@@ -1,0 +1,141 @@
+{% extends 'base_map.html' %}
+{% load django_bootstrap5 %}
+{% load static %}
+
+{% block content %}
+    <div class="row mt-2">
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header">
+                    <div class="card-title h6">MPA Description</div>
+                </div>
+                <div class="card-body">
+                    Some descriptive text here
+                </div>
+            </div>
+        </div>
+        <div class="col-auto">
+         <div class="folium-map" id="map" ></div>
+        </div>
+    </div>
+
+    <div class="card mt-2 h-100">
+        <div class="card-body" style="height: 300px">
+            <canvas id="myChart"></canvas>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    {{ mpas|json_script:"mpas_json" }}
+
+    <script>
+        let ts_labels = [];
+        let ts_data = [];
+        let ts_title = '';
+        const ctx = document.getElementById('myChart');
+        let timeseries_chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ts_labels,
+                datasets: [{
+                    label: ts_title,
+                    data: ts_data,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'timeseries',
+                        title: {
+                            display: true,
+                            text: "Date"
+                        },
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: "Temperature (C)"
+                        }
+                    }
+                },
+                plugins: {
+                    zoom: {
+                        zoom: {
+                            wheel: {
+                                enabled: true,
+                            },
+                            pinch: {
+                                enabled: true,
+                            },
+                            mode: 'x',
+                        },
+                        pan: {
+                            enabled: true,
+                            mode: 'x',
+                            }
+                        },
+                }
+            }
+        });
+
+        function get_timeseries(id){
+            $.ajax({
+                method: "GET",
+                url: {%  url 'timeseries' %} + '?mpa=' + id,
+                success: function(data) {
+                    ts_title = data.name
+                    qs_data = data.data
+                    ts_labels = $.map(qs_data, function (value, key) { return Date.parse(value.date)})
+                    ts_data = $.map(qs_data, function (value, key) { return value.temp})
+                    update_chart()
+                },
+                error: function (error_data) {
+                    console.log("error");
+                    console.log(error_data);
+                }
+            });
+        }
+
+        function update_chart() {
+            timeseries_chart.data.labels = ts_labels
+            timeseries_chart.data.datasets[0].label = ts_title
+            timeseries_chart.data.datasets[0].data = ts_data
+            timeseries_chart.update();
+        }
+
+        let map = L.map('map').setView([44.666830, -59.631500], 6)
+
+        L.tileLayer(
+            "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {"attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors", "detectRetina": false, "maxNativeZoom": 19, "maxZoom": 19, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+        ).addTo(map);
+
+        let mpas = JSON.parse(document.getElementById('mpas_json').textContent)
+
+        let multiPolygonOptions = {color:'red', weight:8};
+
+        mpas.forEach(mpa => {
+            let json = JSON.parse(mpa)
+            let geo_obj = L.geoJSON(json,
+                {
+                    style: function(feature) {
+                        return {
+                            fillColor: feature.style.color,
+                            fillOpacity: '0.8',
+                        }
+                    }
+                });
+            geo_obj.bindPopup(function(layer) {
+                get_timeseries(layer.feature.id);
+                return "<b>MPA:</b> " + layer.feature.properties.name + "<br>" +
+                    "<b>Zone:</b> " + layer.feature.properties.zone
+            });
+            geo_obj.addTo(map)
+            {#console.log(json)#}
+        });
+
+    </script>
+{% endblock %}
