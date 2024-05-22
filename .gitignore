@@ -81,3 +81,4 @@ pip-selfcheck.json
 
 # additional ignores
 *.conf
+*.sqlite3
