@@ -1,9 +1,9 @@
 import json
 import matplotlib as mpl
-import time
 import folium
 import rioxarray
 import branca.colormap as cm
+import logging
 
 import numpy as np
 import xarray as xr
@@ -18,6 +18,7 @@ from django.contrib.gis.db.models.functions import Transform
 
 from core import models
 
+logger = logging.getLogger(__name__)
 
 colormap = cm.linear.Paired_07.scale(-2, 35)
 
@@ -115,6 +116,7 @@ def index(request):
     context = {
         'mpas': mpas,
     }
+    logger.error("An error has occured")
 
     return render(request, 'core/map.html', context)
 

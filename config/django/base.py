@@ -136,3 +136,35 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": env.str('DJANGO_LOG_FILE', 'errors.log'),
+            "level": env.str('DJANGO_LOG_LEVEL', 'ERROR'),
+            "formatter": "verbose",
+        }
+    },
+    "loggers": {
+        "": {
+            "level": "DEBUG",
+            "handlers": ["console", "file"],
+        }
+    },
+    "formatters": {
+        "verbose": {
+            "format": "[{levelname}] {asctime} - {name} {module}.py (line: {lineno:d}): {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
+        },
+    },
+}
