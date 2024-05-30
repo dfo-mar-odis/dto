@@ -1,7 +1,32 @@
 let ts_labels = [];
 let ts_data = [];
 let ts_title = '';
-const ctx = document.getElementById('myChart');
+
+const ctx = document.getElementById('mpa_time_series_chart');
+
+const date_indicator = {
+    type: 'line',
+    value: 'undefined',
+    scaleID: 'x',
+    borderColor: 'black',
+}
+
+const max_indicator = {
+    type: 'line',
+    value: tolerance_max,
+    scaleID: 'y',
+    borderColor: 'red',
+    borderWidth: 2
+}
+
+const min_indicator = {
+    type: 'line',
+    value: tolerance_min,
+    scaleID: 'y',
+    borderColor: 'red',
+    borderWidth: 2
+}
+
 let timeseries_chart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -27,9 +52,16 @@ let timeseries_chart = new Chart(ctx, {
                     display: true,
                     text: "Temperature (C)"
                 }
-            }
+            },
         },
         plugins: {
+            annotation: {
+                annotations: {
+                    date_indicator,
+                    max_indicator,
+                    min_indicator
+                }
+            },
             zoom: {
                 zoom: {
                     wheel: {
@@ -50,9 +82,9 @@ let timeseries_chart = new Chart(ctx, {
 });
 
 function update_chart() {
-    timeseries_chart.data.labels = ts_labels
-    timeseries_chart.data.datasets[0].label = ts_title
-    timeseries_chart.data.datasets[0].data = ts_data
+    timeseries_chart.data.labels = ts_labels;
+    timeseries_chart.data.datasets[0].label = ts_title;
+    timeseries_chart.data.datasets[0].data = ts_data;
     timeseries_chart.update();
     timeseries_chart.resetZoom();
 }
@@ -63,8 +95,9 @@ function clickHandler(e) {
     const dataY = timeseries_chart.scales.y.getValueForPixel(canvasPosition.y);
     label_date = new Date(dataX);
 
-    console.log(label_date.toString());
-    console.log(dataY);
+    date_indicator.value = dataX;
+    timeseries_chart.update();
+
     dial_target = dataY;
     animate_dial();
 }

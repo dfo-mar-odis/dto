@@ -1,7 +1,5 @@
 let dial_min = -5;
 let dial_max = 35;
-let tolerance_min = 2;
-let tolerance_max = 5;
 let dial_cur = 0;
 let dial_target = -30;
 let $dial = $(".dial");
@@ -10,19 +8,6 @@ $(function($) {
         "readOnly":true,
     });
     configure_dial();
-
-    let $min_dial = $("#dial_min")
-    let $max_dial = $("#dial_max")
-    $min_dial.val(tolerance_min);
-    $min_dial.on('input', function(e) {
-        tolerance_min = $(this).val()
-        get_color(dial_cur)
-    })
-    $max_dial.val(tolerance_max);
-    $max_dial.on('input', function(e) {
-        tolerance_max = $(this).val()
-        get_color(dial_cur)
-    })
 });
 
 function configure_dial() {

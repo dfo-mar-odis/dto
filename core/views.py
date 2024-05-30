@@ -95,7 +95,7 @@ def add_attributes(mpa):
             'zone': mpa.zone_e,
             'url': mpa.url_e,
             'regulation': mpa.regulation,
-            'km2': mpa.km2,
+            'km2': round(mpa.km2, 0),
             'temperature': temp,
         },
         "geometry": {

@@ -6,7 +6,7 @@
         <div class="col">
             <div class="card h-100">
                 <div class="card-header">
-                    <div class="card-title h6">MPA Description</div>
+                    <div class="card-title"><h2>MPA Description</h2></div>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -34,16 +34,15 @@
                             <div class="card">
                                 <div class="card-header">
                                     <div class="card-title">
-                                        <h3>Tolerance</h3>
+                                        <h6>Tolerance</h6>
                                     </div>
                                 </div>
                                 <div class="card-body">
+                                    <label for="dial_max" class="form-label">Max</label>
+                                    <input type="number" class="form-control" id="tolerance_max" step="0.5" name="max_risk"/>
 
                                     <label for="dial_min" class="form-label">Min</label>
-                                    <input type="number" class="form-control" id="dial_min" name="min_risk"/>
-
-                                    <label for="dial_max" class="form-label">Max</label>
-                                    <input type="number" class="form-control" id="dial_max" name="max_risk"/>
+                                    <input type="number" class="form-control" id="tolerance_min" step="0.5" name="min_risk"/>
                                 </div>
                             </div>
                         </div>
@@ -74,25 +73,67 @@
 
     <div class="card mt-2 h-100">
         <div class="card-body" style="height: 300px">
-            <canvas id="myChart"></canvas>
+            <div class="d-flex justify-content-center">
+                <div id="loading_chart"></div>
+            </div>
+            <canvas id="mpa_time_series_chart"></canvas>
         </div>
     </div>
 {% endblock %}
 
 {% block scripts %}
     {{ mpas|json_script:"mpas_json" }}
-    <script src="{% static 'js/custom_dial.js' %}"></script>
-    <script src="{% static 'js/custom_chart.js' %}"></script>
     <script>
+        let tolerance_min = 2;
+        let tolerance_max = 5;
+
+        $(function($) {
+            let $min_dial = $("#tolerance_min");
+            let $max_dial = $("#tolerance_max");
+            $min_dial.val(tolerance_min);
+            $min_dial.on('input', function(e) {
+                get_color(dial_cur);
+
+                min_indicator.value = tolerance_min = $(this).val();
+                timeseries_chart.update();
+            })
+            $max_dial.val(tolerance_max);
+            $max_dial.on('input', function(e) {
+                get_color(dial_cur);
+
+                max_indicator.value = tolerance_max = $(this).val();
+                timeseries_chart.update();
+            })
+        });
+
+        function clear_timeseries() {
+            ts_title = '';
+            qs_data = [];
+
+            dial_min = 0;
+            dial_max = 0;
+            dial_cur = 0;
+            configure_dial();
+
+            ts_labels = [];
+            ts_data = [];
+            date_indicator.value = "undefined";
+            update_chart();
+        }
 
         function get_timeseries(id) {
             $.ajax({
                 method: "GET",
                 url: {%  url 'timeseries' %} +'?mpa=' + id,
+                beforeSend: function() {
+                    $("#loading_chart").addClass("loader");
+                    $("#mpa_time_series_chart").hide();
+                },
                 success: function (data) {
                     ts_title = data.name;
                     qs_data = data.data;
 
+                    // Min, Max and Average of the time series come from the server
                     dial_min = data.min;
                     dial_max = data.max;
                     dial_cur = data.avg;
@@ -109,6 +150,10 @@
                 error: function (error_data) {
                     console.log("error");
                     console.log(error_data);
+                },
+                complete: function() {
+                    $("#loading_chart").removeClass("loader");
+                    $("#mpa_time_series_chart").show();
                 }
             });
         }
@@ -152,10 +197,10 @@
                 }
 
                 selectedLayer = e.layer
-                selectedLayer.setStyle({fillColor: "#ff0000"});
+                selectedLayer.setStyle({fillColor: "#ffff00"});
 
                 let feature = selectedLayer.feature
-
+                clear_timeseries();
                 get_timeseries(feature.id);
                 $("#mpa_name").text(feature.properties.name);
                 $("#mpa_zone").text(feature.properties.zone);
@@ -175,4 +220,7 @@
         });
 
     </script>
+    <script src="{% static 'js/custom_dial.js' %}"></script>
+    <script src="{% static 'js/custom_chart.js' %}"></script>
+
 {% endblock %}
