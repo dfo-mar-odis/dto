@@ -1,5 +1,7 @@
 let dial_min = -5;
 let dial_max = 35;
+let tolerance_min = 2;
+let tolerance_max = 5;
 let dial_cur = 0;
 let dial_target = -30;
 let $dial = $(".dial");
@@ -8,6 +10,19 @@ $(function($) {
         "readOnly":true,
     });
     configure_dial();
+
+    let $min_dial = $("#dial_min")
+    let $max_dial = $("#dial_max")
+    $min_dial.val(tolerance_min);
+    $min_dial.on('input', function(e) {
+        tolerance_min = $(this).val()
+        get_color(dial_cur)
+    })
+    $max_dial.val(tolerance_max);
+    $max_dial.on('input', function(e) {
+        tolerance_max = $(this).val()
+        get_color(dial_cur)
+    })
 });
 
 function configure_dial() {
@@ -22,7 +37,6 @@ function configure_dial() {
             "step": 0.001,
             "thickness": 0.25,
             "inputColor": "#000000",
-            "width": 100
         },
     )
     $dial.val(dial_cur).trigger('change');
@@ -30,16 +44,12 @@ function configure_dial() {
 }
 
 function get_color(v) {
-    let percent = (v - dial_min)/(dial_max - dial_min);
-    let rp = Math.abs(percent-0.5)/0.5;
-    let gp = 1-rp;
-    let bp = 0.33;
-    let r = 255 * rp;
-    let g = 255 * gp;
-    let b = 255 * bp;
+    let danger = ( v < tolerance_min || v > tolerance_max )
+    let r = 255 * (danger ? 1.0 : 0.25);
+    let g = 255 * (danger ? 0.25 : 1.0);
+    let b = 255 * 0.25;
+
     let color = "rgb(" + r + ", " + g + ", " + b + ")"
-    console.log("(" + rp + ", " + gp + ", " + bp + ")")
-    console.log(color)
     $dial.trigger('configure', {"fgColor": color});
 }
 

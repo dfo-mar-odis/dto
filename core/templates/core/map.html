@@ -29,20 +29,33 @@
                         <div class="col-2"><b>km^2:</b></div>
                         <div class="col" id="mpa_km2"></div>
                     </div>
-                    <div class="row">
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-auto">
-                                        <label for="dial_min" class="form-label">Min</label>
-                                        <input type="number" class="form-control" id="dial_min"/>
+                    <div class="row mt-2">
+                        <div class="col-auto">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="card-title">
+                                        <h3>Tolerance</h3>
+                                    </div>
+                                </div>
+                                <div class="card-body">
 
-                                        <label for="dial_max" class="form-label">Max</label>
-                                        <input type="number" class="form-control" id="dial_max"/>
-                                    </div>
-                                    <div class="col text-center align-items-center">
-                                        <input type="text" class="dial"/>
-                                    </div>
+                                    <label for="dial_min" class="form-label">Min</label>
+                                    <input type="number" class="form-control" id="dial_min" name="min_risk"/>
+
+                                    <label for="dial_max" class="form-label">Max</label>
+                                    <input type="number" class="form-control" id="dial_max" name="max_risk"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="row">
+                                <div class="col text-center">
+                                    <label for="riskdial" class="text-center">Risk Dial</label>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col text-center">
+                                    <input id="riskdial" type="text" class="dial"/>
                                 </div>
                             </div>
                         </div>
@@ -51,7 +64,7 @@
             </div>
         </div>
         <div class="col-auto">
-            <div class="card">
+            <div class="card h-100">
                 <div class="card-body">
                     <div class="folium-map mt-2" id="map"></div>
                 </div>
@@ -69,71 +82,8 @@
 {% block scripts %}
     {{ mpas|json_script:"mpas_json" }}
     <script src="{% static 'js/custom_dial.js' %}"></script>
+    <script src="{% static 'js/custom_chart.js' %}"></script>
     <script>
-        let ts_labels = [];
-        let ts_data = [];
-        let ts_title = '';
-        const ctx = document.getElementById('myChart');
-        let timeseries_chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ts_labels,
-                datasets: [{
-                    label: ts_title,
-                    data: ts_data,
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        type: 'timeseries',
-                        title: {
-                            display: true,
-                            text: "Date"
-                        },
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: "Temperature (C)"
-                        }
-                    }
-                },
-                plugins: {
-                    zoom: {
-                        zoom: {
-                            wheel: {
-                                enabled: true,
-                            },
-                            pinch: {
-                                enabled: true,
-                            },
-                            mode: 'x',
-                        },
-                        pan: {
-                            enabled: true,
-                            mode: 'x',
-                        }
-                    },
-                }
-            }
-        });
-
-        function clickHandler(e) {
-            const canvasPosition = Chart.helpers.getRelativePosition(e, timeseries_chart);
-            const dataX = timeseries_chart.scales.x.getValueForPixel(canvasPosition.x);
-            const dataY = timeseries_chart.scales.y.getValueForPixel(canvasPosition.y);
-            label_date = new Date(dataX);
-
-            console.log(label_date.toString());
-            console.log(dataY);
-            dial_target = dataY;
-            animate_dial();
-        }
-
-        timeseries_chart.canvas.onclick = clickHandler;
 
         function get_timeseries(id) {
             $.ajax({
@@ -143,8 +93,8 @@
                     ts_title = data.name;
                     qs_data = data.data;
 
-                    {#dial_min = data.min;#}
-                    {#dial_max = data.max;#}
+                    dial_min = data.min;
+                    dial_max = data.max;
                     dial_cur = data.avg;
                     configure_dial();
 
@@ -161,14 +111,6 @@
                     console.log(error_data);
                 }
             });
-        }
-
-        function update_chart() {
-            timeseries_chart.data.labels = ts_labels
-            timeseries_chart.data.datasets[0].label = ts_title
-            timeseries_chart.data.datasets[0].data = ts_data
-            timeseries_chart.update();
-            timeseries_chart.resetZoom();
         }
 
         let map = L.map('map').setView([44.666830, -59.631500], 6)
