@@ -1,5 +1,4 @@
 {% extends 'base_map.html' %}
-{% load django_bootstrap5 %}
 {% load static %}
 
 {% block content %}
@@ -10,12 +9,53 @@
                     <div class="card-title h6">MPA Description</div>
                 </div>
                 <div class="card-body">
-                    Some descriptive text here
+                    <div class="row">
+                        <div class="col-2"><b>MPA Name:</b></div>
+                        <div class="col" id="mpa_name"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-2"><b>MPA Zone:</b></div>
+                        <div class="col" id="mpa_zone"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-2"><b>MPA URL:</b></div>
+                        <div class="col" id="mpa_url"><a></a></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-2"><b>Regulation:</b></div>
+                        <div class="col" id="mpa_regulation"><a></a></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-2"><b>km^2:</b></div>
+                        <div class="col" id="mpa_km2"></div>
+                    </div>
+                    <div class="row">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-auto">
+                                        <label for="dial_min" class="form-label">Min</label>
+                                        <input type="number" class="form-control" id="dial_min"/>
+
+                                        <label for="dial_max" class="form-label">Max</label>
+                                        <input type="number" class="form-control" id="dial_max"/>
+                                    </div>
+                                    <div class="col text-center align-items-center">
+                                        <input type="text" class="dial"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-auto">
-         <div class="folium-map" id="map" ></div>
+            <div class="card">
+                <div class="card-body">
+                    <div class="folium-map mt-2" id="map"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -28,7 +68,7 @@
 
 {% block scripts %}
     {{ mpas|json_script:"mpas_json" }}
-
+    <script src="{% static 'js/custom_dial.js' %}"></script>
     <script>
         let ts_labels = [];
         let ts_data = [];
@@ -75,22 +115,46 @@
                         pan: {
                             enabled: true,
                             mode: 'x',
-                            }
-                        },
+                        }
+                    },
                 }
             }
         });
 
-        function get_timeseries(id){
+        function clickHandler(e) {
+            const canvasPosition = Chart.helpers.getRelativePosition(e, timeseries_chart);
+            const dataX = timeseries_chart.scales.x.getValueForPixel(canvasPosition.x);
+            const dataY = timeseries_chart.scales.y.getValueForPixel(canvasPosition.y);
+            label_date = new Date(dataX);
+
+            console.log(label_date.toString());
+            console.log(dataY);
+            dial_target = dataY;
+            animate_dial();
+        }
+
+        timeseries_chart.canvas.onclick = clickHandler;
+
+        function get_timeseries(id) {
             $.ajax({
                 method: "GET",
-                url: {%  url 'timeseries' %} + '?mpa=' + id,
-                success: function(data) {
-                    ts_title = data.name
-                    qs_data = data.data
-                    ts_labels = $.map(qs_data, function (value, key) { return Date.parse(value.date)})
-                    ts_data = $.map(qs_data, function (value, key) { return value.temp})
-                    update_chart()
+                url: {%  url 'timeseries' %} +'?mpa=' + id,
+                success: function (data) {
+                    ts_title = data.name;
+                    qs_data = data.data;
+
+                    {#dial_min = data.min;#}
+                    {#dial_max = data.max;#}
+                    dial_cur = data.avg;
+                    configure_dial();
+
+                    ts_labels = $.map(qs_data, function (value, key) {
+                        return Date.parse(value.date)
+                    })
+                    ts_data = $.map(qs_data, function (value, key) {
+                        return value.temp
+                    })
+                    update_chart();
                 },
                 error: function (error_data) {
                     console.log("error");
@@ -104,37 +168,68 @@
             timeseries_chart.data.datasets[0].label = ts_title
             timeseries_chart.data.datasets[0].data = ts_data
             timeseries_chart.update();
+            timeseries_chart.resetZoom();
         }
 
         let map = L.map('map').setView([44.666830, -59.631500], 6)
 
         L.tileLayer(
             "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-            {"attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors", "detectRetina": false, "maxNativeZoom": 19, "maxZoom": 19, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+            {
+                "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+                "detectRetina": false,
+                "maxNativeZoom": 19,
+                "maxZoom": 19,
+                "minZoom": 0,
+                "noWrap": false,
+                "opacity": 1,
+                "subdomains": "abc",
+                "tms": false
+            }
         ).addTo(map);
 
         let mpas = JSON.parse(document.getElementById('mpas_json').textContent)
 
-        let multiPolygonOptions = {color:'red', weight:8};
+        let multiPolygonOptions = {color: 'red', weight: 8};
 
+        let selectedLayer = null;
         mpas.forEach(mpa => {
             let json = JSON.parse(mpa)
             let geo_obj = L.geoJSON(json,
                 {
-                    style: function(feature) {
+                    style: function (feature) {
                         return {
                             fillColor: feature.style.color,
                             fillOpacity: '0.8',
                         }
                     }
                 });
-            geo_obj.bindPopup(function(layer) {
-                get_timeseries(layer.feature.id);
-                return "<b>MPA:</b> " + layer.feature.properties.name + "<br>" +
-                    "<b>Zone:</b> " + layer.feature.properties.zone
+            geo_obj.on('click', function (e) {
+                if (selectedLayer) {
+                    selectedLayer.setStyle({fillColor: selectedLayer.feature.style.color});
+                }
+
+                selectedLayer = e.layer
+                selectedLayer.setStyle({fillColor: "#ff0000"});
+
+                let feature = selectedLayer.feature
+
+                get_timeseries(feature.id);
+                $("#mpa_name").text(feature.properties.name);
+                $("#mpa_zone").text(feature.properties.zone);
+
+                let $mpa_url = $("#mpa_url a");
+                $mpa_url.attr("href", feature.properties.url)
+                $mpa_url.text(feature.properties.url);
+
+                let $regulation = $("#mpa_regulation a");
+                $regulation.attr("href", feature.properties.regulation)
+                $regulation.text(feature.properties.regulation);
+
+                $("#mpa_reglement").text(feature.properties.reglement);
+                $("#mpa_km2").text(feature.properties.km2);
             });
             geo_obj.addTo(map)
-            {#console.log(json)#}
         });
 
     </script>

@@ -2,6 +2,7 @@
 <html>
 <head>
 
+    <title>{% block title %}Digital Twin Ocean Viewer{% endblock %}</title>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
 
         <script>
@@ -9,7 +10,7 @@
             L_DISABLE_3D = false;
         </script>
 
-    {% load django_bootstrap5 %}
+    {% load bootstrap5 %}
     {% bootstrap_css %}
     {% bootstrap_javascript %}
 
@@ -22,6 +23,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/2.0.1/chartjs-plugin-zoom.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jQuery-Knob/1.2.13/jquery.knob.min.js" integrity="sha512-NhRZzPdzMOMf005Xmd4JonwPftz4Pe99mRVcFeRDcdCtfjv46zPIi/7ZKScbpHD/V0HB1Eb+ZWigMqw94VUVaw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>

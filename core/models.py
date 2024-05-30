@@ -34,7 +34,7 @@ class MPAZone(models.Model):
     geom = models.MultiPolygonField(srid=102001)
 
     def __str__(self):
-        return self.name_e
+        return f"{self.name.name_e} - {self.zone_e}"
 
 
 class Timeseries(models.Model):

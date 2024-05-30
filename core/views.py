@@ -15,6 +15,7 @@ from folium.plugins import HeatMap
 
 from django.views.generic import TemplateView
 from django.contrib.gis.db.models.functions import Transform
+from django.db.models import Min, Max, Avg
 
 from core import models
 
@@ -92,6 +93,9 @@ def add_attributes(mpa):
         "properties": {
             'name': mpa.name.name_e,
             'zone': mpa.zone_e,
+            'url': mpa.url_e,
+            'regulation': mpa.regulation,
+            'km2': mpa.km2,
             'temperature': temp,
         },
         "geometry": {
@@ -110,13 +114,12 @@ def add_attributes(mpa):
 
 def index(request):
     mpas = [add_attributes(mpa) for mpa in
-            models.MPAZone.objects.annotate(trans=Transform('geom', srid=4326))]
+            models.MPAZone.objects.filter(zone_e__icontains='union').annotate(trans=Transform('geom', srid=4326))]
     # mpas = list(models.MPA.objects.all())
 
     context = {
         'mpas': mpas,
     }
-    logger.error("An error has occured")
 
     return render(request, 'core/map.html', context)
 
@@ -130,6 +133,9 @@ def get_timeseries(request):
     mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
     timeseries['name'] = mpa_zone.name.name_e
     mpa_timeseries = mpa_zone.name.timeseries.all()
+    stats = mpa_timeseries.exclude(temperature='nan').aggregate(min=Min('temperature'), max=Max('temperature'),
+                                                                avg=Avg('temperature'))
+    timeseries.update(stats)
     timeseries['data'] = [{"date": mt.date_time.strftime("%Y-%m-%d"),
                            "temp": f'{mt.temperature}'} for mt in mpa_timeseries]
     #timeseries['data'] = {'2000-01-01': 3.4, '2000-02-01': 5}
