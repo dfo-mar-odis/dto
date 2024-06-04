@@ -16,9 +16,6 @@ env.read_env(os.path.join(BASE_DIR, '.env'))
 
 TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
 
-GDAL_LIBRARY_PATH = r'D:\Gov\projects\python\dto_env\Lib\site-packages\osgeo\gdal304.dll'
-GEOS_LIBRARY_PATH = r'D:\Gov\projects\python\dto_env\Lib\site-packages\osgeo\geos_c.dll'
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
@@ -82,10 +79,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'OPTIONS': {
-            "service": "dto",
-            "passfile": "config/settings/dto_pgpass.conf"
-        },
+        'NAME': env('POSTGIS_NAME'),
+        'USER': env('POSTGIS_USER'),
+        'PASSWORD': env('POSTGIS_PASS'),
+        'HOST': env('POSTGIS_ADDR'),
+        'PORT': env('POSTGIS_PORT'),
     }
 }
 
