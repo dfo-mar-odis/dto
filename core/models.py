@@ -1,4 +1,5 @@
 from django.contrib.gis.db import models
+from django.db.models import Avg
 
 
 # Create your models here.
@@ -41,3 +42,4 @@ class Timeseries(models.Model):
     mpa = models.ForeignKey(MPAName, on_delete=models.CASCADE, related_name='timeseries')
     date_time = models.DateField(verbose_name="Date")
     temperature = models.FloatField(verbose_name="Temperature")
+    climatology = models.FloatField(verbose_name="Climatology")

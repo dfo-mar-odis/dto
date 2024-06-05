@@ -15,7 +15,7 @@ def read_timeseries(mpa_name, filename, date_col='Date'):
         except ValueError:
             value = np.nan
 
-        add_time_series.append(models.Timeseries(mpa=mpa_name, date_time=row[0], temperature=value))
+        add_time_series.append(models.Timeseries(mpa=mpa_name, date_time=row[0], temperature=value, climatology=0))
 
         print(len(add_time_series))
         if len(add_time_series) > 1000:

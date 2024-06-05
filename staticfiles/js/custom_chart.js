@@ -1,8 +1,8 @@
 let ts_labels = [];
-let ts_title = 'Timeseries';
+let ts_title = '';
 let ts_data = [];
 
-let cs_title = 'Climatology';
+let cs_title = '';
 let cs_data = [];
 
 const ctx = document.getElementById('mpa_time_series_chart');
@@ -37,33 +37,21 @@ let timeseries_chart = new Chart(ctx, {
         datasets: [{
             label: cs_title,
             data: cs_data,
-            background: 'red',
             borderWidth: 1,
-            pointRadius: 0.9,
-            fill: {
-                target: '+1',
-                above: 'purple',
-                below: 'orange'
-            },
+            borderColor: 'red'
         },
         {
             label: ts_title,
             data: ts_data,
             borderWidth: 1,
-            background: 'blue',
-            pointRadius: 0.9
+            borderColor: 'blue'
         }]
     },
     options: {
         maintainAspectRatio: false,
-        interaction: {
-            mode: 'x'
-        },
         scales: {
             x: {
                 type: 'timeseries',
-                min: '1993-01-01 00:00:00',
-                max: '2024-12-31 11:59:00',
                 title: {
                     display: true,
                     text: "Date"
@@ -80,8 +68,8 @@ let timeseries_chart = new Chart(ctx, {
             annotation: {
                 annotations: {
                     date_indicator,
-                    // max_indicator,
-                    // min_indicator
+                    max_indicator,
+                    min_indicator
                 }
             },
             zoom: {
@@ -124,14 +112,7 @@ function clickHandler(e) {
     date_indicator.value = dataX;
     timeseries_chart.update();
 
-    const points = timeseries_chart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
-    dial_target = 0;
-    if(points.length) {
-        const firstPoint = points[0];
-        const clim = timeseries_chart.data.datasets[0].data[firstPoint.index];
-        const timeseries = timeseries_chart.data.datasets[1].data[firstPoint.index];
-        dial_target = timeseries - clim;
-    }
+    dial_target = dataY;
     animate_dial();
 }
 

@@ -49,7 +49,7 @@
                         <div class="col">
                             <div class="row">
                                 <div class="col text-center">
-                                    <label for="riskdial" class="text-center">Risk Dial</label>
+                                    <label for="riskdial" class="text-center">Difference Dial</label>
                                 </div>
                             </div>
                             <div class="row">
@@ -84,8 +84,8 @@
 {% block scripts %}
     {{ mpas|json_script:"mpas_json" }}
     <script>
-        let tolerance_min = 2;
-        let tolerance_max = 5;
+        let tolerance_min = -1;
+        let tolerance_max = 1;
 
         $(function($) {
             let $min_dial = $("#tolerance_min");
@@ -107,16 +107,16 @@
         });
 
         function clear_timeseries() {
-            ts_title = '';
             qs_data = [];
 
-            dial_min = 0;
-            dial_max = 0;
+            {#dial_min = 0;#}
+            {#dial_max = 0;#}
             dial_cur = 0;
             configure_dial();
 
             ts_labels = [];
             ts_data = [];
+            cs_data = [];
             date_indicator.value = "undefined";
             update_chart();
         }
@@ -130,13 +130,12 @@
                     $("#mpa_time_series_chart").hide();
                 },
                 success: function (data) {
-                    ts_title = data.name;
                     qs_data = data.data;
 
                     // Min, Max and Average of the time series come from the server
-                    dial_min = data.min;
-                    dial_max = data.max;
-                    dial_cur = data.avg;
+                    {#dial_min = data.min;#}
+                    {#dial_max = data.max;#}
+                    {#dial_cur = data.avg;#}
                     configure_dial();
 
                     ts_labels = $.map(qs_data, function (value, key) {
@@ -145,6 +144,10 @@
                     ts_data = $.map(qs_data, function (value, key) {
                         return value.temp
                     })
+                    cs_data = $.map(qs_data, function (value, key) {
+                        return value.clim
+                    })
+
                     update_chart();
                 },
                 error: function (error_data) {

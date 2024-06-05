@@ -72,12 +72,15 @@ def get_timeseries(request):
 
     mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
     timeseries['name'] = mpa_zone.name.name_e
-    mpa_timeseries = mpa_zone.name.timeseries.all()
+    mpa_timeseries = mpa_zone.name.timeseries.all().order_by('date_time')
     stats = mpa_timeseries.exclude(temperature='nan').aggregate(min=Min('temperature'), max=Max('temperature'),
                                                                 avg=Avg('temperature'))
     timeseries.update(stats)
-    timeseries['data'] = [{"date": mt.date_time.strftime("%Y-%m-%d"),
-                           "temp": f'{mt.temperature}'} for mt in mpa_timeseries]
+    timeseries['data'] = [{"date": mt.date_time.strftime("%Y-%m-%d") + " 00:01",
+                           "temp": f'{mt.temperature}',
+                           "clim": f'{mt.climatology}'}
+                          for mt in mpa_timeseries]
+
     #timeseries['data'] = {'2000-01-01': 3.4, '2000-02-01': 5}
     # if mpa_zone.name.name_e.lower() == "st. anns bank marine protected area":
     #     timeseries = pd.read_csv('data/GLORYS_StAnnsBank_daily_aveBottomT.csv')

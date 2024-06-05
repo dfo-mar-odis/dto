@@ -1,7 +1,7 @@
-let dial_min = -3;
-let dial_max = 3;
+let dial_min = -5;
+let dial_max = 35;
 let dial_cur = 0;
-let dial_target = 0;
+let dial_target = -30;
 let $dial = $(".dial");
 $(function($) {
     $dial.knob({
