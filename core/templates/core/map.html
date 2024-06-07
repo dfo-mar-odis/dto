@@ -32,17 +32,21 @@
                     <div class="row mt-2">
                         <div class="col-auto">
                             <div class="card">
-                                <div class="card-header">
-                                    <div class="card-title">
-                                        <h6>Tolerance</h6>
-                                    </div>
-                                </div>
                                 <div class="card-body">
-                                    <label for="dial_max" class="form-label">Max</label>
-                                    <input type="number" class="form-control" id="tolerance_max" step="0.5" name="max_risk"/>
-
-                                    <label for="dial_min" class="form-label">Min</label>
-                                    <input type="number" class="form-control" id="tolerance_min" step="0.5" name="min_risk"/>
+                                    <label for="q_upper" class="form-label">Upper Quantile</label>
+                                    <input type="number" class="form-control" id="q_upper" step="0.1"/>
+                                    <label for="q_lower" class="form-label">Lower Quantile</label>
+                                    <input type="number" class="form-control" id="q_lower" step="0.1"/>
+                                    <div class="row mt-2">
+                                        <div class="col-auto">
+                                            <button class="btn btn-primary" onclick="update_thresholds()" title="refresh">Refresh</button>
+                                        </div>
+                                        <div class="col-auto">
+                                            <div class="d-flex justify-content-center">
+                                                <div id="loading_threshold"></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -84,26 +88,23 @@
 {% block scripts %}
     {{ mpas|json_script:"mpas_json" }}
     <script>
-        let tolerance_min = -1;
-        let tolerance_max = 1;
+        let q_upper = 0.9;
+        let q_lower = 0.1;
+        let mpa_id = null;
 
         $(function($) {
-            let $min_dial = $("#tolerance_min");
-            let $max_dial = $("#tolerance_max");
-            $min_dial.val(tolerance_min);
-            $min_dial.on('input', function(e) {
-                get_color(dial_cur);
+            let $max_dial = $("#q_upper");
+            let $min_dial = $("#q_lower");
 
-                min_indicator.value = tolerance_min = $(this).val();
-                timeseries_chart.update();
-            })
-            $max_dial.val(tolerance_max);
+            $max_dial.val(q_upper);
             $max_dial.on('input', function(e) {
-                get_color(dial_cur);
+                q_upper = parseFloat($(this).val());
+            });
 
-                max_indicator.value = tolerance_max = $(this).val();
-                timeseries_chart.update();
-            })
+            $min_dial.val(q_lower);
+            $min_dial.on('input', function(e) {
+                q_lower = parseFloat($(this).val());
+            });
         });
 
         function clear_timeseries() {
@@ -117,14 +118,50 @@
             ts_labels = [];
             ts_data = [];
             cs_data = [];
+            threshold_data = [];
             date_indicator.value = "undefined";
             update_chart();
         }
 
-        function get_timeseries(id) {
+        function update_thresholds() {
             $.ajax({
                 method: "GET",
-                url: {%  url 'timeseries' %} +'?mpa=' + id,
+                url: {%  url 'timeseries' %} +'?mpa=' + mpa_id + '&upper=' + q_upper + '&lower=' + q_lower,
+                beforeSend: function() {
+                    $("#loading_threshold").addClass("loader-sm");
+                    {#$("#mpa_time_series_chart").hide();#}
+                },
+                success: function (data) {
+                    qs_data = data.data;
+
+                    upper_threshold_data = $.map(qs_data, function (value, key) {
+                        return value.upperq;
+                    })
+                    lower_threshold_data = $.map(qs_data, function (value, key) {
+                        return value.lowerq;
+                    })
+
+                    ds_upper_threshold.data = upper_threshold_data
+                    ds_lower_threshold.data = lower_threshold_data
+
+                    timeseries_chart.update();
+                },
+                error: function (error_data) {
+                    console.log("error");
+                    console.log(error_data);
+                },
+                complete: function() {
+                    $("#loading_threshold").removeClass("loader-sm");
+                    {#$("#mpa_time_series_chart").show();#}
+                }
+            });
+        }
+
+        function get_timeseries(id) {
+            mpa_id = id;
+            $.ajax({
+                method: "GET",
+                url: {%  url 'timeseries' %} +'?mpa=' + id + '&upper=' + q_upper + '&lower=' + q_lower,
                 beforeSend: function() {
                     $("#loading_chart").addClass("loader");
                     $("#mpa_time_series_chart").hide();
@@ -132,20 +169,22 @@
                 success: function (data) {
                     qs_data = data.data;
 
-                    // Min, Max and Average of the time series come from the server
-                    {#dial_min = data.min;#}
-                    {#dial_max = data.max;#}
-                    {#dial_cur = data.avg;#}
                     configure_dial();
 
                     ts_labels = $.map(qs_data, function (value, key) {
-                        return Date.parse(value.date)
+                        return Date.parse(value.date);
                     })
                     ts_data = $.map(qs_data, function (value, key) {
-                        return value.temp
+                        return value.temp;
                     })
                     cs_data = $.map(qs_data, function (value, key) {
-                        return value.clim
+                        return value.clim;
+                    })
+                    upper_threshold_data = $.map(qs_data, function (value, key) {
+                        return value.upperq;
+                    })
+                    lower_threshold_data = $.map(qs_data, function (value, key) {
+                        return value.lowerq;
                     })
 
                     update_chart();

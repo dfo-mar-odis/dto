@@ -1,9 +1,15 @@
 let ts_labels = [];
-let ts_title = 'Timeseries';
+let ts_title = 'Bottom Temperature Timeseries (°C)';
 let ts_data = [];
 
-let cs_title = 'Climatology';
+let cs_title = 'Bottom Temperature Climatology (°C)';
 let cs_data = [];
+
+let lower_threshold_title = 'Lower Threshold';
+let lower_threshold_data = [];
+
+let upper_threshold_title = 'Upper Threshold';
+let upper_threshold_data = [];
 
 const ctx = document.getElementById('mpa_time_series_chart');
 
@@ -14,45 +20,61 @@ const date_indicator = {
     borderColor: 'black',
 }
 
-const max_indicator = {
-    type: 'line',
-    value: tolerance_max,
-    scaleID: 'y',
-    borderColor: 'red',
-    borderWidth: 2
+const ds_climatology = {
+    label: cs_title,
+    data: cs_data,
+    borderColor: 'black',
+    borderWidth: 0.7,
+    pointRadius: 0.5,
+    fill: {
+        target: '0',
+        above: 'rgba(100, 100, 255, 0.4)',
+        below: 'rgba(255, 100, 100, 0.4)'
+    },
 }
 
-const min_indicator = {
-    type: 'line',
-    value: tolerance_min,
-    scaleID: 'y',
+const ds_timeseries = {
+    label: ts_title,
+    data: ts_data,
+    borderWidth: 1,
     borderColor: 'red',
-    borderWidth: 2
+    pointRadius: 0
+}
+
+const ds_upper_threshold = {
+    label: upper_threshold_title,
+    data: upper_threshold_data,
+    backgroundColor: 'rgba(128, 128, 128, 0.4)',
+    borderWidth: 0,
+    pointRadius: 0,
+    fill: {
+        target: '0',
+        below: 'red',
+    },
+}
+
+const ds_lower_threshold = {
+    label: lower_threshold_title,
+    data: lower_threshold_data,
+    backgroundColor: 'rgba(128, 128, 128, 0.4)',
+    borderWidth: 0,
+    pointRadius: 0,
+    fill: {
+        target: '0',
+        above: 'blue',
+    },
 }
 
 let timeseries_chart = new Chart(ctx, {
     type: 'line',
     data: {
         labels: ts_labels,
-        datasets: [{
-            label: cs_title,
-            data: cs_data,
-            background: 'red',
-            borderWidth: 1,
-            pointRadius: 0.9,
-            fill: {
-                target: '+1',
-                above: 'purple',
-                below: 'orange'
-            },
-        },
-        {
-            label: ts_title,
-            data: ts_data,
-            borderWidth: 1,
-            background: 'blue',
-            pointRadius: 0.9
-        }]
+        datasets: [
+            ds_timeseries,
+            ds_climatology,
+            ds_upper_threshold,
+            ds_lower_threshold,
+        ]
     },
     options: {
         maintainAspectRatio: false,
@@ -84,6 +106,18 @@ let timeseries_chart = new Chart(ctx, {
                     // min_indicator
                 }
             },
+            legend: {
+                labels: {
+                    filter: function(legendItem, data) {
+                        if(legendItem.datasetIndex == 2 || legendItem.datasetIndex == 3 ) {
+                            return null;
+                        }
+                        legendItem.lineWidth = 2;
+                        return legendItem;
+                    },
+                    boxHeight: 1
+                }
+            },
             zoom: {
                 zoom: {
                     wheel: {
@@ -105,11 +139,10 @@ let timeseries_chart = new Chart(ctx, {
 
 function update_chart() {
     timeseries_chart.data.labels = ts_labels;
-    timeseries_chart.data.datasets[1].label = ts_title;
-    timeseries_chart.data.datasets[1].data = ts_data;
-
-    timeseries_chart.data.datasets[0].label = cs_title;
-    timeseries_chart.data.datasets[0].data = cs_data;
+    ds_climatology.data = cs_data;
+    ds_timeseries.data = ts_data;
+    ds_lower_threshold.data = lower_threshold_data;
+    ds_upper_threshold.data = upper_threshold_data;
 
     timeseries_chart.update();
     timeseries_chart.resetZoom();
@@ -124,13 +157,16 @@ function clickHandler(e) {
     date_indicator.value = dataX;
     timeseries_chart.update();
 
-    const points = timeseries_chart.getElementsAtEventForMode(e, 'nearest', { intersect: true }, true);
+    const points = timeseries_chart.getElementsAtEventForMode(e, 'nearest', { intersect: false }, true);
     dial_target = 0;
     if(points.length) {
         const firstPoint = points[0];
-        const clim = timeseries_chart.data.datasets[0].data[firstPoint.index];
-        const timeseries = timeseries_chart.data.datasets[1].data[firstPoint.index];
+        const clim = ds_climatology.data[firstPoint.index];
+        const timeseries = ds_timeseries.data[firstPoint.index];
         dial_target = timeseries - clim;
+        dial_value = timeseries
+        dial_upper = ds_upper_threshold.data[firstPoint.index]
+        dial_lower = ds_lower_threshold.data[firstPoint.index]
     }
     animate_dial();
 }

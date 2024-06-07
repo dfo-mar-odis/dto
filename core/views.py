@@ -6,6 +6,7 @@ import branca.colormap as cm
 import logging
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -67,18 +68,29 @@ def index(request):
 def get_timeseries(request):
     timeseries = {}
     mpa_id = int(request.GET.get('mpa', -1))
+    q_upper = float(request.GET.get('upper', 0.9))
+    q_lower = float(request.GET.get('lower', 0.1))
     if mpa_id == -1:
         return JsonResponse(timeseries)
 
     mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
     timeseries['name'] = mpa_zone.name.name_e
     mpa_timeseries = mpa_zone.name.timeseries.all().order_by('date_time')
-    stats = mpa_timeseries.exclude(temperature='nan').aggregate(min=Min('temperature'), max=Max('temperature'),
-                                                                avg=Avg('temperature'))
-    timeseries.update(stats)
+
+    df = pd.DataFrame(list(mpa_timeseries.values('date_time', 'temperature')))
+    df['date_time'] = pd.to_datetime(df['date_time'])
+    df.set_index('date_time', inplace=True)
+
+    # clim = df.groupby([df.index.month, df.index.day]).mean()
+    quant = df.groupby([df.index.month, df.index.day]).quantile()
+    upper = df.groupby([df.index.month, df.index.day]).quantile(q=q_upper)
+    lower = df.groupby([df.index.month, df.index.day]).quantile(q=q_lower)
+
     timeseries['data'] = [{"date": mt.date_time.strftime("%Y-%m-%d") + " 00:01",
                            "temp": f'{mt.temperature}',
-                           "clim": f'{mt.climatology}'}
+                           "clim": f'{quant["temperature"][mt.date_time.month, mt.date_time.day]}',
+                           "lowerq": f'{lower["temperature"][mt.date_time.month, mt.date_time.day]}',
+                           "upperq": f'{upper["temperature"][mt.date_time.month, mt.date_time.day]}'}
                           for mt in mpa_timeseries]
 
     #timeseries['data'] = {'2000-01-01': 3.4, '2000-02-01': 5}

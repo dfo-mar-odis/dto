@@ -1,6 +1,9 @@
 let dial_min = -3;
 let dial_max = 3;
 let dial_cur = 0;
+let dial_value = 0;
+let dial_upper = 0;
+let dial_lower = 0;
 let dial_target = 0;
 let $dial = $(".dial");
 $(function($) {
@@ -28,11 +31,12 @@ function configure_dial() {
     get_color(dial_cur);
 }
 
-function get_color(v) {
-    let danger = ( v < tolerance_min || v > tolerance_max )
-    let r = 255 * (danger ? 1.0 : 0.25);
-    let g = 255 * (danger ? 0.25 : 1.0);
-    let b = 255 * 0.25;
+function get_color() {
+    let positive = (dial_value > dial_upper);
+    let negative = (dial_value < dial_lower );
+    let r = 255 * (negative ? 0.25 : (positive ? 1.0 : 0.25));
+    let g = 255 * (negative ? 0.25 : (positive ? 0.25 : 1.0));
+    let b = 255 * (negative ? 1.0 : 0.25);
 
     let color = "rgb(" + r + ", " + g + ", " + b + ")"
     $dial.trigger('configure', {"fgColor": color});
@@ -49,10 +53,11 @@ function animate_dial() {
         step: function() {
             dial_cur = this.animateVal;
             $dial.val(dial_cur).trigger('change');
-            get_color(dial_cur)
+            get_color()
         },
         complete: function() {
             dial_target = dial_target * -1;
+            get_color()
         }
     })
 }
