@@ -1,19 +1,14 @@
 import json
-import matplotlib as mpl
 import folium
-import rioxarray
 import branca.colormap as cm
 import logging
 
-import numpy as np
 import pandas as pd
-import xarray as xr
 from django.http import JsonResponse
 from django.shortcuts import render
 
 from django.views.generic import TemplateView
 from django.contrib.gis.db.models.functions import Transform
-from django.db.models import Min, Max, Avg
 
 from core import models
 
@@ -109,11 +104,6 @@ class MapView(TemplateView):
 
     def get_context_data(self, **kwargs):
         figure = folium.Figure()
-        raster_location = 'scripts/data/mpa_clipped.tif'
-        # raster_location = 'scripts/data/glorys.tif'
-
-        # netcdf_location = 'scripts/data/mpa.nc'
-        netcdf_location = 'scripts/data/AtlanticNW_monthly_Monthly_clim_1993-2018-01_GLORYS12v1.nc'
 
         # Add a Marker
         # for station in models.Station.objects.all():
@@ -123,17 +113,8 @@ class MapView(TemplateView):
         #     ).add_to(map)
 
         # Make the map
-        # map = folium.Map(location=[44.666830, -63.631500], zoom_start=6, crs="EPSG4326")
         map = folium.Map(location=[44.666830, -63.631500], zoom_start=6)
         map.add_to(figure)
-
-        # add_heat_map(netcdf_location, map)
-        add_map_raster_rio(raster_location, map)
-
-        # for mpa in models.MPA.objects.annotate(trans=Transform('geom', srid=102001)):
-        #     geo_j = folium.GeoJson(data=mpa.trans.geojson)
-        #     folium.Popup(mpa.name_e).add_to(geo_j)
-        #     geo_j.add_to(map)
 
         for mpa in models.MPA.objects.annotate(trans=Transform('geom', srid=4326)):
             geo_j = folium.GeoJson(data=mpa.trans.geojson)

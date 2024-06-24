@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Python 3.11 (dto_env)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="digital_twin_ocean" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Remote Python 3.11.5 Docker Compose (dto-django)" project-jdk-type="Python SDK" />
 </project>

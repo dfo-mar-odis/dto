@@ -29,40 +29,6 @@
                         <div class="col-2"><b>km^2:</b></div>
                         <div class="col" id="mpa_km2"></div>
                     </div>
-                    <div class="row mt-2">
-                        <div class="col-auto">
-                            <div class="card">
-                                <div class="card-body">
-                                    <label for="q_upper" class="form-label">Upper Quantile</label>
-                                    <input type="number" class="form-control" id="q_upper" step="0.1"/>
-                                    <label for="q_lower" class="form-label">Lower Quantile</label>
-                                    <input type="number" class="form-control" id="q_lower" step="0.1"/>
-                                    <div class="row mt-2">
-                                        <div class="col-auto">
-                                            <button class="btn btn-primary" onclick="update_thresholds()" title="refresh">Refresh</button>
-                                        </div>
-                                        <div class="col-auto">
-                                            <div class="d-flex justify-content-center">
-                                                <div id="loading_threshold"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col">
-                            <div class="row">
-                                <div class="col text-center">
-                                    <label for="riskdial" class="text-center">Difference Dial</label>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col text-center">
-                                    <input id="riskdial" type="text" class="dial"/>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -75,34 +41,99 @@
         </div>
     </div>
 
-    <div class="card mt-2 h-100">
-        <div class="card-body" style="height: 300px">
-            <div class="d-flex justify-content-center">
-                <div id="loading_chart"></div>
+    <ul class="nav nav-tabs mt-2" id="chart_types" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="ocean_data_tab" data-bs-toggle="tab" data-bs-target="#ocean_data"
+                    type="button" role="tab" aria-controls="ocean_data" aria-selected="true">Ocean Data
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="species_data_tab" data-bs-toggle="tab" data-bs-target="#species_data"
+                    type="button" role="tab" aria-controls="specieis_data" aria-selected="false">Species Data
+            </button>
+        </li>
+    </ul>
+    <div class="tab-content" id="chart_tabs">
+        <div class="tab-pane fade show active" id="ocean_data">
+            <div class="card mt-2 h-100">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-auto">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col text-center">
+                                            <label for="riskdial" class="text-center">Difference Dial</label>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col text-center">
+                                            <input id="riskdial" type="text" class="dial"/>
+                                        </div>
+                                    </div>
+                                    <label for="q_upper" class="form-label">Upper Quantile</label>
+                                    <input type="number" class="form-control" id="q_upper" step="0.1"/>
+                                    <label for="q_lower" class="form-label">Lower Quantile</label>
+                                    <input type="number" class="form-control" id="q_lower" step="0.1"/>
+                                    <div class="row mt-2">
+                                        <div class="col-auto">
+                                            <button class="btn btn-primary" onclick="update_thresholds()"
+                                                    title="refresh">
+                                                Refresh
+                                            </button>
+                                        </div>
+                                        <div class="col-auto">
+                                            <div class="d-flex justify-content-center">
+                                                <div id="loading_threshold"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="d-flex justify-content-center">
+                                <div id="loading_chart"></div>
+                            </div>
+                            <canvas id="mpa_time_series_chart"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <canvas id="mpa_time_series_chart"></canvas>
+        </div>
+        <div class="tab-pane fade" id="species_data">
+            <div class="card mt-2 h-100">
+                <div class="card-body" style="height: 300px">
+                    {% include 'core/partials/chart_row.html' %}
+                </div>
+            </div>
         </div>
     </div>
+
 {% endblock %}
 
 {% block scripts %}
     {{ mpas|json_script:"mpas_json" }}
+    <script src="{% static 'js/custom_dial.js' %}"></script>
+    <script src="{% static 'js/custom_chart.js' %}"></script>
     <script>
+        const quantile_chart = new OceanChart('mpa_time_series_chart');
+
         let q_upper = 0.9;
         let q_lower = 0.1;
         let mpa_id = null;
 
-        $(function($) {
+        $(function ($) {
             let $max_dial = $("#q_upper");
             let $min_dial = $("#q_lower");
 
             $max_dial.val(q_upper);
-            $max_dial.on('input', function(e) {
+            $max_dial.on('input', function (e) {
                 q_upper = parseFloat($(this).val());
             });
 
             $min_dial.val(q_lower);
-            $min_dial.on('input', function(e) {
+            $min_dial.on('input', function (e) {
                 q_lower = parseFloat($(this).val());
             });
         });
@@ -115,42 +146,39 @@
             dial_cur = 0;
             configure_dial();
 
-            ts_labels = [];
-            ts_data = [];
-            cs_data = [];
-            threshold_data = [];
-            date_indicator.value = "undefined";
-            update_chart();
+            quantile_chart.timeseries_chart.data.labels = [];
+            quantile_chart.ds_timeseries.data = [];
+            quantile_chart.ds_climatology.data = [];
+            quantile_chart.threshold_data = [];
+            quantile_chart.date_indicator.value = "undefined";
+            quantile_chart.update_chart();
         }
 
-        function update_thresholds() {
+        function update_thresholds(component_id) {
             $.ajax({
                 method: "GET",
                 url: {%  url 'timeseries' %} +'?mpa=' + mpa_id + '&upper=' + q_upper + '&lower=' + q_lower,
-                beforeSend: function() {
+                beforeSend: function () {
                     $("#loading_threshold").addClass("loader-sm");
                     {#$("#mpa_time_series_chart").hide();#}
                 },
                 success: function (data) {
                     qs_data = data.data;
 
-                    upper_threshold_data = $.map(qs_data, function (value, key) {
+                    quantile_chart.ds_upper_threshold.data = $.map(qs_data, function (value, key) {
                         return value.upperq;
                     })
-                    lower_threshold_data = $.map(qs_data, function (value, key) {
+                    quantile_chart.ds_lower_threshold.data = $.map(qs_data, function (value, key) {
                         return value.lowerq;
                     })
 
-                    ds_upper_threshold.data = upper_threshold_data
-                    ds_lower_threshold.data = lower_threshold_data
-
-                    timeseries_chart.update();
+                    quantile_chart.timeseries_chart.update();
                 },
                 error: function (error_data) {
                     console.log("error");
                     console.log(error_data);
                 },
-                complete: function() {
+                complete: function () {
                     $("#loading_threshold").removeClass("loader-sm");
                     {#$("#mpa_time_series_chart").show();#}
                 }
@@ -162,7 +190,7 @@
             $.ajax({
                 method: "GET",
                 url: {%  url 'timeseries' %} +'?mpa=' + id + '&upper=' + q_upper + '&lower=' + q_lower,
-                beforeSend: function() {
+                beforeSend: function () {
                     $("#loading_chart").addClass("loader");
                     $("#mpa_time_series_chart").hide();
                 },
@@ -171,29 +199,29 @@
 
                     configure_dial();
 
-                    ts_labels = $.map(qs_data, function (value, key) {
+                    quantile_chart.timeseries_chart.data.labels = $.map(qs_data, function (value, key) {
                         return Date.parse(value.date);
                     })
-                    ts_data = $.map(qs_data, function (value, key) {
+                    quantile_chart.ds_timeseries.data = $.map(qs_data, function (value, key) {
                         return value.temp;
                     })
-                    cs_data = $.map(qs_data, function (value, key) {
+                    quantile_chart.ds_climatology.data = $.map(qs_data, function (value, key) {
                         return value.clim;
                     })
-                    upper_threshold_data = $.map(qs_data, function (value, key) {
+                    quantile_chart.ds_upper_threshold.data = $.map(qs_data, function (value, key) {
                         return value.upperq;
                     })
-                    lower_threshold_data = $.map(qs_data, function (value, key) {
+                    quantile_chart.ds_lower_threshold.data = $.map(qs_data, function (value, key) {
                         return value.lowerq;
                     })
 
-                    update_chart();
+                    quantile_chart.update_chart();
                 },
                 error: function (error_data) {
                     console.log("error");
                     console.log(error_data);
                 },
-                complete: function() {
+                complete: function () {
                     $("#loading_chart").removeClass("loader");
                     $("#mpa_time_series_chart").show();
                 }
@@ -262,7 +290,5 @@
         });
 
     </script>
-    <script src="{% static 'js/custom_dial.js' %}"></script>
-    <script src="{% static 'js/custom_chart.js' %}"></script>
 
 {% endblock %}
