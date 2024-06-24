@@ -16,7 +16,7 @@ services:
     image: postgis/postgis:13-3.4
     restart: always
     env_file:
-      - database.env
+      - .env
     ports:
       - "5432:5432"
     healthcheck:
