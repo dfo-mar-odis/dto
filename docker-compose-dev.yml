@@ -2,6 +2,7 @@ version: "3.9"
 services:
   dto-django:
     build: .
+    container_name: dto-django
     restart: always
     ports:
       - "8000:8000"
@@ -14,6 +15,7 @@ services:
         
   dto-postgis:
     image: postgis/postgis:13-3.4
+    container_name: dto-postgis
     restart: always
     env_file:
       - .env
