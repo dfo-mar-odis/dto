@@ -4,7 +4,7 @@ import branca.colormap as cm
 import logging
 
 import pandas as pd
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render
 
 from django.views.generic import TemplateView
@@ -60,17 +60,57 @@ def index(request):
     return render(request, 'core/map.html', context)
 
 
-def get_timeseries(request):
-    timeseries = {}
+def get_quantiles(request):
+    timeseries = {'data': []}
     mpa_id = int(request.GET.get('mpa', -1))
     q_upper = float(request.GET.get('upper', 0.9))
     q_lower = float(request.GET.get('lower', 0.1))
+
     if mpa_id == -1:
+        return JsonResponse(timeseries)
+
+    if not models.MPAZone.objects.filter(pk=mpa_id).exists():
         return JsonResponse(timeseries)
 
     mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
     timeseries['name'] = mpa_zone.name.name_e
     mpa_timeseries = mpa_zone.name.timeseries.all().order_by('date_time')
+
+    if not mpa_timeseries.exists():
+        return JsonResponse(timeseries)
+
+    df = pd.DataFrame(list(mpa_timeseries.values('date_time', 'temperature')))
+    df['date_time'] = pd.to_datetime(df['date_time'])
+    df.set_index('date_time', inplace=True)
+
+    # clim = df.groupby([df.index.month, df.index.day]).mean()
+    upper = df.groupby([df.index.month, df.index.day]).quantile(q=q_upper)
+    lower = df.groupby([df.index.month, df.index.day]).quantile(q=q_lower)
+
+    timeseries['data'] = [{"date": mt.date_time.strftime("%Y-%m-%d") + " 00:01",
+                           "lowerq": f'{lower["temperature"][mt.date_time.month, mt.date_time.day]}',
+                           "upperq": f'{upper["temperature"][mt.date_time.month, mt.date_time.day]}'}
+                          for mt in mpa_timeseries]
+
+    return JsonResponse(timeseries)
+
+
+def get_timeseries(request):
+    timeseries = {'data': []}
+    mpa_id = int(request.GET.get('mpa', -1))
+
+    if mpa_id == -1:
+        return JsonResponse(timeseries)
+
+    if not models.MPAZone.objects.filter(pk=mpa_id).exists():
+        return JsonResponse(timeseries)
+
+    mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
+    timeseries['name'] = mpa_zone.name.name_e
+    mpa_timeseries = mpa_zone.name.timeseries.all().order_by('date_time')
+
+    if not mpa_timeseries.exists():
+        return JsonResponse(timeseries)
 
     df = pd.DataFrame(list(mpa_timeseries.values('date_time', 'temperature')))
     df['date_time'] = pd.to_datetime(df['date_time'])
@@ -78,24 +118,25 @@ def get_timeseries(request):
 
     # clim = df.groupby([df.index.month, df.index.day]).mean()
     quant = df.groupby([df.index.month, df.index.day]).quantile()
-    upper = df.groupby([df.index.month, df.index.day]).quantile(q=q_upper)
-    lower = df.groupby([df.index.month, df.index.day]).quantile(q=q_lower)
 
     timeseries['data'] = [{"date": mt.date_time.strftime("%Y-%m-%d") + " 00:01",
                            "temp": f'{mt.temperature}',
-                           "clim": f'{quant["temperature"][mt.date_time.month, mt.date_time.day]}',
-                           "lowerq": f'{lower["temperature"][mt.date_time.month, mt.date_time.day]}',
-                           "upperq": f'{upper["temperature"][mt.date_time.month, mt.date_time.day]}'}
+                           "clim": f'{quant["temperature"][mt.date_time.month, mt.date_time.day]}'}
                           for mt in mpa_timeseries]
 
-    #timeseries['data'] = {'2000-01-01': 3.4, '2000-02-01': 5}
-    # if mpa_zone.name.name_e.lower() == "st. anns bank marine protected area":
-    #     timeseries = pd.read_csv('data/GLORYS_StAnnsBank_daily_aveBottomT.csv')
-    #     timeseries = timeseries.set_index('Date')
-    #     timeseries.columns = ['temp']
-    #     timeseries = json.loads(timeseries.to_json())
-
     return JsonResponse(timeseries)
+
+
+def get_range_chart(request):
+    chart_id = request.GET.get('chart_name')
+    html = render(request, 'core/partials/range_chart_row.html', {'id': chart_id})
+    return HttpResponse(html)
+
+
+def get_quantile_chart(request):
+    chart_id = request.GET.get('chart_name')
+    html = render(request, 'core/partials/quantile_chart_row.html', {'id': chart_id})
+    return HttpResponse(html)
 
 
 # Create your views here.

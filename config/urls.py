@@ -21,5 +21,8 @@ from core import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.index, name='map'),
-    path('timeseries/', views.get_timeseries, name='timeseries')
+    path('timeseries/', views.get_timeseries, name='timeseries'),
+    path('quantiles/', views.get_quantiles, name='quantiles'),
+    path('range_chart/', views.get_range_chart, name='range_chart'),
+    path('quantile_chart/', views.get_quantile_chart, name='quantile_chart'),
 ]

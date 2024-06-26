@@ -56,55 +56,23 @@
     <div class="tab-content" id="chart_tabs">
         <div class="tab-pane fade show active" id="ocean_data">
             <div class="card mt-2 h-100">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-auto">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col text-center">
-                                            <label for="riskdial" class="text-center">Difference Dial</label>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col text-center">
-                                            <input id="riskdial" type="text" class="dial"/>
-                                        </div>
-                                    </div>
-                                    <label for="q_upper" class="form-label">Upper Quantile</label>
-                                    <input type="number" class="form-control" id="q_upper" step="0.1"/>
-                                    <label for="q_lower" class="form-label">Lower Quantile</label>
-                                    <input type="number" class="form-control" id="q_lower" step="0.1"/>
-                                    <div class="row mt-2">
-                                        <div class="col-auto">
-                                            <button class="btn btn-primary" onclick="update_thresholds()"
-                                                    title="refresh">
-                                                Refresh
-                                            </button>
-                                        </div>
-                                        <div class="col-auto">
-                                            <div class="d-flex justify-content-center">
-                                                <div id="loading_threshold"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col">
-                            <div class="d-flex justify-content-center">
-                                <div id="loading_chart"></div>
-                            </div>
-                            <canvas id="mpa_time_series_chart"></canvas>
-                        </div>
-                    </div>
+                <div class="card-body" id="div_id_quantile_card">
+{#                    {% include 'core/partials/quantile_chart_row.html' with id="mpa_ts_quantile_chart"%}#}
                 </div>
             </div>
         </div>
         <div class="tab-pane fade" id="species_data">
             <div class="card mt-2 h-100">
-                <div class="card-body" style="height: 300px">
-                    {% include 'core/partials/chart_row.html' %}
+                <div class="card-body" id="div_id_range_card">
+                    <div class="row">
+                        <div class="col"></div>
+                        <div class="col-auto">
+                            <button id="btn_id_add_chart" class="btn btn-primary btn-sm" onclick="add_range_chart()">Add a Chart</button>
+                            <div id="btn_id_add_chart_loading"></div>
+                        </div>
+                    </div>
+{#                    {% include 'core/partials/range_chart_row.html' with id="mpa_ts_range_chart"%}#}
+{#                    {% include 'core/partials/range_chart_row.html' with id="mpa_ts_range_chart_1"%}#}
                 </div>
             </div>
         </div>
@@ -114,116 +82,86 @@
 
 {% block scripts %}
     {{ mpas|json_script:"mpas_json" }}
-    <script src="{% static 'js/custom_dial.js' %}"></script>
-    <script src="{% static 'js/custom_chart.js' %}"></script>
+    <script src="{% static 'core/js/range_chart.js' %}"></script>
+    <script src="{% static 'core/js/quantile_chart.js' %}"></script>
     <script>
-        const quantile_chart = new OceanChart('mpa_time_series_chart');
 
-        let q_upper = 0.9;
-        let q_lower = 0.1;
+        let range_charts = 1;
+        const charts = {
+            'mpa_ts_quantile_chart': new QuantileChart('mpa_ts_quantile_chart'),
+            'mpa_ts_range_chart': new RangeChart('mpa_ts_range_chart'),
+        };
+
         let mpa_id = null;
+        let date_labels = [];
+        let temp_data = [];
+        let climate_data = [];
 
-        $(function ($) {
-            let $max_dial = $("#q_upper");
-            let $min_dial = $("#q_lower");
-
-            $max_dial.val(q_upper);
-            $max_dial.on('input', function (e) {
-                q_upper = parseFloat($(this).val());
-            });
-
-            $min_dial.val(q_lower);
-            $min_dial.on('input', function (e) {
-                q_lower = parseFloat($(this).val());
-            });
-        });
-
-        function clear_timeseries() {
-            qs_data = [];
-
-            {#dial_min = 0;#}
-            {#dial_max = 0;#}
-            dial_cur = 0;
-            configure_dial();
-
-            quantile_chart.timeseries_chart.data.labels = [];
-            quantile_chart.ds_timeseries.data = [];
-            quantile_chart.ds_climatology.data = [];
-            quantile_chart.threshold_data = [];
-            quantile_chart.date_indicator.value = "undefined";
-            quantile_chart.update_chart();
-        }
-
-        function update_thresholds(component_id) {
-            $.ajax({
-                method: "GET",
-                url: {%  url 'timeseries' %} +'?mpa=' + mpa_id + '&upper=' + q_upper + '&lower=' + q_lower,
-                beforeSend: function () {
-                    $("#loading_threshold").addClass("loader-sm");
-                    {#$("#mpa_time_series_chart").hide();#}
-                },
-                success: function (data) {
-                    qs_data = data.data;
-
-                    quantile_chart.ds_upper_threshold.data = $.map(qs_data, function (value, key) {
-                        return value.upperq;
-                    })
-                    quantile_chart.ds_lower_threshold.data = $.map(qs_data, function (value, key) {
-                        return value.lowerq;
-                    })
-
-                    quantile_chart.timeseries_chart.update();
-                },
-                error: function (error_data) {
-                    console.log("error");
-                    console.log(error_data);
-                },
-                complete: function () {
-                    $("#loading_threshold").removeClass("loader-sm");
-                    {#$("#mpa_time_series_chart").show();#}
+        function add_range_chart() {
+            set_chart_loading(true).then(function() {
+                range_charts += 1;
+                const label = 'mpa_ts_range_chart_' + range_charts.toString();
+                charts[label] = new RangeChart(label);
+                charts[label].initialized = function() {
+                    if(mpa_id) {
+                        charts[label].mpa_id = mpa_id;
+                        charts[label].update_timeseries_data(date_labels, temp_data, climate_data);
+                        set_chart_loading(false)
+                    }
                 }
             });
         }
 
+        async function set_chart_loading(loading) {
+            if(loading) {
+                $("#btn_id_add_chart").hide();
+                $("#btn_id_add_chart_loading").addClass("loader-sm");
+            } else {
+                $("#btn_id_add_chart_loading").removeClass("loader-sm");
+                $("#btn_id_add_chart").show();
+            }
+        }
+
+        function clear_timeseries() {
+            qs_data = [];
+
+            for (const key in charts) {
+                charts[key].clear_timeseries();
+            }
+        }
+
+        {# The timeseries should update for all charts #}
         function get_timeseries(id) {
             mpa_id = id;
+            let url = {% url 'timeseries' %} + "?mpa=" + mpa_id
             $.ajax({
                 method: "GET",
-                url: {%  url 'timeseries' %} +'?mpa=' + id + '&upper=' + q_upper + '&lower=' + q_lower,
+                url: url,
                 beforeSend: function () {
-                    $("#loading_chart").addClass("loader");
-                    $("#mpa_time_series_chart").hide();
+                    for (const key in charts) {
+                        charts[key].set_loading(true);
+                    }
                 },
-                success: function (data) {
-                    qs_data = data.data;
+                success: function(data) {
+                    const qs_data = data.data;
+                    date_labels = $.map(qs_data, function (value, key) { return Date.parse(value.date); });
+                    temp_data = $.map(qs_data, function (value, key) { return value.temp; });
+                    climate_data = $.map(qs_data, function (value, key) { return value.clim; });
 
-                    configure_dial();
-
-                    quantile_chart.timeseries_chart.data.labels = $.map(qs_data, function (value, key) {
-                        return Date.parse(value.date);
-                    })
-                    quantile_chart.ds_timeseries.data = $.map(qs_data, function (value, key) {
-                        return value.temp;
-                    })
-                    quantile_chart.ds_climatology.data = $.map(qs_data, function (value, key) {
-                        return value.clim;
-                    })
-                    quantile_chart.ds_upper_threshold.data = $.map(qs_data, function (value, key) {
-                        return value.upperq;
-                    })
-                    quantile_chart.ds_lower_threshold.data = $.map(qs_data, function (value, key) {
-                        return value.lowerq;
-                    })
-
-                    quantile_chart.update_chart();
+                    for (const key in charts) {
+                        let chart = charts[key];
+                        chart.mpa_id = mpa_id;
+                        chart.update_timeseries_data(date_labels, temp_data, climate_data);
+                    }
                 },
                 error: function (error_data) {
                     console.log("error");
                     console.log(error_data);
                 },
                 complete: function () {
-                    $("#loading_chart").removeClass("loader");
-                    $("#mpa_time_series_chart").show();
+                    for (const key in charts) {
+                        charts[key].set_loading(false);
+                    }
                 }
             });
         }
