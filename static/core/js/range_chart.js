@@ -234,6 +234,9 @@ class RangeChart {
         await $.ajax({
             method: "GET",
             url: url,
+            beforeSend: function () {
+                $("#" + chart_obj.chart_name + "_loading_threshold").addClass("loader-sm");
+            },
             success: function(data) {
                 chart_obj.q_upper = data.upper;
                 chart_obj.q_lower = data.lower;
@@ -242,6 +245,9 @@ class RangeChart {
                 console.log("error");
                 console.log(error_data);
             },
+            complete: function () {
+                $("#" + chart_obj.chart_name + "_loading_threshold").removeClass("loader-sm");
+            }
         }).then(function() {
             $("#" + chart_obj.chart_name + "_q_upper").val(chart_obj.q_upper);
             $("#" + chart_obj.chart_name + "_q_lower").val(chart_obj.q_lower);
