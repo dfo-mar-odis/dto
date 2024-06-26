@@ -129,7 +129,7 @@ def get_timeseries(request):
 
 def get_range_chart(request):
     chart_id = request.GET.get('chart_name')
-    species = models.Species.objects.all()
+    species = models.Species.objects.all().order_by('name')
     html = render(request, 'core/partials/range_chart_row.html', {'id': chart_id, 'species': species})
     return HttpResponse(html)
 
