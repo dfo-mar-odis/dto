@@ -129,7 +129,8 @@ def get_timeseries(request):
 
 def get_range_chart(request):
     chart_id = request.GET.get('chart_name')
-    html = render(request, 'core/partials/range_chart_row.html', {'id': chart_id})
+    species = models.Species.objects.all()
+    html = render(request, 'core/partials/range_chart_row.html', {'id': chart_id, 'species': species})
     return HttpResponse(html)
 
 
@@ -137,6 +138,17 @@ def get_quantile_chart(request):
     chart_id = request.GET.get('chart_name')
     html = render(request, 'core/partials/quantile_chart_row.html', {'id': chart_id})
     return HttpResponse(html)
+
+
+def get_species_range(request, species_id):
+    upper = 5
+    lower = 2
+    if models.Species.objects.filter(pk=species_id).exists():
+        species = models.Species.objects.get(pk=species_id)
+        upper = species.upper_temperature
+        lower = species.lower_temperature
+
+    return JsonResponse({'upper': upper, 'lower': lower})
 
 
 # Create your views here.

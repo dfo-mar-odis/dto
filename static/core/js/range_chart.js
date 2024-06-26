@@ -167,6 +167,8 @@ class RangeChart {
         chart_obj.update_thresholds().then(
             chart_obj.initialized()
         );
+
+        $("#" + ctx_element + "_select_id_species").on('change', function(e) {chart_obj.get_species_range(e)});
     }
 
     initialized() {};
@@ -222,6 +224,29 @@ class RangeChart {
 
         this.date_indicator.value = "undefined";
         this.update_chart();
+    }
+
+
+    async get_species_range(event) {
+        const selected_id = event.target.value
+        const url = '/species_range/' + selected_id + "/"
+        const chart_obj = this;
+        await $.ajax({
+            method: "GET",
+            url: url,
+            success: function(data) {
+                chart_obj.q_upper = data.upper;
+                chart_obj.q_lower = data.lower;
+            },
+            error: function (error_data) {
+                console.log("error");
+                console.log(error_data);
+            },
+        }).then(function() {
+            $("#" + chart_obj.chart_name + "_q_upper").val(chart_obj.q_upper);
+            $("#" + chart_obj.chart_name + "_q_lower").val(chart_obj.q_lower);
+            chart_obj.update_thresholds();
+        });
     }
 
     async update_thresholds() {

@@ -14,6 +14,19 @@
                         <input id="{{ id }}_riskdial" type="text" class="dial"/>
                     </div>
                 </div>
+                {% block species_select %}
+                <div class="row">
+                    <div class="col form-group">
+                        <label for="{{ id }}_select_id_species" class="form-label">{% block species %}{% trans 'Species Select' %}{% endblock %}</label>
+                        <select class="form-select" id="{{ id }}_select_id_species" name="species">
+                            <option value="-1">----</option>
+                            {% for specie in species %}
+                                <option value="{{ specie.id }}">{{ specie.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                {% endblock %}
                 <label for="{{ id }}_q_upper" class="form-label">{% block dial_upper_limit_label %}{% trans 'Upper Limit' %}{% endblock %}</label>
                 <input type="number" class="form-control" id="{{ id }}_q_upper" step="0.1"/>
                 <label for="{{ id }}_q_lower" class="form-label">{% block dial_lower_limit_label %}{% trans 'Lower Limit' %}{% endblock %}</label>

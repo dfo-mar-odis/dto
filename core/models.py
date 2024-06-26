@@ -1,5 +1,5 @@
 from django.contrib.gis.db import models
-from django.db.models import Avg
+from django.utils.translation import gettext as _
 
 
 # Create your models here.
@@ -43,3 +43,72 @@ class Timeseries(models.Model):
     date_time = models.DateField(verbose_name="Date")
     temperature = models.FloatField(verbose_name="Temperature")
     climatology = models.FloatField(verbose_name="Climatology")
+
+
+class SpeciesGrouping(models.IntegerChoices):
+    benthic = 1, "Benthic fish"
+    benthopelagic = 2, "Benthopelagic fish"
+    benthic_invertebrates = 3, "Benthic Invertebrates"
+    cephalopod = 4, "Cephalopod"
+    copepod = 5, "Copepod"
+    mammal = 6, "Mammal"
+    pelagic = 7, "Pelagic fish"
+    reptile = 8, "Reptile"
+
+    @classmethod
+    def get(cls, value: str):
+        return cls.__getitem__(value.lower())
+
+    @classmethod
+    def has_value(cls, value: str):
+        return cls.__members__.__contains__(value.lower())
+
+
+class Importance(models.IntegerChoices):
+    commercial = 1, "Commercial"
+    important_food_source = 2, "Important food source"
+
+    @classmethod
+    def get(cls, value: str):
+        return cls.__getitem__(value.lower())
+
+    @classmethod
+    def has_value(cls, value: str):
+        return cls.__members__.__contains__(value.lower())
+
+
+class SpeciesStatus(models.IntegerChoices):
+    extinct = 1, "Extinct"
+    extinct_in_the_wild = 2, "Extinct in the Wild"
+    critically_endangered = 3, "Critically Endangered"
+    endangered = 4, "Endangered"
+    vulnerable = 5, "Vulnerable"
+    near_threatened = 6, "Near Threatened"
+    least_concern = 7, "Least Concern"
+    data_deficient = 8, "Data Deficient"
+    not_evaluated = 9, "Not Evaluated"
+
+    @classmethod
+    def get(cls, value: str):
+        if cls.has_value(value):
+            return cls.__getitem__(value.lower())
+
+        return cls.__getitem__('not_evaluated')
+
+    @classmethod
+    def has_value(cls, value: str):
+        return cls.__members__.__contains__(value.lower())
+
+
+class Species(models.Model):
+    name = models.CharField(max_length=50, verbose_name=_("Common Name"))
+    scientific_name = models.CharField(max_length=100, unique=True, verbose_name=_("Scientific Name"))
+
+    grouping = models.IntegerField(choices=SpeciesGrouping.choices, null=True, blank=True, verbose_name="Grouping")
+    importance = models.IntegerField(choices=Importance.choices, null=True, blank=True, verbose_name=_("Importance"))
+    status = models.IntegerField(choices=SpeciesStatus.choices, default=9, verbose_name=_("Status"))
+
+    lower_temperature = models.FloatField(verbose_name=_("Lower Temperature"))
+    upper_temperature = models.FloatField(verbose_name=_("Upper Temperature"))
+    lower_depth = models.FloatField(verbose_name=_("Lower Depth"))
+    upper_depth = models.FloatField(verbose_name=_("Upper Depth"))
