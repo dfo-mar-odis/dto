@@ -2,9 +2,10 @@ version: "3.9"
 services:
   dto-django:
     build: .
+    image: ghcr.io/dfo-mar-odis/dto:latest
     restart: always
     ports:
-      - "8000:8000"
+      - "80:8000"
     command: /bin/bash entry-point.sh
     volumes:
       - .:/code
