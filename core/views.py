@@ -50,19 +50,28 @@ def add_attributes(mpa):
     return json.dumps(geo_json)
 
 
+def list_dir(root):
+    subdirs = [dir for dir in os.listdir(root) if os.path.isdir(dir)]
+    if 'static' in subdirs:
+        subdirs += [os.path.join(root, 'static', dir) for dir in os.listdir(os.path.join(root, 'static'))]
+
+    return subdirs
+
+
 def index(request):
     mpas = [add_attributes(mpa) for mpa in
             models.MPAZone.objects.filter(zone_e__icontains='union').annotate(trans=Transform('geom', srid=4326))]
     # mpas = list(models.MPA.objects.all())
 
-    cwd = os.getcwd()
-    subdirs = [dir for dir in os.listdir(cwd) if os.path.isdir(dir)]
-    if 'static' in subdirs:
-        subdirs += [os.path.join(cwd, 'static', dir) for dir in os.listdir(os.path.join(cwd, 'static'))]
+    subdirs = []
+    subdirs += list_dir('/code')
+
+    opt_dir = os.path.join('/opt', 'project')
+    subdirs += list_dir(opt_dir)
 
     context = {
         'mpas': mpas,
-        'cwd': cwd,
+        'cwd': os.getcwd(),
         'subdirs': subdirs,
     }
 
