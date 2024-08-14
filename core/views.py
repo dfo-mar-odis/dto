@@ -1,4 +1,6 @@
 import json
+import os
+
 import folium
 import branca.colormap as cm
 import logging
@@ -53,8 +55,15 @@ def index(request):
             models.MPAZone.objects.filter(zone_e__icontains='union').annotate(trans=Transform('geom', srid=4326))]
     # mpas = list(models.MPA.objects.all())
 
+    cwd = os.getcwd()
+    subdirs = [dir for dir in os.listdir(cwd) if os.path.isdir(dir)]
+    if 'static' in subdirs:
+        subdirs += [os.path.join(cwd, 'static', dir) for dir in os.listdir(os.path.join(cwd, 'static'))]
+
     context = {
         'mpas': mpas,
+        'cwd': cwd,
+        'subdirs': subdirs,
     }
 
     return render(request, 'core/map.html', context)

@@ -5,6 +5,18 @@
     <div class="row mt-2">
         <div class="col">
             <div class="card h-100">
+                <div class="card-body">
+                    <h1>{{ cwd }}</h1>
+                    {% for sub in subdirs %}
+                        {{ sub }} <br />
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-2">
+        <div class="col">
+            <div class="card h-100">
                 <div class="card-header">
                     <div class="card-title">
                         <div class="row">
