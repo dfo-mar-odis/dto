@@ -66,9 +66,6 @@ def index(request):
     subdirs = []
     subdirs += list_dir('/code')
 
-    opt_dir = os.path.join('/opt', 'project')
-    subdirs += list_dir(opt_dir)
-
     context = {
         'mpas': mpas,
         'cwd': os.getcwd(),
