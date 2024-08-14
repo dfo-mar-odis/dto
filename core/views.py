@@ -53,7 +53,10 @@ def add_attributes(mpa):
 def list_dir(root):
     subdirs = [dir for dir in os.listdir(root) if os.path.isdir(dir)]
     if 'static' in subdirs:
-        subdirs += [os.path.join(root, 'static', dir) for dir in os.listdir(os.path.join(root, 'static'))]
+        s_subdirs = [os.path.join(root, 'static', dir) for dir in os.listdir(os.path.join(root, 'static'))]
+        for dir in s_subdirs:
+            subdirs += [dir]
+            subdirs += [os.path.join(dir, sdir) for sdir in os.listdir(os.path.join(dir))]
 
     return subdirs
 
