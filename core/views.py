@@ -66,15 +66,6 @@ def index(request):
             models.MPAZone.objects.filter(zone_e__icontains='union').annotate(trans=Transform('geom', srid=4326))]
     # mpas = list(models.MPA.objects.all())
 
-    subdirs = []
-    subdirs += list_dir('/code')
-
-    context = {
-        'mpas': mpas,
-        'cwd': os.getcwd(),
-        'subdirs': subdirs,
-    }
-
     return render(request, 'core/map.html', context)
 
 
