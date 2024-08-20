@@ -20,9 +20,7 @@ TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-secret = os.getenv('SECRET_KEY')
-print(f'==============SECRET=========: {secret}')
-SECRET_KEY = env('SECRET_KEY', )
+SECRET_KEY = env('SECRET_KEY', os.getenv('SECRET_KEY'))
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DJANGO_DEBUG', default=True)
@@ -81,11 +79,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': env('POSTGRES_DB'),
-        'USER': env('POSTGRES_USER'),
-        'PASSWORD': env('POSTGRES_PASSWORD'),
-        'HOST': env('POSTGIS_ADDR'),
-        'PORT': env('POSTGIS_PORT'),
+        'NAME': env('POSTGRES_DB', os.getenv('POSTGRES_DB')),
+        'USER': env('POSTGRES_USER', os.getenv('POSTGRES_USER')),
+        'PASSWORD': env('POSTGRES_PASSWORD', os.getenv('POSTGRES_PASSWORD')),
+        'HOST': env('POSTGIS_ADDR', os.getenv('POSTGIS_ADDR')),
+        'PORT': env('POSTGIS_PORT', os.getenv('POSTGIS_PORT')),
     }
 }
 
@@ -146,8 +144,8 @@ LOGGING = {
         },
         "file": {
             "class": "logging.FileHandler",
-            "filename": env.str('DJANGO_LOG_FILE', 'errors.log'),
-            "level": env.str('DJANGO_LOG_LEVEL', 'ERROR'),
+            "filename": env.str('DJANGO_LOG_FILE', os.getenv('DJANGO_LOG_FILE', 'errors.log')),
+            "level": env.str('DJANGO_LOG_LEVEL', os.getenv('DJANGO_LOG_LEVEL', 'ERROR')),
             "formatter": "verbose",
         }
     },
