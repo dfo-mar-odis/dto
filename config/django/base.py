@@ -22,7 +22,7 @@ TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
 # SECURITY WARNING: keep the secret key used in production secret!
 secret = os.getenv('SECRET_KEY')
 print(f"========================== SECRET ================: {secret}")
-SECRET_KEY = env('SECRET_KEY', secret)
+SECRET_KEY = env.str('SECRET_KEY', secret)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DJANGO_DEBUG', default=True)
@@ -81,11 +81,11 @@ WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': env('POSTGRES_DB', os.getenv('POSTGRES_DB')),
-        'USER': env('POSTGRES_USER', os.getenv('POSTGRES_USER')),
-        'PASSWORD': env('POSTGRES_PASSWORD', os.getenv('POSTGRES_PASSWORD')),
-        'HOST': env('POSTGIS_ADDR', os.getenv('POSTGIS_ADDR')),
-        'PORT': env('POSTGIS_PORT', os.getenv('POSTGIS_PORT')),
+        'NAME': env.str('POSTGRES_DB', os.getenv('POSTGRES_DB')),
+        'USER': env.str('POSTGRES_USER', os.getenv('POSTGRES_USER')),
+        'PASSWORD': env.str('POSTGRES_PASSWORD', os.getenv('POSTGRES_PASSWORD')),
+        'HOST': env.str('POSTGIS_ADDR', os.getenv('POSTGIS_ADDR')),
+        'PORT': env.str('POSTGIS_PORT', os.getenv('POSTGIS_PORT')),
     }
 }
 
