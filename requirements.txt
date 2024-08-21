@@ -5,7 +5,7 @@ django-bootstrap-v5==1.0.11
 django-environ==0.11.2
 
 # whitenoise is used in serving resouces on the proudction server
-whitenoise==6.7.0
+# whitenoise==6.7.0
 
 # mapping library
 folium==0.16.0
