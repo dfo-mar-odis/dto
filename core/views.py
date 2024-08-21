@@ -54,8 +54,11 @@ def index(request):
     mpas = [add_attributes(mpa) for mpa in
             models.MPAZone.objects.filter(zone_e__icontains='union').annotate(trans=Transform('geom', srid=4326))]
     # mpas = list(models.MPA.objects.all())
+    context = {
+        'mpas': mpas,
+    }
 
-    return render(request, 'core/map.html')
+    return render(request, 'core/map.html', context)
 
 
 def get_quantiles(request):
