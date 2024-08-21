@@ -3,7 +3,7 @@ import os
 from .base import *
 from config.env import env
 
-DEBUG = env.bool('DJANGO_DEBUG', default=False)
+DEBUG = env.bool('DJANGO_DEBUG', default=True)
 # https://poc.fsdh-dhsf.science.cloud-nuage.canada.ca/webapp-DTO/static/core/js/range_chart.js
 STATIC_URL = env.str('STATIC_URL', os.getenv('STATIC_URL',  'https://poc.fsdh-dhsf.science.cloud-nuage.canada.ca/webapp-DTO/staticfiles'))
 # STATIC_URL = env.str('STATIC_URL', os.getenv('STATIC_URL',  'staticfiles/'))
