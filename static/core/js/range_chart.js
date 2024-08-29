@@ -175,7 +175,7 @@ class RangeChart {
 
     get_chart_html(chart_name, url="range_chart/", append_to="div_id_range_card") {
         const chart_obj = this;
-        url = url + '?chart_name=' + chart_name;
+        url = "/webapp-DTO/" + url + '?chart_name=' + chart_name;
         $.ajax({
             method: "GET",
             url: url,

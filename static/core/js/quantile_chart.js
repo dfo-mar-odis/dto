@@ -24,6 +24,7 @@ class QuantileChart extends RangeChart {
         });
 
         url += '?mpa=' + this.mpa_id + '&upper=' + this.q_upper + '&lower=' + this.q_lower;
+        console.log("update thresholds: " + url)
         await $.ajax({
             method: "GET",
             url: url,
