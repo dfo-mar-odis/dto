@@ -20,9 +20,9 @@ from core import views
 
 urlpatterns = [
     path('', views.index, name='map'),
-    path('/webapp-DTO/timeseries/', views.get_timeseries, name='timeseries'),
-    path('/webapp-DTO/quantiles/', views.get_quantiles, name='quantiles'),
-    path('/webapp-DTO/species_range/<int:species_id>/', views.get_species_range, name='species_range'),
-    path('/webapp-DTO/range_chart/', views.get_range_chart, name='range_chart'),
-    path('/webapp-DTO/quantile_chart/', views.get_quantile_chart, name='quantile_chart'),
+    path('/timeseries/', views.get_timeseries, name='timeseries'),
+    path('/quantiles/', views.get_quantiles, name='quantiles'),
+    path('/species_range/<int:species_id>/', views.get_species_range, name='species_range'),
+    path('/range_chart/', views.get_range_chart, name='range_chart'),
+    path('/quantile_chart/', views.get_quantile_chart, name='quantile_chart'),
 ]
