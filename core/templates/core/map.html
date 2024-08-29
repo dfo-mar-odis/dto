@@ -143,7 +143,7 @@
         {# The timeseries should update for all charts #}
         function get_timeseries(id) {
             mpa_id = id;
-            let url = {% url 'timeseries' %} + "?mpa=" + mpa_id
+            let url = "{% url 'timeseries' %}?mpa=" + mpa_id
             $.ajax({
                 method: "GET",
                 url: url,
