@@ -173,7 +173,7 @@ class RangeChart {
 
     initialized() {};
 
-    get_chart_html(chart_name, url="/range_chart/", append_to="div_id_range_card") {
+    get_chart_html(chart_name, url="range_chart/", append_to="div_id_range_card") {
         const chart_obj = this;
         url = url + '?chart_name=' + chart_name;
         $.ajax({
@@ -229,7 +229,7 @@ class RangeChart {
 
     async get_species_range(event) {
         const selected_id = event.target.value
-        const url = '/species_range/' + selected_id + "/"
+        const url = 'species_range/' + selected_id + "/"
         const chart_obj = this;
         await $.ajax({
             method: "GET",

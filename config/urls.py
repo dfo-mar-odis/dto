@@ -19,11 +19,10 @@ from django.urls import path
 from core import views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', views.index, name='map'),
-    path('timeseries/', views.get_timeseries, name='timeseries'),
-    path('quantiles/', views.get_quantiles, name='quantiles'),
-    path('species_range/<int:species_id>/', views.get_species_range, name='species_range'),
-    path('range_chart/', views.get_range_chart, name='range_chart'),
-    path('quantile_chart/', views.get_quantile_chart, name='quantile_chart'),
+    path('Webapp-DTO/', views.index, name='map'),
+    path('Webapp-DTO/timeseries/', views.get_timeseries, name='timeseries'),
+    path('Webapp-DTO/quantiles/', views.get_quantiles, name='quantiles'),
+    path('Webapp-DTO/species_range/<int:species_id>/', views.get_species_range, name='species_range'),
+    path('Webapp-DTO/range_chart/', views.get_range_chart, name='range_chart'),
+    path('Webapp-DTO/quantile_chart/', views.get_quantile_chart, name='quantile_chart'),
 ]

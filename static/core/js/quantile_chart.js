@@ -4,7 +4,7 @@ class QuantileChart extends RangeChart {
         super(ctx_element, upper_limit, lower_limit);
     }
 
-    async get_chart_html(chart_name, url="/quantile_chart/", append_to = "div_id_quantile_card") {
+    async get_chart_html(chart_name, url="quantile_chart/", append_to = "div_id_quantile_card") {
         await super.get_chart_html(chart_name, url, append_to);
     }
 
