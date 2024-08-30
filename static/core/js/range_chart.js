@@ -69,7 +69,9 @@ class RangeChart {
 
     mpa_id = null;
 
-    constructor(ctx_element, upper_limit=5.0, lower_limit=2.0) {
+    constructor(ctx_element, data_url, upper_limit=5.0, lower_limit=2.0) {
+        this.data_url = data_url
+
         this.get_chart_html(ctx_element);
 
         this.q_upper = upper_limit;
@@ -173,9 +175,9 @@ class RangeChart {
 
     initialized() {};
 
-    get_chart_html(chart_name, url="range_chart/", append_to="div_id_range_card") {
+    get_chart_html(chart_name, append_to="div_id_range_card") {
         const chart_obj = this;
-        url = "/webapp-DTO/" + url + '?chart_name=' + chart_name;
+        let url =  this.data_url + '?chart_name=' + chart_name;
         $.ajax({
             method: "GET",
             url: url,
@@ -229,7 +231,7 @@ class RangeChart {
 
     async get_species_range(event) {
         const selected_id = event.target.value
-        const url = '/webapp-DTO/species_range/' + selected_id + "/"
+        const url = this.update_btn.data('url') + selected_id + "/"
         const chart_obj = this;
         await $.ajax({
             method: "GET",

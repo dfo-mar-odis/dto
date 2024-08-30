@@ -1,16 +1,16 @@
 class QuantileChart extends RangeChart {
 
-    constructor(ctx_element, upper_limit=0.9, lower_limit=0.1) {
-        super(ctx_element, upper_limit, lower_limit);
+    constructor(ctx_element, data_url, upper_limit=0.9, lower_limit=0.1) {
+        super(ctx_element, data_url, upper_limit, lower_limit);
     }
 
-    async get_chart_html(chart_name, url="quantile_chart/", append_to = "div_id_quantile_card") {
-        await super.get_chart_html(chart_name, url, append_to);
+    async get_chart_html(chart_name, append_to = "div_id_quantile_card") {
+        await super.get_chart_html(chart_name, append_to);
     }
 
     async update_thresholds() {
         const chart_obj = this
-        let url = "/webapp-DTO/" + this.update_btn.data('url');
+        let url = this.update_btn.data('url');
         if(this.mpa_id==null) {
             return;
         }

@@ -6,6 +6,7 @@ import branca.colormap as cm
 import logging
 
 import pandas as pd
+from django.conf import settings
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render
 
@@ -51,11 +52,13 @@ def add_attributes(mpa):
 
 
 def index(request):
+    proxy_url = request.build_absolute_uri().replace(request.get_host(), '').replace(request.path, '')
     mpas = [add_attributes(mpa) for mpa in
             models.MPAZone.objects.filter(zone_e__icontains='union').annotate(trans=Transform('geom', srid=4326))]
     # mpas = list(models.MPA.objects.all())
     context = {
         'mpas': mpas,
+        'proxy_url': settings.PROXY_URL,
     }
 
     return render(request, 'core/map.html', context)
