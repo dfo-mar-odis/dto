@@ -144,7 +144,7 @@ def get_quantile_chart(request):
     chart_id = request.GET.get('chart_name')
 
     context = {'id': chart_id, 'proxy_url': settings.PROXY_URL}
-    html = render(request, 'core/partials/quantile_chart_row.html', {'id': chart_id})
+    html = render(request, 'core/partials/quantile_chart_row.html', context)
     return HttpResponse(html)
 
 
