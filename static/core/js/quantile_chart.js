@@ -10,7 +10,7 @@ class QuantileChart extends RangeChart {
 
     async update_thresholds() {
         const chart_obj = this
-        let url = this.update_btn.data('url');
+        let url = "/webapp-DTO/" + this.update_btn.data('url');
         if(this.mpa_id==null) {
             return;
         }

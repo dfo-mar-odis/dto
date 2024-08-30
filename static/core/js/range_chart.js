@@ -229,7 +229,7 @@ class RangeChart {
 
     async get_species_range(event) {
         const selected_id = event.target.value
-        const url = 'species_range/' + selected_id + "/"
+        const url = '/webapp-DTO/species_range/' + selected_id + "/"
         const chart_obj = this;
         await $.ajax({
             method: "GET",
