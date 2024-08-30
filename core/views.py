@@ -134,12 +134,16 @@ def get_timeseries(request):
 def get_range_chart(request):
     chart_id = request.GET.get('chart_name')
     species = models.Species.objects.all().order_by('name')
-    html = render(request, 'core/partials/range_chart_row.html', {'id': chart_id, 'species': species})
+
+    context = {'id': chart_id, 'species': species, 'proxy_url': settings.PROXY_URL}
+    html = render(request, 'core/partials/range_chart_row.html', context)
     return HttpResponse(html)
 
 
 def get_quantile_chart(request):
     chart_id = request.GET.get('chart_name')
+
+    context = {'id': chart_id, 'proxy_url': settings.PROXY_URL}
     html = render(request, 'core/partials/quantile_chart_row.html', {'id': chart_id})
     return HttpResponse(html)
 
