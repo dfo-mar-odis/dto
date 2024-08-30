@@ -91,8 +91,8 @@
 
 {% block scripts %}
     {{ mpas|json_script:"mpas_json" }}
-    <script src="{% static 'core/js/range_chart.js' %}"></script>
-    <script src="{% static 'core/js/quantile_chart.js' %}"></script>
+    <script src="{{ proxy_url }}{% static 'core/js/range_chart.js' %}"></script>
+    <script src="{{ proxy_url }}{% static 'core/js/quantile_chart.js' %}"></script>
     <script>
 
         let range_charts = 1;
