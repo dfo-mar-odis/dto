@@ -9,7 +9,7 @@
                     <div class="card-title">
                         <div class="row">
                             <div class="col-1">
-                                <img class="img-fluid" src="{% static 'icons/favicon.png' %}">
+                                <img class="img-fluid" src="{{ proxy_url }}{% static 'icons/favicon.png' %}">
                             </div>
                             <div class="col">
                                 <h2>MPA Description</h2>
@@ -97,8 +97,8 @@
 
         let range_charts = 1;
         const charts = {
-            'mpa_ts_quantile_chart': new QuantileChart('mpa_ts_quantile_chart', {{ proxy_url }}{% url 'quantile_chart' %}),
-            'mpa_ts_range_chart': new RangeChart('mpa_ts_range_chart', {{ proxy_url }}{% url 'range_chart' %}),
+            'mpa_ts_quantile_chart': new QuantileChart('mpa_ts_quantile_chart', "{{ proxy_url }}{% url 'quantile_chart' %}"),
+            'mpa_ts_range_chart': new RangeChart('mpa_ts_range_chart', "{{ proxy_url }}{% url 'range_chart' %}"),
         };
 
         let mpa_id = null;
