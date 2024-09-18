@@ -33,3 +33,5 @@ matplotlib==3.8.4
 
 # libs for deploying to FSDH
 docker-composer-v2==0.8.8
+
+reportlab==4.2.2

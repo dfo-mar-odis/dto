@@ -14,6 +14,9 @@
                             <div class="col">
                                 <h2>MPA Description</h2>
                             </div>
+                            <div class="col-auto">
+                                <a class="btn btn-primary" href="{{ proxy_url }}{% url 'generate_pdf' %}">Generate PDF</a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -111,7 +114,7 @@
             set_chart_loading(true).then(function() {
                 range_charts += 1;
                 const label = 'mpa_ts_range_chart_' + range_charts.toString();
-                charts[label] = new RangeChart(label);
+                charts[label] = new RangeChart(label, "{{ proxy_url }}{% url 'range_chart' %}");
                 charts[label].initialized = function() {
                     if(mpa_id) {
                         charts[label].mpa_id = mpa_id;

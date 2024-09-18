@@ -27,4 +27,6 @@ urlpatterns = [
     path('species_range/<int:species_id>/', views.get_species_range, name='species_range'),
     path('range_chart/', views.get_range_chart, name='range_chart'),
     path('quantile_chart/', views.get_quantile_chart, name='quantile_chart'),
+    path('generate_pdf/', views.generate_pdf, name='generate_pdf'),
+
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
