@@ -1,3 +1,4 @@
+import calendar
 import io
 import os
 import json
@@ -101,22 +102,63 @@ def get_mpa_zone_info():
     return zone_info
 
 
-def add_plot(title, mpa_id):
+def add_plot(title, mpa_id, start_date='2020-01-01', end_date='2023-01-01'):
+    q_upper = 0.9
+    q_lower = 0.1
     mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
     mpa_timeseries = mpa_zone.name.timeseries.all().order_by('date_time')
 
-    df = pd.DataFrame(list(mpa_timeseries.values('date_time', 'temperature')))
+    df = pd.DataFrame(list(mpa_timeseries.values('date_time', 'temperature', 'climatology')))
     df['date_time'] = pd.to_datetime(df['date_time'])
+    df = df.set_index('date_time')
+
+    upper = df.groupby([df.index.month, df.index.day]).quantile(q=q_upper)['temperature']
+    lower = df.groupby([df.index.month, df.index.day]).quantile(q=q_lower)['temperature']
+
+    df['upper'] = df.index.map(lambda x: upper[(x.month, x.day)])
+    df['lower'] = df.index.map(lambda x: lower[(x.month, x.day)])
+
+    if start_date:
+        df = df[start_date:]
+
+    if end_date:
+        df = df[:end_date]
 
     # Row: Add chart
-    figure = plt.figure(figsize=(10, 3))
-    figure.subplots_adjust(left=0.1, right=0.95, top=0.8, bottom=0.2)
+    figure, ax = plt.subplots(figsize=(10, 3))
+    plt.subplots_adjust(left=0.1, right=0.95, top=0.8, bottom=0.2)
 
     plt.title(title)
     plt.ylabel("Temperature (C)")
     plt.xticks(rotation=30)
 
-    plt.plot(df['date_time'], df['temperature'])
+    ax.set_xlim([df.index.min(), df.index.max()])
+    # ax.plot(df.index, df['temperature'], df.index, df['climatology'])
+
+    ax.fill_between(
+        df.index, df['temperature'], df['climatology'], where=(df['temperature'] > df['climatology']),
+        interpolate=True, color="red", alpha=0.25
+    )
+
+    ax.fill_between(
+        df.index, df['temperature'], df['climatology'], where=(df['temperature'] <= df['climatology']),
+        interpolate=True, color="blue", alpha=0.25
+    )
+
+    ax.fill_between(
+        df.index, df['upper'], df['lower'], where=(df['lower'] <= df['upper']),
+        interpolate=True, color="grey", alpha=0.5
+    )
+
+    ax.fill_between(
+        df.index, df['temperature'], df['upper'], where=(df['temperature'] > df['upper']),
+        interpolate=True, color="red", alpha=1.0
+    )
+
+    ax.fill_between(
+        df.index, df['temperature'], df['lower'], where=(df['temperature'] < df['lower']),
+        interpolate=True, color="blue", alpha=1.0
+    )
 
     imgdata = io.BytesIO()
     figure.savefig(imgdata, format='png')
@@ -165,8 +207,11 @@ def generate_pdf(request):
 
     # df.set_index('date_time', inplace=True)
 
+    year_span = 30/6
+    year = 1993
     for i in range(0, 6):
-        plot = add_plot(i, 62)
+        plot = add_plot(i, 62, start_date=f'{int(year)}-01-01', end_date=f'{int(year+year_span)}-01-01')
+        year += year_span
 
         ratio = (letter[0] - margin * 2) / plot.getSize()[0]
 
@@ -175,7 +220,20 @@ def generate_pdf(request):
 
         row_offset -= height
 
-        if row_offset < 0:
+        if row_offset - margin < 0:
+
+            rect_height = 100
+
+            textob = p.beginText()
+            textob.setTextOrigin(page_left+margin, row_offset+height-(rect_height/2))
+            textob.setFont("Helvetica", 8)
+            textob.textLine("This is an example citation at the bottom of a page because we've run out of space here")
+
+            p.drawText(textob)
+
+            p.setFillGray(gray=0.5, alpha=0.5)
+            p.rect(margin, row_offset + height - rect_height, letter[0] - (margin*2), rect_height, fill=1)
+
             p.showPage()
             row_offset = letter[1] - margin - height
 
