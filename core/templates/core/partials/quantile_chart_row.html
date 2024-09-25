@@ -5,7 +5,7 @@
 {% block dial_upper_limit_label %}{% trans "Upper Quantile" %}{% endblock %}
 {% block dial_lower_limit_label %}{% trans "Lower Quantile" %}{% endblock %}
 {% block refresh_button %}
-<button id="btn_{{ id }}_update_thresholds" class="btn btn-primary" title="{% trans 'Refresh' %}" data-url="{{ proxy_url }}{% url 'quantiles' %}">
+<button id="btn_{{ id }}_update_thresholds" class="btn btn-primary" title="{% trans 'Refresh' %}" data-url="{% url 'quantiles' %}">
     {% trans 'Refresh' %}
 </button>
 {% endblock %}
