@@ -21,12 +21,12 @@ from django.urls import path
 from core import views
 
 urlpatterns = [
-    path('app/DTO/', views.index, name='map'),
-    path('timeseries/', views.get_timeseries, name='timeseries'),
-    path('quantiles/', views.get_quantiles, name='quantiles'),
-    path('species_range/<int:species_id>/', views.get_species_range, name='species_range'),
-    path('range_chart/', views.get_range_chart, name='range_chart'),
-    path('quantile_chart/', views.get_quantile_chart, name='quantile_chart'),
-    path('generate_pdf/', views.generate_pdf, name='generate_pdf'),
+    path(f'{settings.PROXY_URL}/', views.index, name='map'),
+    path(f'{settings.PROXY_URL}/timeseries/', views.get_timeseries, name='timeseries'),
+    path(f'{settings.PROXY_URL}/quantiles/', views.get_quantiles, name='quantiles'),
+    path(f'{settings.PROXY_URL}/species_range/<int:species_id>/', views.get_species_range, name='species_range'),
+    path(f'{settings.PROXY_URL}/range_chart/', views.get_range_chart, name='range_chart'),
+    path(f'{settings.PROXY_URL}/quantile_chart/', views.get_quantile_chart, name='quantile_chart'),
+    path(f'{settings.PROXY_URL}/generate_pdf/', views.generate_pdf, name='generate_pdf'),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
