@@ -21,7 +21,7 @@ from django.urls import path
 from core import views
 
 urlpatterns = [
-    path('', views.index, name='map'),
+    path('app/DTO/', views.index, name='map'),
     path('timeseries/', views.get_timeseries, name='timeseries'),
     path('quantiles/', views.get_quantiles, name='quantiles'),
     path('species_range/<int:species_id>/', views.get_species_range, name='species_range'),
