@@ -18,7 +18,7 @@
                 <div class="row">
                     <div class="col form-group">
                         <label for="{{ id }}_select_id_species" class="form-label">{% block species %}{% trans 'Species Select' %}{% endblock %}</label>
-                        <select class="form-select" id="{{ id }}_select_id_species" name="species" {% block data_url %}data-url="{{ proxy_prefix }}/species_range/"{% endblock %}>
+                        <select class="form-select" id="{{ id }}_select_id_species" name="species" {% block data_url %}data-url="{{ proxy_url }}/species_range/"{% endblock %}>
                             <option value="-1">----</option>
                             {% for specie in species %}
                                 <option value="{{ specie.id }}">{{ specie.name }}</option>
