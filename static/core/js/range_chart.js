@@ -231,7 +231,7 @@ class RangeChart {
 
     async get_species_range(event) {
         const selected_id = event.target.value
-        const url = this.update_btn.data('url') + selected_id + "/"
+        const url = "/" + this.update_btn.data('url') + selected_id + "/"
         const chart_obj = this;
         await $.ajax({
             method: "GET",
