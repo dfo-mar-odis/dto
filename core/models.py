@@ -22,6 +22,9 @@ class MPAName(models.Model):
     name_e = models.CharField(max_length=254, null=True)
     name_f = models.CharField(max_length=254, null=True)
 
+    def __str__(self) -> str:
+        return self.name_e
+
 
 class MPAZone(models.Model):
     name = models.ForeignKey(MPAName, on_delete=models.CASCADE, related_name='zones')

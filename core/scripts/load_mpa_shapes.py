@@ -41,7 +41,10 @@ def merge_zones():
         zone_names_f = ", ".join([zone.zone_f for zone in mpa.zones.all()])
         meta = mpa.zones.first()
         area = geom.area
-        print(f"{mpa.name_e} - {area / 1000000}")
+        try:
+            print(f"{mpa.name_e.encode('utf-8')} - {area / 1000000}")
+        except UnicodeEncodeError as ex:
+            print(f"Could not decode mpa name - {area / 1000000}")
 
         merged_zone = models.MPAZone(name=mpa, zone_e=f'Union: {zone_names_e}', zone_f=f'Union: {zone_names_f}',
                                      url_e=meta.url_e, url_f=meta.url_e, regulation=meta.regulation,
@@ -51,7 +54,7 @@ def merge_zones():
 
 
 def load_mpas():
-    data = gpd.read_file(mpa_shape)
+    data = gpd.read_file(mpa_shape, encoding='utf-8')
 
     for shp in data.iterrows():
 

@@ -53,7 +53,8 @@ target/
 celerybeat-schedule
 
 # dotenv
-.env
+.env*
+!.env.example
 database.env
 
 # virtualenv

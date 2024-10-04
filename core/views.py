@@ -8,13 +8,10 @@ import branca.colormap as cm
 import logging
 
 import matplotlib.pyplot as plt
-import datetime
-import numpy as np
 
 from PIL import Image
 
 from reportlab.pdfgen import canvas
-from reportlab.graphics import renderPDF
 from reportlab.lib.utils import ImageReader
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
@@ -353,6 +350,7 @@ class MapView(TemplateView):
     template_name = 'core/map.html'
 
     def get_context_data(self, **kwargs):
+        logger.debug("Initializing View")
         figure = folium.Figure()
 
         # Add a Marker

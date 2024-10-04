@@ -1,4 +1,5 @@
 {% extends 'base_map.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block content %}
@@ -52,7 +53,20 @@
             </div>
         </div>
     </div>
-
+    <div class="card mt-2">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-2">
+                    <label for="zoom_min" class="form-label">{% trans 'Min Date' %}</label>
+                    <input id="zoom_min" type="date" class="form-control" value="2019-01-01" onchange="set_zoom()"/>
+                </div>
+                <div class="col-2">
+                    <label for="zoom_max" class="form-label">{% trans 'Max Date' %}</label>
+                    <input id="zoom_max" type="date" class="form-control" value="2024-01-01" onchange="set_zoom()"/>
+                </div>
+            </div>
+        </div>
+    </div>
     <ul class="nav nav-tabs mt-2" id="chart_types" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="ocean_data_tab" data-bs-toggle="tab" data-bs-target="#ocean_data"
@@ -109,6 +123,14 @@
         let temp_data = [];
         let climate_data = [];
         const initialized = false;
+
+        function set_zoom() {
+            const min_date = $("#zoom_min").val();
+            const max_date = $("#zoom_max").val();
+            for (const key in charts) {
+                charts[key].set_zoom(min_date, max_date);
+            }
+        }
 
         function add_range_chart() {
             set_chart_loading(true).then(function() {
@@ -176,6 +198,7 @@
                     for (const key in charts) {
                         charts[key].set_loading(false);
                     }
+                    set_zoom();
                 }
             });
         }

@@ -18,7 +18,7 @@ def read_timeseries(mpa_name, filename, date_col='Date'):
 
         add_time_series.append(models.Timeseries(mpa=mpa_name, date_time=row[0], temperature=value, climatology=0))
 
-        print(len(add_time_series))
+        # print(len(add_time_series))
         if len(add_time_series) > 1000:
             print("loading 1000 items")
             models.Timeseries.objects.bulk_create(add_time_series)

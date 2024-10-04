@@ -29,7 +29,7 @@ class RangeChart {
         pointRadius: 0.0,
     };
 
-        ds_upper_threshold = {
+    ds_upper_threshold = {
         label: 'Upper Threshold',
         data: [],
         backgroundColor: 'rgba(128, 128, 128, 0.4)',
@@ -101,8 +101,8 @@ class RangeChart {
                 scales: {
                     x: {
                         type: 'timeseries',
-                        min: '1993-01-01 00:00:00',
-                        max: '2024-12-31 11:59:00',
+                        min: new Date('1993-01-01 00:00').valueOf(),
+                        max: new Date('2024-12-31 11:59').valueOf(),
                         title: {
                             display: true,
                             text: "Date"
@@ -142,7 +142,13 @@ class RangeChart {
                         pan: {
                             enabled: true,
                             mode: 'x',
-                        }
+                        },
+                        limits: {
+                            x: {
+                                min: new Date('1993-01-01 00:00').valueOf(),
+                                max: new Date('2024-12-31 11:59').valueOf(),
+                            },
+                        },
                     },
                 }
             }
@@ -171,6 +177,8 @@ class RangeChart {
         );
 
         $("#" + ctx_element + "_select_id_species").on('change', function(e) {chart_obj.get_species_range(e)});
+
+        this.set_zoom("x", "y");
     }
 
     initialized() {};
@@ -202,6 +210,16 @@ class RangeChart {
         }
     }
 
+    set_zoom(start_date, end_date) {
+        this.timeseries_chart.zoomScale('x',
+            {
+                min: new Date(start_date).valueOf(),
+                max: new Date(end_date).valueOf(),
+            },
+            'default');
+        this.timeseries_chart.update();
+    }
+
     filter_legend(legendItem, data) {
         if(legendItem.datasetIndex === 2 || legendItem.datasetIndex === 3 ) {
             return null;
@@ -212,7 +230,7 @@ class RangeChart {
 
     update_chart() {
         this.timeseries_chart.update();
-        this.timeseries_chart.resetZoom();
+        // this.timeseries_chart.resetZoom();
     }
 
     clear_timeseries() {
