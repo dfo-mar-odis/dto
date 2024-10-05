@@ -57,11 +57,11 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-2">
-                    <label for="zoom_min" class="form-label">{% trans 'Min Date' %}</label>
+                    <label for="zoom_min" class="form-label">{% trans 'Start Date' %}</label>
                     <input id="zoom_min" type="date" class="form-control" value="2019-01-01" onchange="set_zoom()"/>
                 </div>
                 <div class="col-2">
-                    <label for="zoom_max" class="form-label">{% trans 'Max Date' %}</label>
+                    <label for="zoom_max" class="form-label">{% trans 'End Date' %}</label>
                     <input id="zoom_max" type="date" class="form-control" value="2024-01-01" onchange="set_zoom()"/>
                 </div>
             </div>
@@ -137,12 +137,17 @@
                 range_charts += 1;
                 const label = 'mpa_ts_range_chart_' + range_charts.toString();
                 charts[label] = new RangeChart(label, "{% url 'range_chart' %}");
+
                 charts[label].initialized = function() {
                     if(mpa_id) {
                         charts[label].mpa_id = mpa_id;
                         charts[label].update_timeseries_data(date_labels, temp_data, climate_data);
                     }
                     set_chart_loading(false);
+                }
+
+                charts[label].post_initialize = function() {
+                    set_zoom();
                 }
             });
         }

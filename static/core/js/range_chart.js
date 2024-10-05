@@ -182,6 +182,7 @@ class RangeChart {
     }
 
     initialized() {};
+    post_initialize() {};
 
     get_chart_html(chart_name, append_to="div_id_range_card") {
         const chart_obj = this;
@@ -197,6 +198,9 @@ class RangeChart {
                 console.log("error");
                 console.log(error_data);
             },
+            complete: function(data) {
+                chart_obj.post_initialize()
+            }
         });
     }
 
@@ -230,7 +234,7 @@ class RangeChart {
 
     update_chart() {
         this.timeseries_chart.update();
-        // this.timeseries_chart.resetZoom();
+        this.timeseries_chart.resetZoom();
     }
 
     clear_timeseries() {
