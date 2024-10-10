@@ -55,7 +55,11 @@
     </div>
     <div class="card mt-2">
         <div class="card-body">
-            <div class="row">
+            <div class="row justify-content-center">
+                <div class="col-auto align-content-center">
+                    <button type="button" class="btn btn-secondary" title="-10 years" onclick="pan_frame(-10)">{% trans '<<' %}</button>
+                    <button type="button" class="btn btn-secondary" title="-5 years" onclick="pan_frame(-5)">{% trans '<' %}</button>
+                </div>
                 <div class="col-2">
                     <label for="zoom_min" class="form-label">{% trans 'Start Date' %}</label>
                     <input id="zoom_min" type="date" class="form-control" value="2019-01-01" onchange="set_zoom()"/>
@@ -63,6 +67,10 @@
                 <div class="col-2">
                     <label for="zoom_max" class="form-label">{% trans 'End Date' %}</label>
                     <input id="zoom_max" type="date" class="form-control" value="2024-01-01" onchange="set_zoom()"/>
+                </div>
+                <div class="col-auto align-content-center">
+                    <button type="button" class="btn btn-secondary" title="+5 years" onclick="pan_frame(5)">{% trans '>' %}</button>
+                    <button type="button" class="btn btn-secondary" title="+10 years" onclick="pan_frame(10)">{% trans '>>' %}</button>
                 </div>
             </div>
         </div>
@@ -123,6 +131,26 @@
         let temp_data = [];
         let climate_data = [];
         const initialized = false;
+
+        function pan_frame(pan) {
+            const min_date = $("#zoom_min").val();
+            const max_date = $("#zoom_max").val();
+
+            let min_d = new Date(min_date);
+            let max_d = new Date(max_date);
+
+            min_d.setFullYear(min_d.getFullYear()+pan);
+            max_d.setFullYear(max_d.getFullYear()+pan);
+
+            $("#zoom_min").val(min_d.toISOString().substring(0, 10));
+            $("#zoom_max").val(max_d.toISOString().substring(0, 10));
+
+            set_zoom();
+            {#for (const key in charts) {#}
+            {#    charts[key].timeseries_chart.pan({x: 100}, undefined, 'default');#}
+            {#    charts[key].timeseries_chart.update();#}
+            {#}#}
+        }
 
         function set_zoom() {
             const min_date = $("#zoom_min").val();
