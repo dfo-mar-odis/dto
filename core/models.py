@@ -9,6 +9,7 @@ class StationLookup(models.Model):
     def __str__(self) -> str:
         return self.name
 
+
 class Station(models.Model):
     station = models.ForeignKey(StationLookup, on_delete=models.CASCADE, related_name='stations')
     number = models.CharField(max_length=10, null=False, blank=False)
@@ -46,6 +47,7 @@ class Timeseries(models.Model):
     date_time = models.DateField(verbose_name="Date")
     temperature = models.FloatField(verbose_name="Temperature")
     climatology = models.FloatField(verbose_name="Climatology")
+    depth = models.IntegerField(verbose_name="Depth", null=True)
 
 
 class SpeciesGrouping(models.IntegerChoices):

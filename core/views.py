@@ -248,6 +248,8 @@ def generate_pdf(request):
 def get_quantiles(request):
     timeseries = {'data': []}
     mpa_id = int(request.GET.get('mpa', -1))
+    depth = request.GET.get('depth', None)
+    depth = None if depth == '' or depth is None else int(depth)
     q_upper = float(request.GET.get('upper', 0.9))
     q_lower = float(request.GET.get('lower', 0.1))
 
@@ -259,7 +261,7 @@ def get_quantiles(request):
 
     mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
     timeseries['name'] = mpa_zone.name.name_e
-    mpa_timeseries = mpa_zone.name.timeseries.all().order_by('date_time')
+    mpa_timeseries = mpa_zone.name.timeseries.filter(depth=depth).order_by('date_time')
 
     if not mpa_timeseries.exists():
         return JsonResponse(timeseries)
@@ -280,7 +282,7 @@ def get_quantiles(request):
     return JsonResponse(timeseries)
 
 
-def get_timeseries_data(mpa_id):
+def get_timeseries_data(mpa_id, depth=None):
     timeseries = {'data': []}
 
     if mpa_id == -1:
@@ -291,7 +293,7 @@ def get_timeseries_data(mpa_id):
 
     mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
     timeseries['name'] = mpa_zone.name.name_e
-    mpa_timeseries = mpa_zone.name.timeseries.all().order_by('date_time')
+    mpa_timeseries = mpa_zone.name.timeseries.filter(depth=depth).order_by('date_time')
 
     if not mpa_timeseries.exists():
         return timeseries
@@ -313,8 +315,19 @@ def get_timeseries_data(mpa_id):
 
 def get_timeseries(request):
     mpa_id = int(request.GET.get('mpa', -1))
+    depth = request.GET.get('depth', None)
+    depth = None if depth == '' or depth is None else int(depth)
 
-    return JsonResponse(get_timeseries_data(mpa_id))
+    return JsonResponse(get_timeseries_data(mpa_id, depth))
+
+
+def get_depths(request):
+    mpa_id = int(request.GET.get('mpa', -1))
+    mpa = models.MPAZone.objects.get(pk=mpa_id).name
+    depths = models.Timeseries.objects.filter(mpa=mpa).order_by('depth').values_list('depth', flat=True).distinct()
+    depth_array = [d for d in depths if d is not None]
+    depth_array.insert(0, None)
+    return JsonResponse({'depths': depth_array})
 
 
 def get_range_chart(request):

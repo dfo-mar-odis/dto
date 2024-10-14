@@ -28,5 +28,6 @@ urlpatterns = [
     path(f'{settings.PROXY_URL}range_chart/', views.get_range_chart, name='range_chart'),
     path(f'{settings.PROXY_URL}quantile_chart/', views.get_quantile_chart, name='quantile_chart'),
     path(f'{settings.PROXY_URL}generate_pdf/', views.generate_pdf, name='generate_pdf'),
+    path(f'{settings.PROXY_URL}get_depths/', views.get_depths, name='get_depths'),
 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -1,11 +1,17 @@
 class QuantileChart extends RangeChart {
 
+    depth = '';
+
     constructor(ctx_element, data_url, upper_limit=0.9, lower_limit=0.1) {
         super(ctx_element, data_url, upper_limit, lower_limit);
     }
 
     async get_chart_html(chart_name, append_to = "div_id_quantile_card") {
         await super.get_chart_html(chart_name, append_to);
+    }
+
+    set_depth(depth) {
+        this.depth = depth
     }
 
     async update_thresholds() {
@@ -23,7 +29,7 @@ class QuantileChart extends RangeChart {
             chart_obj.q_lower = parseFloat($(this).val());
         });
 
-        url += '?mpa=' + this.mpa_id + '&upper=' + this.q_upper + '&lower=' + this.q_lower;
+        url += '?mpa=' + this.mpa_id + '&depth=' + this.depth + '&upper=' + this.q_upper + '&lower=' + this.q_lower;
         console.log("update thresholds: " + url)
         await $.ajax({
             method: "GET",

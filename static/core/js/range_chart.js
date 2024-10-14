@@ -221,7 +221,7 @@ class RangeChart {
                 max: new Date(end_date).valueOf(),
             },
             'default');
-        this.timeseries_chart.update();
+        // this.timeseries_chart.update();
     }
 
     filter_legend(legendItem, data) {
