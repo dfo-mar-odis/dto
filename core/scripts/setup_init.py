@@ -9,7 +9,7 @@ def setup():
     load_mpa_shapes.load_mpas()
     load_mpa_shapes.merge_zones()
 
-    load_timeseries.load_stAnns()
+    load_timeseries.load_mpas()
 
 
 if __name__ == '__main__':

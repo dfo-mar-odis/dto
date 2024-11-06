@@ -10,13 +10,10 @@ class QuantileChart extends RangeChart {
         await super.get_chart_html(chart_name, append_to);
     }
 
-    set_depth(depth) {
-        this.depth = depth
-    }
-
     async update_thresholds() {
         const chart_obj = this
         let url = this.update_btn.data('url');
+
         if(this.mpa_id==null) {
             return;
         }
@@ -29,8 +26,16 @@ class QuantileChart extends RangeChart {
             chart_obj.q_lower = parseFloat($(this).val());
         });
 
-        url += '?mpa=' + this.mpa_id + '&depth=' + this.depth + '&upper=' + this.q_upper + '&lower=' + this.q_lower;
-        console.log("update thresholds: " + url)
+        url += '?mpa=' + this.mpa_id;
+
+        const date_scale = this.timeseries_chart.scales.x.ticks;
+
+        url = url + "&depth=" + ((this.depth) ? this.depth : "");
+        url = url + "&start_date=" + (new Date(date_scale[0].value)).toLocaleDateString();
+        url = url + "&end_date=" + (new Date(date_scale[date_scale.length-1].value)).toLocaleDateString();
+        url = url + '&upper=' + this.q_upper;
+        url = url + '&lower=' + this.q_lower
+
         await $.ajax({
             method: "GET",
             url: url,

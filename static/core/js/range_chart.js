@@ -55,6 +55,10 @@ class RangeChart {
         },
     }
 
+    depth = null;
+    start_date = null;
+    end_date = null;
+
     q_upper = 5.0;
     q_lower = 3.0;
 
@@ -95,6 +99,7 @@ class RangeChart {
             },
             options: {
                 maintainAspectRatio: false,
+                animation: false,
                 interaction: {
                     mode: 'x'
                 },
@@ -205,13 +210,17 @@ class RangeChart {
     }
 
     set_loading(loading) {
-        if(loading) {
-            $("#" + this.chart_name + "_loading_chart").addClass("loader");
-            $("#" + this.chart_name).hide();
-        } else {
-            $("#" + this.chart_name + "_loading_chart").removeClass("loader");
-            $("#" + this.chart_name).show();
-        }
+        // if(loading) {
+        //     $("#" + this.chart_name + "_loading_chart").addClass("loader");
+        //     $("#" + this.chart_name).hide();
+        // } else {
+        //     $("#" + this.chart_name + "_loading_chart").removeClass("loader");
+        //     $("#" + this.chart_name).show();
+        // }
+    }
+
+    set_depth(depth) {
+        this.depth = depth
     }
 
     set_zoom(start_date, end_date) {
@@ -253,8 +262,15 @@ class RangeChart {
 
     async get_species_range(event) {
         const selected_id = event.target.value
-        const url = "/" + this.update_btn.data('url') + selected_id + "/"
         const chart_obj = this;
+
+        let url = "/" + this.update_btn.data('url') + selected_id + "/?";
+
+        const date_scale = this.timeseries_chart.scales.x.ticks;
+        url = url + "depth=" + ((this.depth) ? this.depth : "");
+        url = url + "&start_date=" + (new Date(date_scale[0].value)).toLocaleDateString();
+        url = url + "&end_date=" + (new Date(date_scale[date_scale.length-1].value)).toLocaleDateString();
+
         await $.ajax({
             method: "GET",
             url: url,

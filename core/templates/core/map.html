@@ -16,7 +16,7 @@
                                 <h2>MPA Description</h2>
                             </div>
                             <div class="col-auto">
-                                <a class="btn btn-primary" href="{% url 'generate_pdf' %}">Generate PDF</a>
+                                <a id="btn_id_pdf" class="btn btn-primary" style="display: none" href="{% url 'generate_pdf' %}">Generate PDF</a>
                             </div>
                         </div>
                     </div>
@@ -170,24 +170,29 @@
             for (const key in charts) {
                 charts[key].set_zoom(min_date, max_date);
             }
+
+            if(mpa_id) {
+                get_timeseries(mpa_id);
+            }
         }
 
         function add_range_chart() {
+            const min_date = $("#zoom_min").val();
+            const max_date = $("#zoom_max").val();
+
             set_chart_loading(true).then(function() {
                 range_charts += 1;
+
                 const label = 'mpa_ts_range_chart_' + range_charts.toString();
                 charts[label] = new RangeChart(label, "{% url 'range_chart' %}");
 
                 charts[label].initialized = function() {
+                    charts[label].set_zoom(min_date, max_date);
                     if(mpa_id) {
                         charts[label].mpa_id = mpa_id;
                         charts[label].update_timeseries_data(date_labels, temp_data, climate_data);
                     }
                     set_chart_loading(false);
-                }
-
-                charts[label].post_initialize = function() {
-                    set_zoom();
                 }
             });
         }
@@ -243,18 +248,23 @@
 
         {# The timeseries should update for all charts #}
         function get_timeseries(id) {
-            let btm_depth = $("#btm_depth").val();
+            const min_date = $("#zoom_min").val();
+            const max_date = $("#zoom_max").val();
+            const btm_depth = $("#btm_depth").val();
+
             charts['mpa_ts_quantile_chart'].set_depth(btm_depth);
 
             mpa_id = id;
-            let url = "{% url 'timeseries' %}?mpa=" + mpa_id + "&depth=" + btm_depth
+            let url = "{% url 'timeseries' %}?mpa=" + mpa_id + "&depth=" + btm_depth +
+                "&start_date=" + min_date + "&end_date=" + max_date
 
             $.ajax({
                 method: "GET",
                 url: url,
                 beforeSend: function () {
                     for (const key in charts) {
-                        charts[key].set_loading(true);
+                       charts[key].set_zoom(min_date, max_date)
+                       charts[key].set_loading(true);
                     }
                 },
                 success: function(data) {
@@ -277,7 +287,6 @@
                     for (const key in charts) {
                         charts[key].set_loading(false);
                     }
-                    set_zoom();
                 }
             });
         }
@@ -331,6 +340,11 @@
                 clear_timeseries();
                 get_depths(feature.id);
                 get_timeseries(feature.id);
+                console.log("Showing Button");
+                let $btn_pdf = $("#btn_id_pdf")
+                $btn_pdf.show();
+                $btn_pdf.attr("href", "{% url 'generate_pdf' %}?mpa_id=" + feature.id);
+
                 $("#mpa_name").text(feature.properties.name);
                 $("#mpa_zone").text(feature.properties.zone);
 

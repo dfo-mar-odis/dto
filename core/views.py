@@ -1,4 +1,3 @@
-import calendar
 import io
 import os
 import json
@@ -99,13 +98,19 @@ def get_mpa_zone_info():
     return zone_info
 
 
-def add_plot(title, mpa_id, start_date='2020-01-01', end_date='2023-01-01'):
+def add_plot(title, mpa_id, start_date='2020-01-01', end_date='2023-01-01', depth=None):
     q_upper = 0.9
     q_lower = 0.1
-    mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
-    mpa_timeseries = mpa_zone.name.timeseries.all().order_by('date_time')
 
-    df = pd.DataFrame(list(mpa_timeseries.values('date_time', 'temperature', 'climatology')))
+    mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
+    ts_mpa_timeseries = mpa_zone.name.timeseries.filter(depth__isnull=True).order_by('date_time')
+    ts_df = pd.DataFrame(list(ts_mpa_timeseries.values('date_time', 'temperature', 'climatology')))
+    ts_df['date_time'] = pd.to_datetime(ts_df['date_time'])
+    ts_df = ts_df.set_index('date_time')
+
+    mpa_timeseries = get_timeseries_data(mpa_id, depth, start_date, end_date)['data']
+    df = pd.DataFrame(mpa_timeseries)
+    df.columns = ['date_time', 'temperature', 'climatology']
     df['date_time'] = pd.to_datetime(df['date_time'])
     df = df.set_index('date_time')
 
@@ -147,15 +152,15 @@ def add_plot(title, mpa_id, start_date='2020-01-01', end_date='2023-01-01'):
         interpolate=True, color="grey", alpha=0.5
     )
 
-    ax.fill_between(
-        df.index, df['temperature'], df['upper'], where=(df['temperature'] > df['upper']),
-        interpolate=True, color="red", alpha=1.0
-    )
-
-    ax.fill_between(
-        df.index, df['temperature'], df['lower'], where=(df['temperature'] < df['lower']),
-        interpolate=True, color="blue", alpha=1.0
-    )
+    # ax.fill_between(
+    #     df.index, df['temperature'], df['upper'], where=(df['temperature'] > df['upper']),
+    #     interpolate=True, color="red", alpha=1.0
+    # )
+    #
+    # ax.fill_between(
+    #     df.index, df['temperature'], df['lower'], where=(df['temperature'] < df['lower']),
+    #     interpolate=True, color="blue", alpha=1.0
+    # )
 
     imgdata = io.BytesIO()
     figure.savefig(imgdata, format='png')
@@ -165,14 +170,19 @@ def add_plot(title, mpa_id, start_date='2020-01-01', end_date='2023-01-01'):
 
 
 def generate_pdf(request):
+    mpa_id = request.GET.get('mpa_id', None)
+
+    if not mpa_id:
+        return FileResponse()
+
     buffer = io.BytesIO()
 
-    margin = inch*0.5
+    margin = inch * 0.5
     row_offset = letter[1] - margin
 
-    page_top = letter[1]-margin
+    page_top = letter[1] - margin
     page_bottom = margin
-    page_right = letter[0]-margin
+    page_right = letter[0] - margin
     page_left = margin
 
     # align map from the bottom right of the page
@@ -207,7 +217,7 @@ def generate_pdf(request):
     year_span = 30/6
     year = 1993
     for i in range(0, 6):
-        plot = add_plot(i, 62, start_date=f'{int(year)}-01-01', end_date=f'{int(year+year_span)}-01-01')
+        plot = add_plot(i, mpa_id, start_date=f'{int(year)}-01-01', end_date=f'{int(year+year_span)}-01-01')
         year += year_span
 
         ratio = (letter[0] - margin * 2) / plot.getSize()[0]
@@ -246,10 +256,10 @@ def generate_pdf(request):
 
 
 def get_quantiles(request):
+
     timeseries = {'data': []}
-    mpa_id = int(request.GET.get('mpa', -1))
-    depth = request.GET.get('depth', None)
-    depth = None if depth == '' or depth is None else int(depth)
+    mpa_id, depth, start_date, end_date = parse_request_variables(request)
+
     q_upper = float(request.GET.get('upper', 0.9))
     q_lower = float(request.GET.get('lower', 0.1))
 
@@ -261,28 +271,47 @@ def get_quantiles(request):
 
     mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
     timeseries['name'] = mpa_zone.name.name_e
-    mpa_timeseries = mpa_zone.name.timeseries.filter(depth=depth).order_by('date_time')
 
-    if not mpa_timeseries.exists():
-        return JsonResponse(timeseries)
-
-    df = pd.DataFrame(list(mpa_timeseries.values('date_time', 'temperature')))
-    df['date_time'] = pd.to_datetime(df['date_time'])
-    df.set_index('date_time', inplace=True)
+    df = get_timeseries_dataframe(mpa_zone, depth)
 
     # clim = df.groupby([df.index.month, df.index.day]).mean()
     upper = df.groupby([df.index.month, df.index.day]).quantile(q=q_upper)
     lower = df.groupby([df.index.month, df.index.day]).quantile(q=q_lower)
 
-    timeseries['data'] = [{"date": mt.date_time.strftime("%Y-%m-%d") + " 00:01",
-                           "lowerq": f'{lower["temperature"][mt.date_time.month, mt.date_time.day]}',
-                           "upperq": f'{upper["temperature"][mt.date_time.month, mt.date_time.day]}'}
-                          for mt in mpa_timeseries]
+    df = df[(df.index > start_date) & (df.index < end_date)]
+    timeseries['data'] = [{"date": f'{date.strftime("%Y-%m-%d")} 00:01',
+                           "lowerq": f'{lower["temperature"][date.month, date.day]}',
+                           "upperq": f'{upper["temperature"][date.month, date.day]}'}
+                          for date, mt in df.iterrows()]
+
+    # timeseries['data'] = [{"date": mt.date_time.strftime("%Y-%m-%d") + " 00:01",
+    #                        "lowerq": f'{lower["temperature"][mt.date_time.month, mt.date_time.day]}',
+    #                        "upperq": f'{upper["temperature"][mt.date_time.month, mt.date_time.day]}'}
+    #                       for mt in mpa_timeseries]
 
     return JsonResponse(timeseries)
 
 
-def get_timeseries_data(mpa_id, depth=None):
+def get_timeseries_dataframe(mpa_zone: models.MPAZone, depth=None, start_date=None, end_date=None):
+    mpa_timeseries = mpa_zone.name.timeseries.filter(depth=depth).order_by('date_time')
+
+    if start_date:
+        mpa_timeseries = mpa_timeseries.filter(date_time__gte=start_date)
+
+    if end_date:
+        mpa_timeseries = mpa_timeseries.filter(date_time__lte=end_date)
+
+    if not mpa_timeseries.exists():
+        return None
+
+    df = pd.DataFrame(list(mpa_timeseries.values('date_time', 'temperature')))
+    df['date_time'] = pd.to_datetime(df['date_time'])
+    df.set_index('date_time', inplace=True)
+
+    return df
+
+
+def get_timeseries_data(mpa_id, depth=None, start_date=None, end_date=None):
     timeseries = {'data': []}
 
     if mpa_id == -1:
@@ -292,33 +321,44 @@ def get_timeseries_data(mpa_id, depth=None):
         return timeseries
 
     mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
+
     timeseries['name'] = mpa_zone.name.name_e
-    mpa_timeseries = mpa_zone.name.timeseries.filter(depth=depth).order_by('date_time')
 
-    if not mpa_timeseries.exists():
-        return timeseries
-
-    df = pd.DataFrame(list(mpa_timeseries.values('date_time', 'temperature')))
-    df['date_time'] = pd.to_datetime(df['date_time'])
-    df.set_index('date_time', inplace=True)
+    df = get_timeseries_dataframe(mpa_zone, depth)
 
     # clim = df.groupby([df.index.month, df.index.day]).mean()
     quant = df.groupby([df.index.month, df.index.day]).quantile()
 
-    timeseries['data'] = [{"date": mt.date_time.strftime("%Y-%m-%d") + " 00:01",
-                           "temp": f'{mt.temperature}',
-                           "clim": f'{quant["temperature"][mt.date_time.month, mt.date_time.day]}'}
-                          for mt in mpa_timeseries]
+    df = df[(df.index >= start_date) & (df.index <= end_date)]
+    timeseries['data'] = [{"date": f'{date.strftime("%Y-%m-%d")} 00:01',
+                           "temp": str(mt['temperature'].item()),
+                           "clim": f'{quant["temperature"][date.month, date.day]}'} for date, mt in df.iterrows()]
+
+    # timeseries['data'] = [{"date": mt.date_time.strftime("%Y-%m-%d") + " 00:01",
+    #                        "temp": f'{mt.temperature}',
+    #                        "clim": f'{quant["temperature"][mt.date_time.month, mt.date_time.day]}'}
+    #                       for mt in df.iterrows()]
 
     return timeseries
 
 
 def get_timeseries(request):
+    mpa_id, depth, start_date, end_date = parse_request_variables(request)
+    return JsonResponse(get_timeseries_data(mpa_id, depth, start_date, end_date))
+
+
+def parse_request_variables(request):
     mpa_id = int(request.GET.get('mpa', -1))
     depth = request.GET.get('depth', None)
     depth = None if depth == '' or depth is None else int(depth)
 
-    return JsonResponse(get_timeseries_data(mpa_id, depth))
+    start_date = request.GET.get('start_date', None)
+    start_date = None if start_date == '' or start_date is None else start_date
+
+    end_date = request.GET.get('end_date', None)
+    end_date = None if end_date == '' or end_date is None else end_date
+
+    return mpa_id, depth, start_date, end_date
 
 
 def get_depths(request):

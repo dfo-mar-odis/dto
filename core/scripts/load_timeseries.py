@@ -56,3 +56,8 @@ def load_stAnns_depths():
     file = 'core/scripts/data/SAB_GLORYS_daily_depth_temp.csv'
     mpa = models.MPAName.objects.get(pk=9)
     read_depth_timeseries(mpa, file)
+
+
+def load_mpas():
+    load_stAnns()
+    load_stAnns_depths()
