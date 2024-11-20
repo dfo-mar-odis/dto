@@ -71,21 +71,27 @@ def index(request):
     return render(request, 'core/map.html', context)
 
 
-def get_mpa_zone_info():
+def get_mpa_zone_info(mpa_id):
+    mpa = models.MPAZone.objects.get(pk=mpa_id)
+
     mpa_name_label = "MPA Name:"
-    mpa_name_text = "St. Anns Bank Marine Protected Area"
+    mpa_name_text = mpa.name.name_e
 
     mpa_zone_label = "MPA Zone:"
-    mpa_zone_text = "Union: Zone 2, Zone 3, Zone 4, Zone 1, Union: Zone 2, Zone 3, Zone 4, Zone 1"
+    mpa_zone_text = f"Union: {mpa.zone_e}"
 
     mpa_url_label = "MPA URL:"
-    mpa_url_text = "https://www.dfo-mpo.gc.ca/oceans/mpa-zpm/stanns-sainteanne/index-eng.html"
+    mpa_url_text = f"{mpa.url_e}"
 
     mpa_regulation_label = "MPA Regulation:"
-    mpa_regulation_text = "http://laws-lois.justice.gc.ca/eng/regulations/SOR-2017-106/index.html"
+    mpa_regulation_text = f"{mpa.regulation}"
 
     mpa_area_label = "km^2"
-    mpa_area_text = "4364"
+    mpa_area_text = f"{mpa.km2}"
+
+    map = None
+    if mpa.name.name_e.lower() == 'st. anns bank marine protected area':
+        map = "st_anns_bank_mpa.png"
 
     zone_info = [
         (mpa_name_label, mpa_name_text),
@@ -95,30 +101,24 @@ def get_mpa_zone_info():
         (mpa_area_label, mpa_area_text),
     ]
 
-    return zone_info
+    return map, zone_info
 
 
-def add_plot(title, mpa_id, start_date='2020-01-01', end_date='2023-01-01', depth=None):
+def add_plot(title, mpa_id, depth=None, start_date='2020-01-01', end_date='2023-01-01'):
     q_upper = 0.9
     q_lower = 0.1
 
     mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
-    ts_mpa_timeseries = mpa_zone.name.timeseries.filter(depth__isnull=True).order_by('date_time')
-    ts_df = pd.DataFrame(list(ts_mpa_timeseries.values('date_time', 'temperature', 'climatology')))
-    ts_df['date_time'] = pd.to_datetime(ts_df['date_time'])
-    ts_df = ts_df.set_index('date_time')
+    df = get_timeseries_dataframe(mpa_zone, depth)
 
-    mpa_timeseries = get_timeseries_data(mpa_id, depth, start_date, end_date)['data']
-    df = pd.DataFrame(mpa_timeseries)
-    df.columns = ['date_time', 'temperature', 'climatology']
-    df['date_time'] = pd.to_datetime(df['date_time'])
-    df = df.set_index('date_time')
-
+    # clim = df.groupby([df.index.month, df.index.day]).mean()
     upper = df.groupby([df.index.month, df.index.day]).quantile(q=q_upper)['temperature']
     lower = df.groupby([df.index.month, df.index.day]).quantile(q=q_lower)['temperature']
+    clim = df.groupby([df.index.month, df.index.day]).quantile()['temperature']
 
     df['upper'] = df.index.map(lambda x: upper[(x.month, x.day)])
     df['lower'] = df.index.map(lambda x: lower[(x.month, x.day)])
+    df['climatology'] = df.index.map(lambda x: clim[(x.month, x.day)])
 
     if start_date:
         df = df[start_date:]
@@ -127,11 +127,12 @@ def add_plot(title, mpa_id, start_date='2020-01-01', end_date='2023-01-01', dept
         df = df[:end_date]
 
     # Row: Add chart
-    figure, ax = plt.subplots(figsize=(10, 3))
+    figure, ax = plt.subplots(figsize=(10, 3.75))
     plt.subplots_adjust(left=0.1, right=0.95, top=0.8, bottom=0.2)
 
     plt.title(title)
     plt.ylabel("Temperature (C)")
+    plt.xlabel("Date")
     plt.xticks(rotation=30)
 
     ax.set_xlim([df.index.min(), df.index.max()])
@@ -152,15 +153,18 @@ def add_plot(title, mpa_id, start_date='2020-01-01', end_date='2023-01-01', dept
         interpolate=True, color="grey", alpha=0.5
     )
 
-    # ax.fill_between(
-    #     df.index, df['temperature'], df['upper'], where=(df['temperature'] > df['upper']),
-    #     interpolate=True, color="red", alpha=1.0
-    # )
-    #
-    # ax.fill_between(
-    #     df.index, df['temperature'], df['lower'], where=(df['temperature'] < df['lower']),
-    #     interpolate=True, color="blue", alpha=1.0
-    # )
+    ax.fill_between(
+        df.index, df['temperature'], df['upper'], where=(df['temperature'] > df['upper']),
+        interpolate=True, color="red", alpha=1.0
+    )
+
+    ax.fill_between(
+        df.index, df['temperature'], df['lower'], where=(df['temperature'] < df['lower']),
+        interpolate=True, color="blue", alpha=1.0
+    )
+
+    ax.plot(df['temperature'], color="#801515", linewidth=1)
+    ax.plot(df['climatology'], color="black", linewidth=0.7)
 
     imgdata = io.BytesIO()
     figure.savefig(imgdata, format='png')
@@ -170,7 +174,14 @@ def add_plot(title, mpa_id, start_date='2020-01-01', end_date='2023-01-01', dept
 
 
 def generate_pdf(request):
-    mpa_id = request.GET.get('mpa_id', None)
+
+    mpa_id, depth, start_date, end_date = parse_request_variables(request)
+
+    if not start_date:
+        start_date = models.Timeseries.objects.order_by('date_time')[0].date_time
+
+    if not end_date:
+        end_date = models.Timeseries.objects.order_by('date_time')[-1].date_time
 
     if not mpa_id:
         return FileResponse()
@@ -196,7 +207,7 @@ def generate_pdf(request):
     textob.setTextOrigin(page_left, page_top)
     textob.setFont("Helvetica", 8)
 
-    zone_info = get_mpa_zone_info()
+    map, zone_info = get_mpa_zone_info(mpa_id)
 
     for line in zone_info:
         textob.textLine(line[0])
@@ -205,48 +216,48 @@ def generate_pdf(request):
 
     p.drawText(textob)
 
-    img = Image.open(os.path.join(settings.STATIC_ROOT, 'st_anns_bank_mpa.png'))
-    img.thumbnail(thumbnail_map_size, Image.Resampling.LANCZOS)
+    if map:
+        img = Image.open(os.path.join(settings.STATIC_ROOT, map))
+        img.thumbnail(thumbnail_map_size, Image.Resampling.LANCZOS)
 
-    p.drawInlineImage(img, thumbnail_map_position[1], thumbnail_map_position[0], showBoundary=True)
+        p.drawInlineImage(img, thumbnail_map_position[1], thumbnail_map_position[0], showBoundary=True)
 
-    row_offset -= img.height + margin
+        row_offset -= img.height + margin
 
     # df.set_index('date_time', inplace=True)
 
     year_span = 30/6
     year = 1993
-    for i in range(0, 6):
-        plot = add_plot(i, mpa_id, start_date=f'{int(year)}-01-01', end_date=f'{int(year+year_span)}-01-01')
-        year += year_span
+    plot = add_plot("Quartile Chart", mpa_id, depth, start_date=start_date, end_date=end_date)
+    year += year_span
 
-        ratio = (letter[0] - margin * 2) / plot.getSize()[0]
+    ratio = (letter[0] - margin * 2) / plot.getSize()[0]
 
-        height = plot.getSize()[1] * ratio
-        width = plot.getSize()[0] * ratio
+    height = plot.getSize()[1] * ratio
+    width = plot.getSize()[0] * ratio
 
-        row_offset -= height
+    row_offset -= height
 
-        if row_offset - margin < 0:
+    if row_offset - margin < 0:
 
-            rect_height = 100
+        rect_height = 100
 
-            textob = p.beginText()
-            textob.setTextOrigin(page_left+margin, row_offset+height-(rect_height/2))
-            textob.setFont("Helvetica", 8)
-            textob.textLine("This is an example citation at the bottom of a page because we've run out of space here")
+        textob = p.beginText()
+        textob.setTextOrigin(page_left+margin, row_offset+height-(rect_height/2))
+        textob.setFont("Helvetica", 8)
+        textob.textLine("This is an example citation at the bottom of a page because we've run out of space here")
 
-            p.drawText(textob)
+        p.drawText(textob)
 
-            p.setFillGray(gray=0.5, alpha=0.5)
-            p.rect(margin, row_offset + height - rect_height, letter[0] - (margin*2), rect_height, fill=1)
+        p.setFillGray(gray=0.5, alpha=0.5)
+        p.rect(margin, row_offset + height - rect_height, letter[0] - (margin*2), rect_height, fill=1)
 
-            p.showPage()
-            row_offset = letter[1] - margin - height
+        p.showPage()
+        row_offset = letter[1] - margin - height
 
-        p.drawImage(plot, margin, row_offset, width=width, height=height, showBoundary=True)
+    p.drawImage(plot, margin, row_offset, width=width, height=height, showBoundary=True)
 
-        row_offset -= margin
+    row_offset -= margin
 
     p.showPage()
     p.save()
@@ -278,7 +289,7 @@ def get_quantiles(request):
     upper = df.groupby([df.index.month, df.index.day]).quantile(q=q_upper)
     lower = df.groupby([df.index.month, df.index.day]).quantile(q=q_lower)
 
-    df = df[(df.index > start_date) & (df.index < end_date)]
+    df = df[(df.index >= start_date) & (df.index < end_date)]
     timeseries['data'] = [{"date": f'{date.strftime("%Y-%m-%d")} 00:01',
                            "lowerq": f'{lower["temperature"][date.month, date.day]}',
                            "upperq": f'{upper["temperature"][date.month, date.day]}'}
@@ -329,7 +340,7 @@ def get_timeseries_data(mpa_id, depth=None, start_date=None, end_date=None):
     # clim = df.groupby([df.index.month, df.index.day]).mean()
     quant = df.groupby([df.index.month, df.index.day]).quantile()
 
-    df = df[(df.index >= start_date) & (df.index <= end_date)]
+    df = df[(df.index >= start_date) & (df.index < end_date)]
     timeseries['data'] = [{"date": f'{date.strftime("%Y-%m-%d")} 00:01',
                            "temp": str(mt['temperature'].item()),
                            "clim": f'{quant["temperature"][date.month, date.day]}'} for date, mt in df.iterrows()]

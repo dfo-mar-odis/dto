@@ -17,7 +17,8 @@ class RangeChart {
         fill: {
             target: '0',
             above: 'rgba(150, 150, 255, 0.4)',
-            below: 'rgba(255, 150, 150, 0.4)'
+            below: 'rgba(255, 150, 150, 0.4)',
+
         },
     };
 
@@ -25,7 +26,7 @@ class RangeChart {
         label: 'Bottom Temperature Timeseries (°C)',
         data: [],
         borderColor: 'rgba(120, 20, 20)',
-        borderWidth: 0.7,
+        borderWidth: 1,
         pointRadius: 0.0,
     };
 
@@ -56,8 +57,6 @@ class RangeChart {
     }
 
     depth = null;
-    start_date = null;
-    end_date = null;
 
     q_upper = 5.0;
     q_lower = 3.0;
@@ -237,7 +236,7 @@ class RangeChart {
         if(legendItem.datasetIndex === 2 || legendItem.datasetIndex === 3 ) {
             return null;
         }
-        legendItem.lineWidth = 2;
+        legendItem.lineWidth = 5;
         return legendItem;
     }
 
