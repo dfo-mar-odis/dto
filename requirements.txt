@@ -1,3 +1,9 @@
+# needed to read Shapefiles into the DB
+boto3
+
+# used for producing PDF files
+reportlab
+
 django>=4.2,<5.0
 
 # web page formattting css
@@ -33,7 +39,3 @@ matplotlib==3.8.4
 
 # libs for deploying to FSDH
 docker-composer-v2==0.8.8
-
-# needed to read Shapefiles into the DB
-boto3
-reportlab
