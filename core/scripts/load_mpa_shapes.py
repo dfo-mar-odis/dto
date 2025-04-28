@@ -1,4 +1,3 @@
-import os
 import geopandas as gpd
 
 from django.contrib.gis.db.models import Union
@@ -8,19 +7,15 @@ from core import models
 
 # Auto-generated `LayerMapping` dictionary for mpa model
 mpa_mapping = {
-    'name_e': 'NAME_E',
-    'name_f': 'NAME_F',
-    'zone_e': 'ZONE_E',
-    'zone_f': 'ZONE_F',
+    'name_e': 'SitNm_E',
+    'name_f': 'NmDSt_F',
     'url_e': 'URL_E',
     'url_f': 'URL_F',
-    'regulation': 'REGULATION',
-    'reglement': 'REGLEMENT',
-    'km2': 'KM2',
+    'km2': 'Km2',
     'geom': 'MULTIPOLYGON',
 }
 
-mpa_shape = r'core/scripts/data/DFO_MPA_MPO_ZPM_SHP/DFO_MPA_MPO_ZPM.shp'
+mpa_shape = r'core/scripts/data/Additional_MPA/MPA_polygons.shp'
 
 
 def merge_zones():
@@ -57,20 +52,18 @@ def load_mpas():
     data = gpd.read_file(mpa_shape, encoding='utf-8')
 
     for shp in data.iterrows():
-
-        if not (mpa_name := models.MPAName.objects.filter(name_e=shp[1].NAME_E)).exists():
-            mpa_name = models.MPAName(name_e=shp[1].NAME_E, name_f=shp[1].NAME_F)
+        print(shp[1])
+        if not (mpa_name := models.MPAName.objects.filter(name_e=shp[1].SitNm_E)).exists():
+            mpa_name = models.MPAName(name_e=shp[1].SitNm_E, name_f=shp[1].NmDSt_F)
             mpa_name.save()
         else:
             mpa_name = mpa_name.first()
 
-        if not (mpa_zone := models.MPAZone.objects.filter(name=mpa_name, zone_e=shp[1].ZONE_E)).exists():
-            mpa_zone = models.MPAZone(name=mpa_name, zone_e=shp[1].ZONE_E, zone_f=shp[1].ZONE_F)
+        if not (mpa_zone := models.MPAZone.objects.filter(name=mpa_name)).exists():
+            mpa_zone = models.MPAZone(name=mpa_name)
             mpa_zone.url_e = shp[1].URL_E
             mpa_zone.url_f = shp[1].URL_F
-            mpa_zone.regulation = shp[1].REGULATION
-            mpa_zone.reglement = shp[1].REGLEMENT
-            mpa_zone.km2 = shp[1].KM2
+            mpa_zone.km2 = shp[1].Km2
             try:
                 geo = str(shp[1].geometry)
                 if geo.startswith('MULTIPOLYGON'):

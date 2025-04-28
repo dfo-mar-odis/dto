@@ -27,16 +27,8 @@
                         <div class="col" id="mpa_name"></div>
                     </div>
                     <div class="row">
-                        <div class="col-2"><b>MPA Zone:</b></div>
-                        <div class="col" id="mpa_zone"></div>
-                    </div>
-                    <div class="row">
                         <div class="col-2"><b>MPA URL:</b></div>
                         <div class="col" id="mpa_url"><a></a></div>
-                    </div>
-                    <div class="row">
-                        <div class="col-2"><b>Regulation:</b></div>
-                        <div class="col" id="mpa_regulation"><a></a></div>
                     </div>
                     <div class="row">
                         <div class="col-2"><b>km^2:</b></div>
@@ -321,7 +313,7 @@
             get_timeseries(mpa_id)
         }
 
-        let map = L.map('map').setView([44.666830, -59.631500], 6)
+        let map = L.map('map').setView([44.666830, -61.531500], 5)
 
         L.tileLayer(
             "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -375,17 +367,11 @@
                 $btn_pdf.show();
 
                 $("#mpa_name").text(feature.properties.name);
-                $("#mpa_zone").text(feature.properties.zone);
 
                 let $mpa_url = $("#mpa_url a");
                 $mpa_url.attr("href", feature.properties.url)
                 $mpa_url.text(feature.properties.url);
 
-                let $regulation = $("#mpa_regulation a");
-                $regulation.attr("href", feature.properties.regulation)
-                $regulation.text(feature.properties.regulation);
-
-                $("#mpa_reglement").text(feature.properties.reglement);
                 $("#mpa_km2").text(feature.properties.km2);
             });
             geo_obj.addTo(map)

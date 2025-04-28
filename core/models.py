@@ -29,17 +29,13 @@ class MPAName(models.Model):
 
 class MPAZone(models.Model):
     name = models.ForeignKey(MPAName, on_delete=models.CASCADE, related_name='zones')
-    zone_e = models.CharField(max_length=254, null=True)
-    zone_f = models.CharField(max_length=254, null=True)
     url_e = models.CharField(max_length=254, null=True)
     url_f = models.CharField(max_length=254, null=True)
-    regulation = models.CharField(max_length=254, null=True)
-    reglement = models.CharField(max_length=254, null=True)
     km2 = models.FloatField(null=True)
     geom = models.MultiPolygonField(srid=102001)
 
     def __str__(self):
-        return f"{self.name.name_e} - {self.zone_e}"
+        return f"{self.name.name_e}"
 
 
 class Timeseries(models.Model):

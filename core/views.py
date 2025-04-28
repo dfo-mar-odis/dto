@@ -40,15 +40,13 @@ def add_attributes(mpa):
         "id": mpa.pk,
         "properties": {
             'name': mpa.name.name_e,
-            'zone': mpa.zone_e,
             'url': mpa.url_e,
-            'regulation': mpa.regulation,
             'km2': round(mpa.km2, 0),
             'temperature': temp,
         },
         "geometry": {
             "type": "MultiPolygon",
-            "coordinates": mpa.trans.coords,
+            "coordinates": mpa.geom.coords,
         }
     }
     # geo_json = json.loads(mpa.trans.geojson)
@@ -62,7 +60,7 @@ def add_attributes(mpa):
 
 def index(request):
     mpas = [add_attributes(mpa) for mpa in
-            models.MPAZone.objects.filter(zone_e__icontains='union').annotate(trans=Transform('geom', srid=4326))]
+            models.MPAZone.objects.all()]
     context = {
         'mpas': mpas,
         'proxy_url': settings.PROXY_URL,
@@ -76,9 +74,6 @@ def get_mpa_zone_info(mpa_id):
 
     mpa_name_label = "MPA Name:"
     mpa_name_text = mpa.name.name_e
-
-    mpa_zone_label = "MPA Zone:"
-    mpa_zone_text = f"Union: {mpa.zone_e}"
 
     mpa_url_label = "MPA URL:"
     mpa_url_text = f"{mpa.url_e}"
@@ -95,7 +90,6 @@ def get_mpa_zone_info(mpa_id):
 
     zone_info = [
         (mpa_name_label, mpa_name_text),
-        (mpa_zone_label, mpa_zone_text),
         (mpa_url_label, mpa_url_text),
         (mpa_regulation_label, mpa_regulation_text),
         (mpa_area_label, mpa_area_text),
@@ -285,6 +279,9 @@ def get_quantiles(request):
 
     df = get_timeseries_dataframe(mpa_zone, depth)
 
+    if df is None:
+        return None
+
     # clim = df.groupby([df.index.month, df.index.day]).mean()
     upper = df.groupby([df.index.month, df.index.day]).quantile(q=q_upper)
     lower = df.groupby([df.index.month, df.index.day]).quantile(q=q_lower)
@@ -336,6 +333,8 @@ def get_timeseries_data(mpa_id, depth=None, start_date=None, end_date=None):
     timeseries['name'] = mpa_zone.name.name_e
 
     df = get_timeseries_dataframe(mpa_zone, depth)
+    if df is None:
+        return None
 
     # clim = df.groupby([df.index.month, df.index.day]).mean()
     quant = df.groupby([df.index.month, df.index.day]).quantile()
@@ -355,7 +354,7 @@ def get_timeseries_data(mpa_id, depth=None, start_date=None, end_date=None):
 
 def get_timeseries(request):
     mpa_id, depth, start_date, end_date = parse_request_variables(request)
-    return JsonResponse(get_timeseries_data(mpa_id, depth, start_date, end_date))
+    return JsonResponse(get_timeseries_data(mpa_id, depth, start_date, end_date), safe=False)
 
 
 def parse_request_variables(request):

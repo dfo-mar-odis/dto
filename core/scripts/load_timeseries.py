@@ -44,20 +44,41 @@ def read_depth_timeseries(mpa_name, filename, date_col='Date'):
         load_series(mpa_name, depth_timeseries, depth)
 
 
-def load_stAnns():
-    # load overall average bottom time series
-    file = 'core/scripts/data/GLORYS_StAnnsBank_daily_aveBottomT.csv'
-    mpa = models.MPAName.objects.get(pk=9)
-    read_timeseries(mpa, file)
-
-
-def load_stAnns_depths():
-    # load depth stratified bottom8 time series
-    file = 'core/scripts/data/SAB_GLORYS_daily_depth_temp.csv'
-    mpa = models.MPAName.objects.get(pk=9)
-    read_depth_timeseries(mpa, file)
-
-
 def load_mpas():
-    load_stAnns()
-    load_stAnns_depths()
+    models.Timeseries.objects.all().delete()
+
+    # this is how we'll actually load data when we have real data to load
+    # for now, every MPA is getting loaded with the St. Anne's bank data
+    data = [
+        {
+            "MPA": "St. Anns Bank",
+            "MPA_ID": 9,
+            "BOTTOM_TS": 'core/scripts/data/GLORYS_StAnnsBank_daily_aveBottomT.csv',
+            "DEPTH_TS": 'core/scripts/data/SAB_GLORYS_daily_depth_temp.csv'
+        },
+        {
+            "MPA": "Gully",
+            "MPA_ID": 3,
+            "BOTTOM_TS": 'core/scripts/data/GLORYS_StAnnsBank_daily_aveBottomT.csv',
+            "DEPTH_TS": 'core/scripts/data/SAB_GLORYS_daily_depth_temp.csv'
+        },
+        {
+            "MPA": "Laurentian Channel",
+            "MPA_ID": 14,
+            "BOTTOM_TS": 'core/scripts/data/GLORYS_StAnnsBank_daily_aveBottomT.csv',
+            "DEPTH_TS": 'core/scripts/data/SAB_GLORYS_daily_depth_temp.csv'
+        }
+    ]
+    data = [{
+        "MPA": mpa.name_e,
+        "MPA_ID": mpa.pk,
+        "BOTTOM_TS": 'core/scripts/data/GLORYS_StAnnsBank_daily_aveBottomT.csv',
+        "DEPTH_TS": 'core/scripts/data/SAB_GLORYS_daily_depth_temp.csv'
+    } for mpa in models.MPAName.objects.all()]
+
+    for mpa_dict in data:
+        mpa = models.MPAName.objects.get(pk=mpa_dict['MPA_ID'])
+        bottom_ts = mpa_dict['BOTTOM_TS']
+        depth_ts = mpa_dict['DEPTH_TS']
+        read_timeseries(mpa, bottom_ts)
+        read_depth_timeseries(mpa, depth_ts)

@@ -14,6 +14,9 @@ folium==0.16.0
 # psycopg2==2.9.9
 psycopg2-binary==2.9.9
 
+# needed to read Shapefiles into the DB
+boto3==1.38.2
+
 # data manipulation
 pandas==2.2.2
 
