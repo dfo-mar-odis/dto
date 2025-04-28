@@ -15,5 +15,7 @@ RUN pip install -r requirements.txt
 
 RUN apt-get update && apt-get install -y binutils libproj-dev gdal-bin python3-gdal
 
+RUN pip install -r requirements.txt
+
 # Copy project
 COPY . .
