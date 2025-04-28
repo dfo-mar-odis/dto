@@ -1,4 +1,4 @@
-FROM python:3.11.5-slim-bullseye
+FROM python:3.12.10-slim-bullseye
 LABEL authors="Patrick Upson"
 
 # Set environment variables
