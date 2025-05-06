@@ -61,8 +61,8 @@ def load_mpas_from_dict(data: dict):
 def build_mpa_dictionary() -> dict:
     data = {}
 
-    data_directory = './scripts/data/bottomT_GLORYS_CSV/'
-    id_regex = re.compile(r'.*?_(\d{3})_.*?.csv')
+    data_directory = './scripts/data/GLORYS/'
+    id_regex = re.compile(r'.*?_(\d*)_.*?.csv')
     for f in os.listdir(data_directory):
         if not os.path.isfile(os.path.join(data_directory, f)):
             continue
@@ -94,11 +94,10 @@ def load_dictionary_mpas():
 def load_mpas():
     # this is how we'll actually load data when we have real data to load
     # for now, every MPA is getting loaded with the St. Anne's bank data
-    data = {
-        9: {
-            "BOTTOM_TS": 'scripts/data/GLORYS_StAnnsBank_daily_aveBottomT.csv',
-            "DEPTH_TS": 'scripts/data/SAB_GLORYS_daily_depth_temp.csv'
-        },
+    data = build_mpa_dictionary()
+    data[35] = {
+        "BOTTOM_TS": 'scripts/data/GLORYS_StAnnsBank_daily_aveBottomT.csv',
+        "DEPTH_TS": 'scripts/data/SAB_GLORYS_daily_depth_temp.csv'
     }
 
     load_mpas_from_dict(data)
