@@ -88,4 +88,6 @@ pip-selfcheck.json
 /staticfiles/*
 
 # Don't ignore 'scripts' in the core folder used for importing initial data
-!scripts/
+!core/scripts/
+core/scripts/data/GLORYS/bottomT.nc
+core/scripts/data/GLORYS/depth.nc
