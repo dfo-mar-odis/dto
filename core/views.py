@@ -31,7 +31,7 @@ colormap = cm.linear.Paired_07.scale(-2, 35)
 
 def add_attributes(mpa):
 
-    temp = 20
+    value = 20
     geo_json = {
         "type": "Feature",
         "style": {
@@ -42,18 +42,13 @@ def add_attributes(mpa):
             'name': mpa.name.name_e,
             'url': mpa.url_e,
             'km2': round(mpa.km2, 0),
-            'temperature': temp,
+            'ts_value': value,
         },
         "geometry": {
             "type": "MultiPolygon",
             "coordinates": mpa.geom.coords,
         }
     }
-    # geo_json = json.loads(mpa.trans.geojson)
-    # geo_json['properties'] = {
-    #     'name': mpa.name_e,
-    #     'temperature': 5.0,
-    # }
 
     return json.dumps(geo_json)
 
@@ -69,6 +64,17 @@ def index(request):
     return render(request, 'core/map.html', context)
 
 
+def dials(request):
+    mpas = [add_attributes(mpa) for mpa in
+            models.MPAZone.objects.all()]
+    context = {
+        'mpas': mpas,
+        'proxy_url': settings.PROXY_URL,
+    }
+
+    return render(request, 'core/dials.html', context)
+
+
 def get_mpa_zone_info(mpa_id):
     mpa = models.MPAZone.objects.get(pk=mpa_id)
 
@@ -77,9 +83,6 @@ def get_mpa_zone_info(mpa_id):
 
     mpa_url_label = "MPA URL:"
     mpa_url_text = f"{mpa.url_e}"
-
-    mpa_regulation_label = "MPA Regulation:"
-    mpa_regulation_text = f"{mpa.regulation}"
 
     mpa_area_label = "km^2"
     mpa_area_text = f"{mpa.km2}"
@@ -91,24 +94,25 @@ def get_mpa_zone_info(mpa_id):
     zone_info = [
         (mpa_name_label, mpa_name_text),
         (mpa_url_label, mpa_url_text),
-        (mpa_regulation_label, mpa_regulation_text),
         (mpa_area_label, mpa_area_text),
     ]
 
     return map, zone_info
 
 
-def add_plot(title, mpa_id, depth=None, start_date='2020-01-01', end_date='2023-01-01'):
+def add_plot(title, mpa_id, depth=None, start_date='2020-01-01', end_date='2023-01-01', indicator=1):
     q_upper = 0.9
     q_lower = 0.1
 
     mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
-    df = get_timeseries_dataframe(mpa_zone, depth)
+    indicator = models.Indicator.objects.get(pk=indicator)
+    df = get_timeseries_dataframe(mpa_zone, depth, indicator=indicator)
 
     # clim = df.groupby([df.index.month, df.index.day]).mean()
-    upper = df.groupby([df.index.month, df.index.day]).quantile(q=q_upper)['temperature']
-    lower = df.groupby([df.index.month, df.index.day]).quantile(q=q_lower)['temperature']
-    clim = df.groupby([df.index.month, df.index.day]).quantile()['temperature']
+    grouped = df.groupby([df.index.month, df.index.day])
+    upper = grouped.quantile(q=q_upper)['value']
+    lower = grouped.quantile(q=q_lower)['value']
+    clim = grouped.quantile()['value']
 
     df['upper'] = df.index.map(lambda x: upper[(x.month, x.day)])
     df['lower'] = df.index.map(lambda x: lower[(x.month, x.day)])
@@ -125,7 +129,7 @@ def add_plot(title, mpa_id, depth=None, start_date='2020-01-01', end_date='2023-
     plt.subplots_adjust(left=0.1, right=0.95, top=0.8, bottom=0.2)
 
     plt.title(title)
-    plt.ylabel("Temperature (C)")
+    plt.ylabel(f'{indicator.name}')
     plt.xlabel("Date")
     plt.xticks(rotation=30)
 
@@ -133,12 +137,12 @@ def add_plot(title, mpa_id, depth=None, start_date='2020-01-01', end_date='2023-
     # ax.plot(df.index, df['temperature'], df.index, df['climatology'])
 
     ax.fill_between(
-        df.index, df['temperature'], df['climatology'], where=(df['temperature'] > df['climatology']),
+        df.index, df['value'], df['climatology'], where=(df['value'] > df['climatology']),
         interpolate=True, color="red", alpha=0.25
     )
 
     ax.fill_between(
-        df.index, df['temperature'], df['climatology'], where=(df['temperature'] <= df['climatology']),
+        df.index, df['value'], df['climatology'], where=(df['value'] <= df['climatology']),
         interpolate=True, color="blue", alpha=0.25
     )
 
@@ -148,16 +152,16 @@ def add_plot(title, mpa_id, depth=None, start_date='2020-01-01', end_date='2023-
     )
 
     ax.fill_between(
-        df.index, df['temperature'], df['upper'], where=(df['temperature'] > df['upper']),
+        df.index, df['value'], df['upper'], where=(df['value'] > df['upper']),
         interpolate=True, color="red", alpha=1.0
     )
 
     ax.fill_between(
-        df.index, df['temperature'], df['lower'], where=(df['temperature'] < df['lower']),
+        df.index, df['value'], df['lower'], where=(df['value'] < df['lower']),
         interpolate=True, color="blue", alpha=1.0
     )
 
-    ax.plot(df['temperature'], color="#801515", linewidth=1)
+    ax.plot(df['value'], color="#801515", linewidth=1)
     ax.plot(df['climatology'], color="black", linewidth=0.7)
 
     imgdata = io.BytesIO()
@@ -288,20 +292,15 @@ def get_quantiles(request):
 
     df = df[(df.index >= start_date) & (df.index < end_date)]
     timeseries['data'] = [{"date": f'{date.strftime("%Y-%m-%d")} 00:01',
-                           "lowerq": f'{lower["temperature"][date.month, date.day]}',
-                           "upperq": f'{upper["temperature"][date.month, date.day]}'}
+                           "lowerq": f'{lower["value"][date.month, date.day]}',
+                           "upperq": f'{upper["value"][date.month, date.day]}'}
                           for date, mt in df.iterrows()]
-
-    # timeseries['data'] = [{"date": mt.date_time.strftime("%Y-%m-%d") + " 00:01",
-    #                        "lowerq": f'{lower["temperature"][mt.date_time.month, mt.date_time.day]}',
-    #                        "upperq": f'{upper["temperature"][mt.date_time.month, mt.date_time.day]}'}
-    #                       for mt in mpa_timeseries]
 
     return JsonResponse(timeseries)
 
 
-def get_timeseries_dataframe(mpa_zone: models.MPAZone, depth=None, start_date=None, end_date=None):
-    mpa_timeseries = mpa_zone.name.timeseries.filter(depth=depth).order_by('date_time')
+def get_timeseries_dataframe(mpa_zone: models.MPAZone, depth=None, start_date=None, end_date=None, indicator=1):
+    mpa_timeseries = mpa_zone.name.timeseries.filter(depth=depth, indicator=indicator).order_by('date_time')
 
     if start_date:
         mpa_timeseries = mpa_timeseries.filter(date_time__gte=start_date)
@@ -312,14 +311,14 @@ def get_timeseries_dataframe(mpa_zone: models.MPAZone, depth=None, start_date=No
     if not mpa_timeseries.exists():
         return None
 
-    df = pd.DataFrame(list(mpa_timeseries.values('date_time', 'temperature')))
+    df = pd.DataFrame(list(mpa_timeseries.values('date_time', 'value')))
     df['date_time'] = pd.to_datetime(df['date_time'])
     df.set_index('date_time', inplace=True)
 
     return df
 
 
-def get_timeseries_data(mpa_id, depth=None, start_date=None, end_date=None):
+def get_timeseries_data(mpa_id, depth=None, start_date=None, end_date=None, indicator=1):
     timeseries = {'data': []}
 
     if mpa_id == -1:
@@ -332,7 +331,7 @@ def get_timeseries_data(mpa_id, depth=None, start_date=None, end_date=None):
 
     timeseries['name'] = mpa_zone.name.name_e
 
-    df = get_timeseries_dataframe(mpa_zone, depth)
+    df = get_timeseries_dataframe(mpa_zone, depth, indicator=indicator)
     if df is None:
         return None
 
@@ -341,13 +340,8 @@ def get_timeseries_data(mpa_id, depth=None, start_date=None, end_date=None):
 
     df = df[(df.index >= start_date) & (df.index < end_date)]
     timeseries['data'] = [{"date": f'{date.strftime("%Y-%m-%d")} 00:01',
-                           "temp": str(mt['temperature'].item()),
-                           "clim": f'{quant["temperature"][date.month, date.day]}'} for date, mt in df.iterrows()]
-
-    # timeseries['data'] = [{"date": mt.date_time.strftime("%Y-%m-%d") + " 00:01",
-    #                        "temp": f'{mt.temperature}',
-    #                        "clim": f'{quant["temperature"][mt.date_time.month, mt.date_time.day]}'}
-    #                       for mt in df.iterrows()]
+                           "ts_data": str(mt['value'].item()),
+                           "clim": f'{quant["value"][date.month, date.day]}'} for date, mt in df.iterrows()]
 
     return timeseries
 

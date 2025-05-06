@@ -1,0 +1,30 @@
+Common,Scientific,Grouping,Importance,Status,Lower Temp,Upper Temp,Upper Depth,Lower Depth
+American plaice,Hippoglossoides platessoides,Benthic fish,Commercial fish,Threatened,-1,11.4,59.7,350.5
+Atlantic halibut,Hippoglossus hippoglossus,Benthic fish,Commercial fish,,2.23,10.87,58.5,864
+Atlantic wolffish,Anarhichas lupus,Benthic fish,,Special concern,2.01,10.1,1,500
+Cusk,Brosme brosme,Benthic fish,,Endangered species,5.55,11.9,18,549
+Little skate,Leucoraja erinacea,Benthic fish,,Sensitive population,8.47,17.04,32,152
+Monkfish,Lophius americanus,Benthic fish,Commercial fish,,6.42,18.33,60.55,352
+Smooth skate,Malacoraja senta,Benthic fish,,Special concern,4.19,11.38,84,426
+Thorny skate,Amblyraja radiata,Benthic fish,,Special concern,0.37,11.22,25,440
+Winter skate,Leucoraja ocellata,Benthic fish,,Endangered species,6.85,15.44,12,138
+Witch flounder,Glyptocephalus cynoglossus,Benthic fish,Commercial fish,,4.31,12.76,45,486
+Acadian redfish,Sebastes fasciatus,Benthopelagic fish,Commercial fish,Threatened,3,11.92,63,366
+(ESS/WSS) Atlantic cod,Gadus morhua,Benthopelagic fish,Commercial fish,,4.15,13,20,339
+(ESS/WSS) haddock,Melanogrammus aeglefinus,Benthopelagic fish,Commercial fish,,1,13,10,220
+Deepwater redfish,Sebastes mentella,Benthopelagic fish,Commercial fish,Endangered,0.53,5.9,127,791
+(ESS/WSS) pollock,Pollachius virens,Benthopelagic fish,Commercial fish,,7.13,12.26,46,244.5
+American lobster,Homarus americanus,Benthic Invertebrates,Commercial fish,,0,22,4,50
+Northern shrimp,Pandalus borealis,Benthic Invertebrates,Commercial fish,,0,14,50,500
+Snow crab,Chionoecetes opilio,Benthic Invertebrates,Commercial fish,,-1,9.28,77.5,373
+Common shortfin squid,Illex illecebrosus,Cephalopod,Important food source,,5.51,18.07,57.6,434
+Copepod,Calanus finmarchicus,Copepod,Important food source,,0.06,13.9,7.5,1221
+Blue whale,Balaenoptera musculus,Mammal,,Endangered species,-1.3,27.88,1000,4000
+North Atlantic Right whale,Eubalaena glacialis,Mammal,,Endangered species,7.94,23.94,0,200
+Northern Bottlenose whale,Hyperoodon ampullatus,Mammal,,Endangered species,3.57,19.32,1000,2000
+Basking shark,Cetorhinus maximus,Pelagic Fish,,Special concern,8.71,21.14,0,834
+Porbeagle shark,Lamna nasus,Pelagic Fish,,Endangered species,8.03,22.18,0,1592
+Spiny dogfish,Squalus acanthias,Pelagic Fish,Commercial fish,Special concern,8.19,19.45,39,300
+White hake,Urophycis tenuis,Pelagic Fish,Commercial fish,Threatened,5.91,15.32,59,397
+White shark,Carcharodon carcharias,Pelagic Fish,,Endangered species,12.62,26.93,0,250
+Loggerhead turtle,Caretta caretta,Reptile,,Endangered species,15.31,27.9,0,250

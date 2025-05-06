@@ -144,7 +144,7 @@
 
         let mpa_id = null;
         let date_labels = [];
-        let temp_data = [];
+        let ts_data = [];
         let climate_data = [];
         const initialized = false;
 
@@ -208,7 +208,7 @@
                     charts[label].set_zoom(min_date, max_date);
                     if(mpa_id) {
                         charts[label].mpa_id = mpa_id;
-                        charts[label].update_timeseries_data(date_labels, temp_data, climate_data);
+                        charts[label].update_timeseries_data(date_labels, ts_data, climate_data);
                     }
                     set_chart_loading(false);
                 }
@@ -288,13 +288,13 @@
                 success: function(data) {
                     const qs_data = data.data;
                     date_labels = $.map(qs_data, function (value, key) { return Date.parse(value.date); });
-                    temp_data = $.map(qs_data, function (value, key) { return value.temp; });
+                    ts_data = $.map(qs_data, function (value, key) { return value.ts_data; });
                     climate_data = $.map(qs_data, function (value, key) { return value.clim; });
 
                     for (const key in charts) {
                         let chart = charts[key];
                         chart.mpa_id = mpa_id;
-                        chart.update_timeseries_data(date_labels, temp_data, climate_data);
+                        chart.update_timeseries_data(date_labels, ts_data, climate_data);
                     }
                 },
                 error: function (error_data) {

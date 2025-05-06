@@ -1,0 +1,123 @@
+{% extends 'base_map.html' %}
+{% load i18n %}
+{% load static %}
+
+
+{% block content %}
+    <div class="row mt-2">
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header">
+                    <div class="card-title">
+                        <div class="row">
+                            <div class="col-1">
+                                <img class="img-fluid" src="{% static 'icons/favicon.png' %}">
+                            </div>
+                            <div class="col">
+                                <h2>MPA Description</h2>
+                            </div>
+                            <div class="col-auto">
+                                <a id="btn_id_pdf" class="btn btn-primary" style="display: none" href="{% url 'generate_pdf' %}">Generate PDF</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-2"><b>MPA Name:</b></div>
+                        <div class="col" id="mpa_name"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-2"><b>MPA URL:</b></div>
+                        <div class="col" id="mpa_url"><a></a></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-2"><b>km^2:</b></div>
+                        <div class="col" id="mpa_km2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-auto">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="folium-map mt-2" id="map"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card mt-2 h-100">
+        <div class="card-body" id="div_id_range_card">
+            <div class="row">
+                <div class="col"></div>
+                <div class="col-auto">
+                    <button id="btn_id_add_chart" class="btn btn-primary btn-sm" onclick="add_range_chart()">Add a Chart</button>
+                    <div id="btn_id_add_chart_loading"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+    {{ mpas|json_script:"mpas_json" }}
+    <script>
+        let map = L.map('map').setView([44.666830, -61.531500], 5)
+
+        L.tileLayer(
+            "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+                "detectRetina": false,
+                "maxNativeZoom": 19,
+                "maxZoom": 19,
+                "minZoom": 0,
+                "noWrap": false,
+                "opacity": 1,
+                "subdomains": "abc",
+                "tms": false
+            }
+        ).addTo(map);
+
+        let mpas = JSON.parse(document.getElementById('mpas_json').textContent)
+
+        let multiPolygonOptions = {color: 'red', weight: 8};
+
+        let selectedLayer = null;
+        mpas.forEach(mpa => {
+            let json = JSON.parse(mpa)
+            let geo_obj = L.geoJSON(json,
+                {
+                    style: function (feature) {
+                        return {
+                            fillColor: feature.style.color,
+                            fillOpacity: '0.8',
+                        }
+                    }
+                });
+            geo_obj.on('click', function (e) {
+                if (selectedLayer) {
+                    selectedLayer.setStyle({fillColor: selectedLayer.feature.style.color});
+                }
+
+                selectedLayer = e.layer
+                selectedLayer.setStyle({fillColor: "#ffff00"});
+
+                let feature = selectedLayer.feature
+                mpa_id = feature.id;
+
+                $("#mpa_name").text(feature.properties.name);
+
+                let $mpa_url = $("#mpa_url a");
+                $mpa_url.attr("href", feature.properties.url)
+                $mpa_url.text(feature.properties.url);
+
+                $("#mpa_km2").text(feature.properties.km2);
+            });
+            geo_obj.addTo(map)
+        });
+
+    </script>
+{% endblock %}

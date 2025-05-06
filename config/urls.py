@@ -30,4 +30,6 @@ urlpatterns = [
     path(f'{settings.PROXY_URL}generate_pdf/', views.generate_pdf, name='generate_pdf'),
     path(f'{settings.PROXY_URL}get_depths/', views.get_depths, name='get_depths'),
 
+    path(f'{settings.PROXY_URL}dials/', views.dials, name='dials'),
+
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
