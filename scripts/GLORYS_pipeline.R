@@ -111,7 +111,7 @@ for(i in seq_along(sites$SiteName_E)){
                                FUN = mean,
                                na.rm = TRUE)) |>
     transmute(Date = time,
-              `Bottom Temperature (oC)` = round(mean,2))
+              `Bottom Temperature (oC)` = round(mean,3))
   fn <- paste0(sites$OBJECTID[i],"_",
                sites[i,]$SiteName_E |>
                  gsub(" ","_",x=_) |>
@@ -149,7 +149,7 @@ for(i in seq_along(sites$SiteName_E)){
                                     FUN = mean,
                                     na.rm = TRUE))
       if(any(!is.na(dfz$mean))){
-        df[[paste0("",z," m")]] <- round(dfz$mean,2)
+        df[[paste0("",z," m")]] <- round(dfz$mean,3)
       }
 
     }
