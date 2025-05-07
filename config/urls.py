@@ -37,7 +37,7 @@ def get_registered_app_urls():
     return url_list
 
 urlpatterns = [
-    path(f'{settings.PROXY_URL}/i18n/', include('django.conf.urls.i18n')),
+    path(f'i18n/', include('django.conf.urls.i18n')),
 
 ]
 
