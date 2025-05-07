@@ -37,17 +37,6 @@ def get_registered_app_urls():
     return url_list
 
 urlpatterns = [
-    path(f'i18n/', include('django.conf.urls.i18n')),
-
-]
-
-# add mission filter as the default page
-urlpatterns += i18n_patterns(path('', views.index, name='map'), prefix_default_language=True)
-
-# load all other URLs for registered apps using the i18n method for localization
-app_url_list = list(get_registered_app_urls().values())
-for app in app_url_list:
-    urlpatterns += i18n_patterns(app, prefix_default_language=True)
-
-
-urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    path(f'{settings.PROXY_URL}', views.index, name='index'),
+    path(f'{settings.PROXY_URL}', include('core.urls'))
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

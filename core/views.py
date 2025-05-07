@@ -58,7 +58,7 @@ def index(request):
             models.MPAZone.objects.all()]
     context = {
         'mpas': mpas,
-        # 'proxy_url': settings.PROXY_URL,
+        'proxy_url': settings.PROXY_URL,
     }
 
     return render(request, 'core/map.html', context)
@@ -69,7 +69,7 @@ def dials(request):
             models.MPAZone.objects.all()]
     context = {
         'mpas': mpas,
-        # 'proxy_url': settings.PROXY_URL,
+        'proxy_url': settings.PROXY_URL,
     }
 
     return render(request, 'core/dials.html', context)
@@ -378,7 +378,7 @@ def get_range_chart(request):
     chart_id = request.GET.get('chart_name')
     species = models.Species.objects.all().order_by('name')
 
-    context = {'id': chart_id, 'species': species, } # 'proxy_url': settings.PROXY_URL}
+    context = {'id': chart_id, 'species': species, 'proxy_url': settings.PROXY_URL}
     html = render(request, 'core/partials/range_chart_row.html', context)
     return HttpResponse(html)
 
@@ -386,7 +386,7 @@ def get_range_chart(request):
 def get_quantile_chart(request):
     chart_id = request.GET.get('chart_name')
 
-    context = {'id': chart_id, }  # 'proxy_url': settings.PROXY_URL}
+    context = {'id': chart_id, 'proxy_url': settings.PROXY_URL}
     html = render(request, 'core/partials/quantile_chart_row.html', context)
     return HttpResponse(html)
 
