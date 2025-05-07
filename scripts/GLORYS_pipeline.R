@@ -81,15 +81,26 @@ cmt$subset(
   minimum_latitude=bbox[2],
   maximum_latitude=bbox[4],
   start_datetime="1992-12-31T00:00:00",
-  end_datetime="2025-01-31T00:00:00",
+  end_datetime=format(Sys.time(), "%Y-%m-%dT%H:%M:%S"),
   output_directory = "data/GLORYS",
   output_filename = "bottomT.nc"
 )
 
-bottom <- stars::read_ncdf("data/GLORYS/bottomT.nc",var = "bottomT", proxy = FALSE)
+cmt$subset(
+  dataset_id="cmems_mod_glo_phy_myint_0.083deg_P1D-m",
+  variables=list("bottomT"),
+  minimum_longitude=bbox[1],
+  maximum_longitude=bbox[3],
+  minimum_latitude=bbox[2],
+  maximum_latitude=bbox[4],
+  start_datetime="1992-12-31T00:00:00",
+  end_datetime=format(Sys.time(), "%Y-%m-%dT%H:%M:%S"),
+  output_directory = "data/GLORYS",
+  output_filename = "bottomTint.nc"
+)
 
-
-
+bottom <- c(stars::read_ncdf("data/GLORYS/bottomT.nc",var = "bottomT", proxy = FALSE),
+            stars::read_ncdf("data/GLORYS/bottomTint.nc",var = "bottomT", proxy = FALSE))
 
 # get daily temp means ----------------------------------------------------
 regular_grid <- st_warp(bottom, crs = st_crs(bottom))
