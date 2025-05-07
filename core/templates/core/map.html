@@ -16,7 +16,7 @@
                                 <h2>MPA Description</h2>
                             </div>
                             <div class="col-auto">
-                                <a id="btn_id_pdf" class="btn btn-primary" style="display: none" href="{% url 'generate_pdf' %}">Generate PDF</a>
+                                <a id="btn_id_pdf" class="btn btn-primary" style="display: none" href="{% url 'core:generate_pdf' %}">Generate PDF</a>
                             </div>
                         </div>
                     </div>
@@ -90,6 +90,11 @@
                     type="button" role="tab" aria-controls="specieis_data" aria-selected="false">Species Data
             </button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="indicator_data_tab" data-bs-toggle="tab" data-bs-target="#indicator_data"
+                    type="button" role="tab" aria-controls="indicator_data" aria-selected="false">Indicator Data
+            </button>
+        </li>
     </ul>
     <div class="tab-content" id="chart_tabs">
         <div class="tab-pane fade show active" id="ocean_data">
@@ -126,6 +131,26 @@
                 </div>
             </div>
         </div>
+        <div class="tab-pane fade show active" id="indicator_data">
+            <div class="card mt-2 h-100">
+                <div class="card-body" id="div_id_indicator_card">
+                    <!--<div class="row"></div>
+                    This is an indicator dial
+                    <div class="row">
+                        <div class="col text-center">
+                            <label for="indicator_dial_temperature" class="text-center">{% trans "Temperature" %}</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col text-center">
+                            <input id="indicator_dial_temperature" type="text" class="dial"/>
+                        </div>
+                    </div>
+                    ######################### -->
+                </div>
+            </div>
+        </div>
+
     </div>
 
 {% endblock %}
@@ -138,8 +163,8 @@
 
         let range_charts = 1;
         const charts = {
-            'mpa_ts_quantile_chart': new QuantileChart('mpa_ts_quantile_chart', "{% url 'quantile_chart' %}"),
-            'mpa_ts_range_chart': new RangeChart('mpa_ts_range_chart', "{% url 'range_chart' %}"),
+            'mpa_ts_quantile_chart': new QuantileChart('mpa_ts_quantile_chart', "{% url 'core:quantile_chart' %}"),
+            'mpa_ts_range_chart': new RangeChart('mpa_ts_range_chart', "{% url 'core:range_chart' %}"),
         };
 
         let mpa_id = null;
@@ -147,6 +172,59 @@
         let ts_data = [];
         let climate_data = [];
         const initialized = false;
+
+        function add_indicator(indicator_key) {
+            console.log(indicator_key)
+
+            let min = -10;
+            let max = 10;
+            let current_val = Math.floor(Math.random() * (max - min + 1) + min);
+
+            let $indicator_id = 'indicator_dial_' + indicator_key
+            let $indicator_card_row = $("#div_id_indicator_card").children('div')[0];
+
+            let $indicator_column = $('<div></div>', {class:"col"}).appendTo($indicator_card_row)
+
+            let $indicator_label_div_row = $('<div></div>', {class:"row"});
+            let $indicator_label_div = $('<div></div>', {class:"col text-center"}).appendTo($indicator_label_div_row);
+            let $indicator_label = $('<label></label>', { for:$indicator_id, class:"text-center", text:indicator_key}).appendTo($indicator_label_div);
+
+            let $indicator_dial_div_row = $('<div></div>', {class:"row"});
+            let $indicator_dial_div = $('<div></div>', {class:"col text-center"}).appendTo($indicator_dial_div_row);
+            let $indicator_input = $('<input />', {type:'text', id:$indicator_id, class:'dial'}).appendTo($indicator_dial_div);
+
+            $indicator_column.append(
+                $indicator_label_div_row,
+                $indicator_dial_div_row
+            );
+
+            $indicator_input.knob({
+                "readOnly": true,
+            });
+            $indicator_input.trigger(
+                'configure',
+                {
+                    "min": min,
+                    "max": max,
+                    "angleOffset": -115,
+                    "angleArc": 230,
+                    "skin": "tron",
+                    "step": 0.001,
+                    "thickness": 0.25,
+                    "inputColor": "#000000",
+                },
+            )
+            $indicator_input.val(current_val).trigger('change');
+        }
+
+        function add_indicators() {
+            let $indicator_card = $("#div_id_indicator_card");
+            $indicator_card.empty();
+            $('<div></div>', {class:"row"}).appendTo($indicator_card);
+
+            let indicators = ['temperature', 'salinity', 'chlorophyll']
+            indicators.forEach(indicator => add_indicator(indicator));
+        }
 
         function pan_frame(pan) {
             const min_date = $("#zoom_min").val();
@@ -202,7 +280,7 @@
                 range_charts += 1;
 
                 const label = 'mpa_ts_range_chart_' + range_charts.toString();
-                charts[label] = new RangeChart(label, "{% url 'range_chart' %}");
+                charts[label] = new RangeChart(label, "{% url 'core:range_chart' %}");
 
                 charts[label].initialized = function() {
                     charts[label].set_zoom(min_date, max_date);
@@ -234,7 +312,7 @@
         }
 
         function get_depths() {
-            let url = "{% url 'get_depths' %}?mpa=" + mpa_id
+            let url = "{% url 'core:get_depths' %}?mpa=" + mpa_id
 
             $.ajax({
                 method: "GET",
@@ -269,11 +347,11 @@
             const max_date = $("#zoom_max").val();
             const btm_depth = $("#btm_depth").val();
 
-            $("#btn_id_pdf").attr('href', get_link('{% url 'generate_pdf' %}'))
+            $("#btn_id_pdf").attr('href', get_link('{% url 'core:generate_pdf' %}'))
 
             charts['mpa_ts_quantile_chart'].set_depth(btm_depth);
 
-            let url = "{% url 'timeseries' %}?mpa=" + mpa_id + "&depth=" + btm_depth +
+            let url = "{% url 'core:timeseries' %}?mpa=" + mpa_id + "&depth=" + btm_depth +
                 "&start_date=" + min_date + "&end_date=" + max_date
 
             $.ajax({
@@ -361,9 +439,11 @@
                 get_depths();
                 set_zoom();
                 get_timeseries();
+                // htmx.ajax('GET', '{% url 'core:get_indicators' %}?mpa_id=' + map_id, '#div_id_indicator_card')
+                add_indicators();
 
                 let $btn_pdf = $("#btn_id_pdf")
-                $btn_pdf.attr("href", get_link('{% url 'generate_pdf' %}'))
+                $btn_pdf.attr("href", get_link('{% url 'core:generate_pdf' %}'))
                 $btn_pdf.show();
 
                 $("#mpa_name").text(feature.properties.name);
@@ -376,7 +456,6 @@
             });
             geo_obj.addTo(map)
         });
-
     </script>
 
 {% endblock %}

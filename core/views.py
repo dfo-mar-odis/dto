@@ -430,3 +430,7 @@ class MapView(TemplateView):
         figure.render()
         map.save(r'scripts/data/sample.html')
         return {"map": figure}
+
+
+def indicators(request):
+    return HttpResponse()

@@ -14,22 +14,40 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+import importlib.util
+
+from django.conf.urls.i18n import i18n_patterns
 from django.conf.urls.static import static
+
 from django.conf import settings
-from django.urls import path
+from django.urls import path, include
 
 from core import views
 
+# {settings.PROXY_URL}
+
+# automatically load URLs for all registered apps
+def get_registered_app_urls():
+    url_list = {}
+    for app in settings.REGISTERED_APPS:
+        url = importlib.util.find_spec(app + ".urls")
+        if url is not None:
+            url_list[app] = path("", include(app+'.urls'))
+
+    return url_list
+
 urlpatterns = [
-    path(f'{settings.PROXY_URL}', views.index, name='map'),
-    path(f'{settings.PROXY_URL}timeseries/', views.get_timeseries, name='timeseries'),
-    path(f'{settings.PROXY_URL}quantiles/', views.get_quantiles, name='quantiles'),
-    path(f'{settings.PROXY_URL}species_range/<int:species_id>/', views.get_species_range, name='species_range'),
-    path(f'{settings.PROXY_URL}range_chart/', views.get_range_chart, name='range_chart'),
-    path(f'{settings.PROXY_URL}quantile_chart/', views.get_quantile_chart, name='quantile_chart'),
-    path(f'{settings.PROXY_URL}generate_pdf/', views.generate_pdf, name='generate_pdf'),
-    path(f'{settings.PROXY_URL}get_depths/', views.get_depths, name='get_depths'),
+    path(f'{settings.PROXY_URL}/i18n/', include('django.conf.urls.i18n')),
 
-    path(f'{settings.PROXY_URL}dials/', views.dials, name='dials'),
+]
 
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+# add mission filter as the default page
+urlpatterns += i18n_patterns(path('', views.index, name='map'), prefix_default_language=True)
+
+# load all other URLs for registered apps using the i18n method for localization
+app_url_list = list(get_registered_app_urls().values())
+for app in app_url_list:
+    urlpatterns += i18n_patterns(app, prefix_default_language=True)
+
+
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
