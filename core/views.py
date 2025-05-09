@@ -106,11 +106,11 @@ def add_plot(title, mpa_id, depth=None, start_date='2020-01-01', end_date='2023-
     indicator = models.Indicator.objects.get(pk=indicator)
     df = get_timeseries_dataframe(mpa_zone, depth, indicator=indicator)
 
-    # clim = df.groupby([df.index.month, df.index.day]).mean()
+    clim = df[(df.index<='2022-12-31')]
+    clim = clim.groupby([clim.index.month, clim.index.day]).quantile()['value']
     grouped = df.groupby([df.index.month, df.index.day])
     upper = grouped.quantile(q=q_upper)['value']
     lower = grouped.quantile(q=q_lower)['value']
-    clim = grouped.quantile()['value']
 
     df['upper'] = df.index.map(lambda x: upper[(x.month, x.day)])
     df['lower'] = df.index.map(lambda x: lower[(x.month, x.day)])
@@ -284,7 +284,6 @@ def get_quantiles(request):
     if df is None:
         return None
 
-    # clim = df.groupby([df.index.month, df.index.day]).mean()
     upper = df.groupby([df.index.month, df.index.day]).quantile(q=q_upper)
     lower = df.groupby([df.index.month, df.index.day]).quantile(q=q_lower)
 
@@ -333,13 +332,18 @@ def get_timeseries_data(mpa_id, depth=None, start_date=None, end_date=None, indi
     if df is None:
         return None
 
-    # clim = df.groupby([df.index.month, df.index.day]).mean()
-    quant = df.groupby([df.index.month, df.index.day]).quantile()
+    clim = df[(df.index<='2022-12-31')]
+    clim = clim.groupby([clim.index.month, clim.index.day]).quantile()
 
+    max_val = df[(df.value==df.max().value)]
+    min_val = df[(df.value==df.min().value)]
+
+    timeseries['max_delta'] = df.max().value - clim.loc[(max_val.index.month[0], max_val.index.day[0])].value
+    timeseries['min_delta'] = df.min().value - clim.loc[(min_val.index.month[0], min_val.index.day[0])].value
     df = df[(df.index >= start_date) & (df.index < end_date)]
     timeseries['data'] = [{"date": f'{date.strftime("%Y-%m-%d")} 00:01',
                            "ts_data": str(mt['value'].item()),
-                           "clim": f'{quant["value"][date.month, date.day]}'} for date, mt in df.iterrows()]
+                           "clim": f'{clim["value"][date.month, date.day]}'} for date, mt in df.iterrows()]
 
     return timeseries
 

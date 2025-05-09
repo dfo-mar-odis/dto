@@ -1,7 +1,7 @@
 {% extends 'core/partials/range_chart_row.html' %}
 {% load i18n %}
 
-{% block dial_title %}{% trans "Difference Dial" %}{% endblock %}
+{% block dial_title %}<i class="bi bi-question-circle me-2" title="{% trans "The difference dial shows the difference between the timeseries and the climatology at a selected point" %}"></i>{% trans "Difference Dial" %}{% endblock %}
 {% block dial_upper_limit_label %}{% trans "Upper Quantile" %}{% endblock %}
 {% block dial_lower_limit_label %}{% trans "Lower Quantile" %}{% endblock %}
 {% block refresh_button %}

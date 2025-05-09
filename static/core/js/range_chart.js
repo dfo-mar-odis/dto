@@ -61,9 +61,9 @@ class RangeChart {
     q_upper = 5.0;
     q_lower = 3.0;
 
-    dial_min = -3;
-    dial_max = 3;
-    dial_cur = 0;
+    dial_min = -3.00;
+    dial_max = 3.00;
+    dial_cur = 0.00;
     dial_value = 0;
     dial_upper = 0;
     dial_lower = 0;
@@ -106,7 +106,7 @@ class RangeChart {
                     x: {
                         type: 'timeseries',
                         min: new Date('1993-01-01 00:00').valueOf(),
-                        max: new Date('2024-12-31 11:59').valueOf(),
+                        max: new Date('9999-12-31 11:59').valueOf(),
                         title: {
                             display: true,
                             text: "Date"
@@ -150,7 +150,7 @@ class RangeChart {
                         limits: {
                             x: {
                                 min: new Date('1993-01-01 00:00').valueOf(),
-                                max: new Date('2024-12-31 11:59').valueOf(),
+                                max: new Date('9999-12-31 11:59').valueOf(),
                             },
                         },
                     },
@@ -349,8 +349,8 @@ class RangeChart {
         this.dial.trigger(
             'configure',
             {
-                "min": this.dial_min,
-                "max": this.dial_max,
+                "min": Math.round(this.dial_min*100)/100,
+                "max": Math.round(this.dial_max*100)/100,
                 "angleOffset": -115,
                 "angleArc": 230,
                 "skin": "tron",
@@ -364,13 +364,16 @@ class RangeChart {
     }
 
     get_dial_color() {
-        let positive = (this.dial_value > this.dial_upper);
-        let negative = (this.dial_value < this.dial_lower );
-        let r = 255 * (negative ? 0.25 : (positive ? 1.0 : 0.25));
-        let g = 255 * (negative ? 0.25 : (positive ? 0.25 : 1.0));
-        let b = 255 * (negative ? 1.0 : 0.25);
+        let color = "rgb(55, 255, 55)"
+        let value = Number(this.dial_value)
+        let upper_tolerance = Number(this.dial_upper)
+        let lower_tolerance = Number(this.dial_lower)
+        if(value < lower_tolerance) {
+            color = "rgb(55, 55, 255)"
+        } else if(value > upper_tolerance) {
+            color = "rgb(255, 55, 55)"
+        }
 
-        let color = "rgb(" + r + ", " + g + ", " + b + ")"
         this.dial.trigger('configure', {"fgColor": color});
     }
 

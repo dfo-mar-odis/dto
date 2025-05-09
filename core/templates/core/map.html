@@ -100,42 +100,36 @@
     </ul>
     <div class="tab-content" id="chart_tabs">
         <div class="tab-pane fade show active" id="ocean_data">
-            <div class="card mt-2 h-100">
-                <div class="card-body" id="div_id_quantile_card">
+            <div id="div_id_quantile_card">
 {#                    {% include 'core/partials/quantile_chart_row.html' with id="mpa_ts_quantile_chart"%}#}
-                </div>
             </div>
         </div>
         <div class="tab-pane fade" id="species_data">
-            <div class="card mt-2 h-100">
-                <div class="card-body" id="div_id_range_card">
-                    <div class="row">
-                        <div class="col"></div>
-                        <div class="col-auto">
-                            <button id="btn_id_add_chart" class="btn btn-primary btn-sm" onclick="add_range_chart()">Add a Chart</button>
-                            <div id="btn_id_add_chart_loading"></div>
-                        </div>
+            <div id="div_id_range_card">
+                <div class="row">
+                    <div class="col">
+                        <button id="btn_id_add_chart" class="btn btn-primary btn-sm" onclick="add_range_chart()">Add a Chart</button>
+                        <div id="btn_id_add_chart_loading"></div>
                     </div>
+                </div>
 {#                    {% include 'core/partials/range_chart_row.html' with id="mpa_ts_range_chart"%}#}
 {#                    {% include 'core/partials/range_chart_row.html' with id="mpa_ts_range_chart_1"%}#}
 
-                </div>
+            </div>
 
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">
-                            Citations
-                        </div>
+            <div class="card mt-2">
+                <div class="card-header">
+                    <div class="card-title">
+                        Citations
                     </div>
-                    <div class="card-body">
-            Shaylyn A. Lewis, Christine H. Stortini, Daniel G. Boyce, and Ryan R.E. Stanley. 2023. Climate change, species thermal emergence, and conservation design: a case study in the Canadian Northwest Atlantic. FACETS. 8: 1-16. <a href="https://doi.org/10.1139/facets-2022-0191">https://doi.org/10.1139/facets-2022-0191</a>
-                    </div>
+                </div>
+                <div class="card-body">
+        Shaylyn A. Lewis, Christine H. Stortini, Daniel G. Boyce, and Ryan R.E. Stanley. 2023. Climate change, species thermal emergence, and conservation design: a case study in the Canadian Northwest Atlantic. FACETS. 8: 1-16. <a href="https://doi.org/10.1139/facets-2022-0191">https://doi.org/10.1139/facets-2022-0191</a>
                 </div>
             </div>
         </div>
         <div class="tab-pane fade" id="indicator_data">
-            <div class="card mt-2 h-100">
-                <div class="card-body" id="div_id_indicator_card">
+            <div class="mt-2" id="div_id_indicator_card">
                     <!--<div class="row"></div>
                     This is an indicator dial
                     <div class="row">
@@ -149,7 +143,6 @@
                         </div>
                     </div>
                     ######################### -->
-                </div>
             </div>
         </div>
 
@@ -373,6 +366,8 @@
                     for (const key in charts) {
                         let chart = charts[key];
                         chart.mpa_id = mpa_id;
+                        chart.dial_max = data.max_delta;
+                        chart.dial_min = data.min_delta;
                         chart.update_timeseries_data(date_labels, ts_data, climate_data);
                     }
                 },
@@ -434,7 +429,7 @@
                 clear_timeseries();
                 get_depths();
                 set_zoom();
-                get_timeseries();
+                //get_timeseries(); // Timeseries is updated in the set_zoom() function
                 add_indicators();
 
                 let $btn_pdf = $("#btn_id_pdf")
@@ -450,7 +445,7 @@
                 $("#mpa_km2").text(feature.properties.km2);
             });
 
-            geo.bindTooltip(mpa.properties.name)
+            geo.bindTooltip('<b>' + mpa.properties.name + '</b>');
             geo.on('mouseover', function(e){
                 this.openPopup();
             });
