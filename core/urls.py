@@ -1,6 +1,7 @@
 from django.urls import path
 
-from . import views
+from . import views, models
+from djgeojson.views import GeoJSONLayerView
 
 app_name = 'core'
 
@@ -15,7 +16,6 @@ urlpatterns = [
     path('generate_pdf/', views.generate_pdf, name='generate_pdf'),
     path('get_depths/', views.get_depths, name='get_depths'),
 
-    path('dials/', views.dials, name='dials'),
-
+    path('mpa_polygons/', views.get_polygons, name='get_polygons'),
     path('indicators/', views.indicators, name='get_indicators'),
 ]

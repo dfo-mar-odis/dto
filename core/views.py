@@ -1,6 +1,8 @@
 import io
 import os
 import json
+
+import numpy as np
 import pandas as pd
 import folium
 import branca.colormap as cm
@@ -9,6 +11,7 @@ import logging
 import matplotlib.pyplot as plt
 
 from PIL import Image
+from djgeojson.views import GeoJSONLayerView
 
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
@@ -32,6 +35,10 @@ colormap = cm.linear.Paired_07.scale(-2, 35)
 def add_attributes(mpa):
 
     value = 20
+    simplified_poly = mpa.geom
+    if simplified_poly.num_coords > 10000:
+        simplified_poly = mpa.geom.simplify(1, preserve_topology=True)
+
     geo_json = {
         "type": "Feature",
         "style": {
@@ -45,34 +52,25 @@ def add_attributes(mpa):
             'ts_value': value,
         },
         "geometry": {
-            "type": "MultiPolygon",
-            "coordinates": mpa.geom.coords,
+            "type":  simplified_poly.geom_type,
+            "coordinates": simplified_poly.coords,
         }
     }
 
-    return json.dumps(geo_json)
+    return geo_json
+
 
 
 def index(request):
-    mpas = [add_attributes(mpa) for mpa in
-            models.MPAZone.objects.all()]
+    # ids = models.Timeseries.objects.values_list('mpa', flat=True).distinct()
+    # mpas = [json.dumps(add_attributes(mpa)) for mpa in
+    #         models.MPAZone.objects.filter(name__in=ids)]
     context = {
-        'mpas': mpas,
+        # 'mpas': mpas,
         'proxy_url': settings.PROXY_URL,
     }
 
     return render(request, 'core/map.html', context)
-
-
-def dials(request):
-    mpas = [add_attributes(mpa) for mpa in
-            models.MPAZone.objects.all()]
-    context = {
-        'mpas': mpas,
-        'proxy_url': settings.PROXY_URL,
-    }
-
-    return render(request, 'core/dials.html', context)
 
 
 def get_mpa_zone_info(mpa_id):
@@ -434,3 +432,17 @@ class MapView(TemplateView):
 
 def indicators(request):
     return HttpResponse()
+
+def get_polygons(request):
+    page_size = 5
+
+    if request.GET.get('page', None):
+        page_start = (int(request.GET.get('page')) - 1) * page_size
+        page_end = page_start + page_size
+        ids = models.Timeseries.objects.values_list('mpa', flat=True).distinct()[page_start:page_end]
+    else:
+        ids = models.Timeseries.objects.values_list('mpa', flat=True).distinct()
+
+    json_data = [add_attributes(mpa) for mpa in models.MPAZone.objects.filter(name__in=ids)]
+
+    return JsonResponse(json_data, safe=False)

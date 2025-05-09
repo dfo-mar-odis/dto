@@ -95,9 +95,4 @@ def load_mpas():
     # this is how we'll actually load data when we have real data to load
     # for now, every MPA is getting loaded with the St. Anne's bank data
     data = build_mpa_dictionary()
-    data[35] = {
-        "BOTTOM_TS": 'scripts/data/GLORYS_StAnnsBank_daily_aveBottomT.csv',
-        "DEPTH_TS": 'scripts/data/SAB_GLORYS_daily_depth_temp.csv'
-    }
-
     load_mpas_from_dict(data)

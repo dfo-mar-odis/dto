@@ -16,14 +16,6 @@
     {% bootstrap_css %}
     {% bootstrap_javascript %}
 
-    <style>#map {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        right: 0;
-        left: 0;
-    }</style>
-
     <script src="https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
@@ -60,6 +52,15 @@
 
         .leaflet-container {
             font-size: 1rem;
+        }
+
+        .loader-lg {
+            border: 160px solid #f3f3f3; /* Light grey */
+            border-top: 160px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 400px;
+            height: 400px;
+            animation: spin 2s linear infinite;
         }
 
         .loader {

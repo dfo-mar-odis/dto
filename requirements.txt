@@ -15,6 +15,7 @@ django-environ==0.11.2
 
 # mapping library
 folium==0.16.0
+django-geojson==4.2.0
 
 # used for database connections
 # psycopg2==2.9.9
