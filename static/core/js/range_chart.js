@@ -158,10 +158,10 @@ class RangeChart {
             }
         })
 
-        let ocean_obj = this;
-        this.ctx.onclick = function(e) {
-            ocean_obj.clickHandler(e)
-        }
+        // let ocean_obj = this;
+        // this.ctx.onclick = function(e) {
+        //     ocean_obj.clickHandler(e)
+        // }
 
         this.dial = $("#" + ctx_element + "_riskdial");
         this.dial.knob({
@@ -322,18 +322,44 @@ class RangeChart {
         this.update_chart();
     }
 
-    clickHandler(e) {
-        const canvasPosition = Chart.helpers.getRelativePosition(e, this.timeseries_chart);
-        const points = this.timeseries_chart.getElementsAtEventForMode(e, 'nearest', { intersect: false }, true);
+    // clickHandler(e) {
+    //     const canvasPosition = Chart.helpers.getRelativePosition(e, this.timeseries_chart);
+    //     const points = this.timeseries_chart.getElementsAtEventForMode(e, 'nearest', { intersect: false }, true);
+    //
+    //     this.date_indicator.value = this.timeseries_chart.scales.x.getValueForPixel(canvasPosition.x);
+    //     this.timeseries_chart.update();
+    //
+    //     this.dial_target = 0;
+    //     if(points.length) {
+    //         this.set_selected_point(points[0]);
+    //     }
+    // }
 
-        this.date_indicator.value = this.timeseries_chart.scales.x.getValueForPixel(canvasPosition.x);
+    set_selected_date(targetDate) {
+        let labels = this.timeseries_chart.data.labels;
+        let min_index = 0;
+        let max_index = labels.length
+        let current_index = max_index/2;
+        let found = false;
+        while(!found) {
+            let cur_date = new Date(labels[current_index]);
+            if(current_index === max_index || current_index === min_index) {
+                found = true;
+                break;
+            } else if (cur_date < targetDate) {
+                min_index = current_index;
+            } else {
+                max_index = current_index;
+            }
+
+            current_index = Math.floor((min_index + max_index) / 2);
+            console.log("current date: " + current_index)
+        }
+
+        this.date_indicator.value = labels[current_index];
         this.timeseries_chart.update();
 
-        this.dial_target = 0;
-        if(points.length) {
-            this.set_selected_point(points[0]);
-        }
-        this.animate_dial();
+        this.set_selected_point({value: labels[current_index], index: current_index});
     }
 
     set_selected_point(point) {
@@ -343,6 +369,8 @@ class RangeChart {
         this.dial_value = timeseries
         this.dial_upper = this.ds_upper_threshold.data[point.index]
         this.dial_lower = this.ds_lower_threshold.data[point.index]
+
+        this.animate_dial();
     }
 
     configure_dial() {

@@ -46,7 +46,7 @@
                                 <div class="row">
                                     <div class="col align-content-center">
                                         <label for="btm_depth">{% trans "Bottom Depth" %}</label>
-                                        <select class="form-select" id="btm_depth" onchange="update_depth()">
+                                        <select class="form-select" id="btm_depth" onchange="get_timeseries()">
                                             <option value="">{% trans "Total Average Bottom Timeseries" %}</option>
                                         </select>
                                     </div>
@@ -58,11 +58,15 @@
                                     </div>
                                     <div class="col">
                                         <label for="zoom_min" class="form-label">{% trans 'Start Date' %}</label>
-                                        <input id="zoom_min" type="date" class="form-control" value="2019-01-01" onchange="set_zoom()"/>
+                                        <input id="zoom_min" type="date" class="form-control" value="2019-01-01" />
+                                    </div>
+                                    <div class="col">
+                                        <label for="selected_date" class="form-label">{% trans 'Selected Date' %}</label>
+                                        <input id="selected_date" type="date" class="form-control" value="" />
                                     </div>
                                     <div class="col">
                                         <label for="zoom_max" class="form-label">{% trans 'End Date' %}</label>
-                                        <input id="zoom_max" type="date" class="form-control" value="2024-01-01" onchange="set_zoom()"/>
+                                        <input id="zoom_max" type="date" class="form-control" value="2024-01-01" />
                                     </div>
                                     <div class="col-auto align-content-center mt-4">
                                         <button type="button" class="btn btn-secondary" title="+5 years" onclick="pan_frame(5)">{% trans '>' %}</button>
@@ -84,37 +88,40 @@
     <ul class="nav nav-tabs mt-2" id="chart_types" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="ocean_data_tab" data-bs-toggle="tab" data-bs-target="#ocean_data"
-                    type="button" role="tab" aria-controls="ocean_data" aria-selected="true">Ocean Data
+                    type="button" role="tab" aria-controls="ocean_data" aria-selected="true">{%  trans "Ocean Data" %}
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="species_data_tab" data-bs-toggle="tab" data-bs-target="#species_data"
-                    type="button" role="tab" aria-controls="specieis_data" aria-selected="false">Species Data
+                    type="button" role="tab" aria-controls="specieis_data" aria-selected="false">{%  trans "Species Data" %}
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="indicator_data_tab" data-bs-toggle="tab" data-bs-target="#indicator_data"
-                    type="button" role="tab" aria-controls="indicator_data" aria-selected="false">Indicator Data
+                    type="button" role="tab" aria-controls="indicator_data" aria-selected="false">{%  trans "Indicator Data" %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="network_data_tab" data-bs-toggle="tab" data-bs-target="#network_data"
+                    type="button" role="tab" aria-controls="network_data" aria-selected="false">{%  trans "Network Comparison" %}
             </button>
         </li>
     </ul>
     <div class="tab-content" id="chart_tabs">
         <div class="tab-pane fade show active" id="ocean_data">
             <div id="div_id_quantile_card">
-{#                    {% include 'core/partials/quantile_chart_row.html' with id="mpa_ts_quantile_chart"%}#}
+                {# Ocean data is populated by javascript functions #}
             </div>
         </div>
+
         <div class="tab-pane fade" id="species_data">
             <div id="div_id_range_card">
                 <div class="row">
                     <div class="col">
-                        <button id="btn_id_add_chart" class="btn btn-primary btn-sm" onclick="add_range_chart()">Add a Chart</button>
+                        <button id="btn_id_add_chart" class="btn btn-primary btn-sm" onclick="add_range_chart()" title="{% trans "Add a Chart" %}">{% trans "Add a Chart" %}</button>
                         <div id="btn_id_add_chart_loading"></div>
                     </div>
                 </div>
-{#                    {% include 'core/partials/range_chart_row.html' with id="mpa_ts_range_chart"%}#}
-{#                    {% include 'core/partials/range_chart_row.html' with id="mpa_ts_range_chart_1"%}#}
-
             </div>
 
             <div class="card mt-2">
@@ -128,21 +135,23 @@
                 </div>
             </div>
         </div>
+
         <div class="tab-pane fade" id="indicator_data">
             <div class="mt-2" id="div_id_indicator_card">
-                    <!--<div class="row"></div>
-                    This is an indicator dial
-                    <div class="row">
-                        <div class="col text-center">
-                            <label for="indicator_dial_temperature" class="text-center">{% trans "Temperature" %}</label>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col text-center">
-                            <input id="indicator_dial_temperature" type="text" class="dial"/>
-                        </div>
-                    </div>
-                    ######################### -->
+                {# Indicator tab is populated using javascript functions #}
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="network_data">
+{#            <div id="div_id_network_button_row">#}
+{#                <div class="row">#}
+{#                    <div class="col">#}
+{#                        <button id="btn_id_add_network" class="btn btn-primary btn-sm" onclick="" title={% trans "Add MPA" %}>{% trans "Add MPA" %}</button>#}
+{#                        <div id="btn_id_add_network_loading"></div>#}
+{#                    </div>#}
+{#                </div>#}
+{#            </div>#}
+            <div class="mt-2" id="div_id_network_card">
             </div>
         </div>
 
@@ -153,71 +162,68 @@
 {% block scripts %}
     <script src="{% static 'core/js/range_chart.js' %}"></script>
     <script src="{% static 'core/js/quantile_chart.js' %}"></script>
+    <script src="{% static 'core/js/indicator_dial.js' %}"></script>
     <script>
 
-        let range_charts = 1;
+        const initialized = false;
         const charts = {
             'mpa_ts_quantile_chart': new QuantileChart('mpa_ts_quantile_chart', "{% url 'core:quantile_chart' %}"),
-            'mpa_ts_range_chart': new RangeChart('mpa_ts_range_chart', "{% url 'core:range_chart' %}"),
+            {#'mpa_ts_range_chart': new RangeChart('mpa_ts_range_chart', "{% url 'core:range_chart' %}"),#}
         };
 
+        let range_charts = 1;
         let mpa_id = null;
         let date_labels = [];
         let ts_data = [];
         let climate_data = [];
-        const initialized = false;
+        let selectedLayer = null;
+        let previous_layers = [];
 
-        function add_indicator(indicator_key) {
-            console.log(indicator_key)
-
-            let min = -10;
-            let max = 10;
-            let current_val = Math.floor(Math.random() * (max - min + 1) + min);
-
-            let $indicator_id = 'indicator_dial_' + indicator_key
-            let $indicator_card_row = $("#div_id_indicator_card").children('div')[0];
-
-            let $indicator_column = $('<div></div>', {class:"col"}).appendTo($indicator_card_row)
-
-            let $indicator_label_div_row = $('<div></div>', {class:"row"});
-            let $indicator_label_div = $('<div></div>', {class:"col text-center"}).appendTo($indicator_label_div_row);
-            let $indicator_label = $('<label></label>', { for:$indicator_id, class:"text-center", text:indicator_key}).appendTo($indicator_label_div);
-
-            let $indicator_dial_div_row = $('<div></div>', {class:"row"});
-            let $indicator_dial_div = $('<div></div>', {class:"col text-center"}).appendTo($indicator_dial_div_row);
-            let $indicator_input = $('<input />', {type:'text', id:$indicator_id, class:'dial'}).appendTo($indicator_dial_div);
-
-            $indicator_column.append(
-                $indicator_label_div_row,
-                $indicator_dial_div_row
-            );
-
-            $indicator_input.knob({
-                "readOnly": true,
-            });
-            $indicator_input.trigger(
-                'configure',
-                {
-                    "min": min,
-                    "max": max,
-                    "angleOffset": -115,
-                    "angleArc": 230,
-                    "skin": "tron",
-                    "step": 0.001,
-                    "thickness": 0.25,
-                    "inputColor": "#000000",
-                },
-            )
-            $indicator_input.val(current_val).trigger('change');
-        }
 
         function add_indicators() {
             let $indicator_card = $("#div_id_indicator_card");
             $indicator_card.empty();
-            $('<div></div>', {class:"row"}).appendTo($indicator_card);
+            let $indicator_card_row = $('<div></div>', {class:"row"}).appendTo($indicator_card);
 
-            let indicators = ['temperature', 'salinity', 'chlorophyll']
-            indicators.forEach(indicator => add_indicator(indicator));
+            // This will eventually be done through an AJAX query that will return the indicator and its
+            // min/max/current values. The current value will be dependent on the user clicking on a time
+            // series chart or selecting a "Current Date" on the conditions card
+            let min = -10;
+            let max = 10;
+            let indicators = [
+                ['Temperature', 'temperature', min, max, Math.floor(Math.random() * (max - min + 1) + min)],
+                ['Salinity', 'salinity', min, max, Math.floor(Math.random() * (max - min + 1) + min)],
+                ['CHL', 'chlorophyll', min, max, Math.floor(Math.random() * (max - min + 1) + min)]
+            ];
+
+            indicators.forEach(indicator => {
+                let column = add_indicator(indicator[0], indicator[1], indicator[2], indicator[3], indicator[4]);
+                column.appendTo($indicator_card_row)
+            });
+        }
+
+        function update_network_indicators() {
+            let $indicator_card = $("#div_id_network_card");
+            $indicator_card.empty();
+            let $indicator_card_row = $('<div></div>', {class:"row"}).appendTo($indicator_card);
+            if(selectedLayer) {
+                let min = -10;
+                let max = 10;
+                let current = Math.floor(Math.random() * (max - min + 1) + min)
+
+                let column = add_indicator(selectedLayer.feature.properties.name, selectedLayer.feature.id, min, max, current);
+                column.appendTo($indicator_card_row)
+            }
+
+            previous_layers.forEach(layer => {
+                let min = -10;
+                let max = 10;
+                let current = Math.floor(Math.random() * (max - min + 1) + min)
+
+                let column = add_indicator(layer.feature.properties.name, layer.feature.id, min, max, current);
+                column.appendTo($indicator_card_row)
+            });
+
         }
 
         function pan_frame(pan) {
@@ -262,7 +268,25 @@
             }
 
             if(mpa_id) {
-                get_timeseries(mpa_id);
+                get_timeseries();
+            }
+        }
+
+        function set_selected_date() {
+            let selected_date = null;
+            try {
+                selected_date = new Date($("#selected_date").val());
+                selected_date.setDate(selected_date.getDate() + 1);
+                console.info(selected_date);
+            } catch(err) {
+                console.error("Could not parse date")
+            }
+
+            if(!isNaN(selected_date)) {
+                for (const key in charts) {
+                    charts[key].set_selected_date(selected_date);
+                    charts[key].timeseries_chart.update();
+                }
             }
         }
 
@@ -275,13 +299,29 @@
 
                 const label = 'mpa_ts_range_chart_' + range_charts.toString();
                 charts[label] = new RangeChart(label, "{% url 'core:range_chart' %}");
-
                 charts[label].initialized = function() {
+                    let chart_obj = this;
+                    let selected_date = null;
+
+                    this.ctx.onclick = function(e) { handle_set_date(e, chart_obj)};
+
                     charts[label].set_zoom(min_date, max_date);
                     if(mpa_id) {
                         charts[label].mpa_id = mpa_id;
                         charts[label].update_timeseries_data(date_labels, ts_data, climate_data);
                     }
+
+                    try {
+                        selected_date = new Date($("#selected_date").val());
+                        selected_date.setDate(selected_date.getDate() + 1);
+                        console.info(selected_date);
+                    } catch(err) {
+                        console.error("Could not parse date")
+                    }
+                    if(!isNaN(selected_date)) {
+                        charts[label].set_selected_date(selected_date);
+                    }
+
                     set_chart_loading(false);
                 }
             });
@@ -340,6 +380,19 @@
             const min_date = $("#zoom_min").val();
             const max_date = $("#zoom_max").val();
             const btm_depth = $("#btm_depth").val();
+            {#const selected_date = $("#selected_date").val();#}
+
+            {#  JavaScript does weird things with dates. If it comes in the format YYYY-MM-DD it subtracts one day #}
+            {#  if it comes in the format YYYY/MM/DD it'll give the correct date. For me, during local development #}
+            {#  I get the date in the YYYY-MM-DD format #}
+            let selected_date = null;
+            try {
+                selected_date = new Date($("#selected_date").val());
+                selected_date.setDate(selected_date.getDate() + 1);
+                console.info(selected_date);
+            } catch(err) {
+                console.error("Could not parse date")
+            }
 
             $("#btn_id_pdf").attr('href', get_link('{% url 'core:generate_pdf' %}'))
 
@@ -369,6 +422,9 @@
                         chart.dial_max = data.max_delta;
                         chart.dial_min = data.min_delta;
                         chart.update_timeseries_data(date_labels, ts_data, climate_data);
+                        if(!isNaN(selected_date)) {
+                            chart.set_selected_date(selected_date);
+                        }
                     }
                 },
                 error: function (error_data) {
@@ -383,97 +439,149 @@
             });
         }
 
-        function update_depth() {
-            get_timeseries(mpa_id)
+        function handle_set_date(e, chart) {
+            const canvasPosition = Chart.helpers.getRelativePosition(e, chart.timeseries_chart);
+
+            let selected_date = new Date(chart.timeseries_chart.scales.x.getValueForPixel(canvasPosition.x))
+
+            let day = ("0" + selected_date.getDate()).slice(-2);
+            let month = ("0" + (selected_date.getMonth() + 1)).slice(-2);
+            let selected = selected_date.getFullYear()+"-"+(month)+"-"+(day) ;
+
+            $('#selected_date').val(selected);
+            set_selected_date();
+            console.log(e);
         }
 
-        let map = L.map('map').setView([44.666830, -61.531500], 5)
-        let selectedLayer = null;
+        $(document).ready( function() {
+            let updateDateTimer;
+            let map = L.map('map').setView([44.666830, -61.531500], 5)
 
-        L.tileLayer(
-            "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-            {
-                "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
-                "detectRetina": false,
-                "maxNativeZoom": 19,
-                "maxZoom": 19,
-                "minZoom": 0,
-                "noWrap": false,
-                "opacity": 1,
-                "subdomains": "abc",
-                "tms": false
-            }
-        ).addTo(map);
-
-        function parse_polygon_data(mpa) {
-            let geo = L.geoJson(mpa, {
-                style: function (feature) {
-                    return {
-                        fillColor: feature.style.color,
-                        fillOpacity: '0.8',
+            function parse_polygon_data(mpa) {
+                let geo = L.geoJson(mpa, {
+                    style: function (feature) {
+                        return {
+                            fillColor: feature.style.color,
+                            fillOpacity: '0.8',
+                        }
                     }
-                }
-            });
+                });
 
-            geo.on('click', function (e) {
-                if (selectedLayer) {
-                    selectedLayer.setStyle({fillColor: selectedLayer.feature.style.color});
-                }
+                geo.on('click', function (e) {
 
-                selectedLayer = e.layer
-                selectedLayer.setStyle({fillColor: "#ffff00"});
+                    if(e.originalEvent.ctrlKey && selectedLayer) {
+                        if(!previous_layers.includes(selectedLayer)) {
+                            previous_layers.push(selectedLayer);
+                        }
+                        previous_layers.forEach(layer => {
+                            layer.setStyle({fillColor: "#00ffff"});
+                        });
+                    } else if(selectedLayer) {
+                        previous_layers.forEach(layer => {
+                            layer.setStyle({fillColor: layer.feature.style.color});
+                        });
+                        previous_layers = []
 
-                let feature = selectedLayer.feature
-                mpa_id = feature.id;
+                        selectedLayer.setStyle({fillColor: selectedLayer.feature.style.color});
+                    }
 
-                clear_timeseries();
-                get_depths();
-                set_zoom();
-                //get_timeseries(); // Timeseries is updated in the set_zoom() function
-                add_indicators();
+                    selectedLayer = e.layer
+                    selectedLayer.setStyle({fillColor: "#ffff00"});
+                    let feature = selectedLayer.feature
+                    mpa_id = feature.id;
 
-                let $btn_pdf = $("#btn_id_pdf")
-                $btn_pdf.attr("href", get_link('{% url 'core:generate_pdf' %}'))
-                $btn_pdf.show();
+                    update_network_indicators()
+                    clear_timeseries();
+                    get_depths();
+                    set_zoom();
+                    //get_timeseries(); // Timeseries is updated in the set_zoom() function
+                    add_indicators();
 
-                $("#mpa_name").text(feature.properties.name);
+                    let $btn_pdf = $("#btn_id_pdf")
+                    $btn_pdf.attr("href", get_link('{% url 'core:generate_pdf' %}'))
+                    $btn_pdf.show();
 
-                let $mpa_url = $("#mpa_url a");
-                $mpa_url.attr("href", feature.properties.url)
-                $mpa_url.text(feature.properties.url);
+                    $("#mpa_name").text(feature.properties.name);
 
-                $("#mpa_km2").text(feature.properties.km2);
-            });
+                    let $mpa_url = $("#mpa_url a");
+                    $mpa_url.attr("href", feature.properties.url)
+                    $mpa_url.text(feature.properties.url);
 
-            geo.bindTooltip('<b>' + mpa.properties.name + '</b>');
-            geo.on('mouseover', function(e){
-                this.openPopup();
-            });
-            geo.on('mouseout', function(e){
-                this.openPopup();
-            });
+                    $("#mpa_km2").text(feature.properties.km2);
+                });
 
-            geo.addTo(map);
-        }
+                geo.bindTooltip('<b>' + mpa.properties.name + '</b>');
+                geo.on('mouseover', function(e){
+                    this.openPopup();
+                });
+                geo.on('mouseout', function(e){
+                    this.openPopup();
+                });
 
-        $.ajax({
-            method: "GET",
-            url: '{%  url 'core:get_polygons' %}',
-            beforeSend: function () {
-                $("#map").hide();
-                $("#map_loading").addClass("loader-lg");
-            },
-            success: function(data) {
-                data.forEach(mpa => parse_polygon_data(mpa));
-            },
-            error: function (error_data) {
-                console.log("error");
-                console.log(error_data);
-            },
-            complete: function () {
-                $("#map_loading").removeClass("loader-lg");
-                $("#map").show();
+                geo.addTo(map);
             }
+
+            L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+                    "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+                    "detectRetina": false,
+                    "maxNativeZoom": 19,
+                    "maxZoom": 19,
+                    "minZoom": 0,
+                    "noWrap": false,
+                    "opacity": 1,
+                    "subdomains": "abc",
+                    "tms": false
+                }
+            ).addTo(map);
+
+            $.ajax({
+                method: "GET",
+                url: '{%  url 'core:get_polygons' %}',
+                beforeSend: function () {
+                    $("#map").hide();
+                    $("#map_loading").addClass("loader-lg");
+                },
+                success: function(data) {
+                    data.forEach(mpa => parse_polygon_data(mpa));
+                },
+                error: function (error_data) {
+                    console.log("error");
+                    console.log(error_data);
+                },
+                complete: function () {
+                    $("#map_loading").removeClass("loader-lg");
+                    $("#map").show();
+                }
+            });
+
+            $("#zoom_min").on('change', function() {
+                clearTimeout(updateDateTimer);
+
+                updateDateTimer = setTimeout(function() {
+                    set_zoom();
+                }, 500)
+            });
+            $("#zoom_max").on('change', function() {
+                clearTimeout(updateDateTimer);
+
+                updateDateTimer = setTimeout(function() {
+                    set_zoom();
+                }, 500)
+            });
+            $("#selected_date").on('change', function() {
+                clearTimeout(updateDateTimer);
+
+                updateDateTimer = setTimeout(function() {
+                    set_selected_date();
+                }, 500)
+            });
+
+            charts['mpa_ts_quantile_chart'].initialized = function() {
+                let chart_obj = this;
+                this.ctx.onclick = function(e) { handle_set_date(e, chart_obj)};
+            };
         });
     </script>
 
