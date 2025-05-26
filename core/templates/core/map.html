@@ -207,15 +207,6 @@
             $indicator_card.empty();
             let $indicator_card_row = $('<div></div>', {class:"row"}).appendTo($indicator_card);
 
-            if(selectedLayer) {
-                let min = -10;
-                let max = 10;
-                let current = Math.floor(Math.random() * (max - min + 1) + min)
-
-                let column = add_indicator(selectedLayer.feature.properties.name, selectedLayer.feature.id, min, max, current);
-                column.appendTo($indicator_card_row)
-            }
-
             previous_layers.forEach(layer => {
                 let min = -10;
                 let max = 10;
