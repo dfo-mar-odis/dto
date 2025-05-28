@@ -97,13 +97,13 @@
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="indicator_data_tab" data-bs-toggle="tab" data-bs-target="#indicator_data"
-                    type="button" role="tab" aria-controls="indicator_data" aria-selected="false">{%  trans "Indicator Data" %}
+            <button class="nav-link" id="network_data_tab" data-bs-toggle="tab" data-bs-target="#network_data"
+                    type="button" role="tab" aria-controls="network_data" aria-selected="false">{%  trans "Network Comparison" %}
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="network_data_tab" data-bs-toggle="tab" data-bs-target="#network_data"
-                    type="button" role="tab" aria-controls="network_data" aria-selected="false">{%  trans "Network Comparison" %}
+            <button class="nav-link" id="indicator_data_tab" data-bs-toggle="tab" data-bs-target="#indicator_data"
+                    type="button" role="tab" aria-controls="indicator_data" aria-selected="false">{%  trans "Indicator Data" %}
             </button>
         </li>
     </ul>
@@ -136,24 +136,18 @@
             </div>
         </div>
 
+
+        <div class="tab-pane fade" id="network_data">
+            <div class="mt-2" id="div_id_network_card">
+            </div>
+        </div>
+
         <div class="tab-pane fade" id="indicator_data">
             <div class="mt-2" id="div_id_indicator_card">
                 {# Indicator tab is populated using javascript functions #}
             </div>
         </div>
 
-        <div class="tab-pane fade" id="network_data">
-{#            <div id="div_id_network_button_row">#}
-{#                <div class="row">#}
-{#                    <div class="col">#}
-{#                        <button id="btn_id_add_network" class="btn btn-primary btn-sm" onclick="" title={% trans "Add MPA" %}>{% trans "Add MPA" %}</button>#}
-{#                        <div id="btn_id_add_network_loading"></div>#}
-{#                    </div>#}
-{#                </div>#}
-{#            </div>#}
-            <div class="mt-2" id="div_id_network_card">
-            </div>
-        </div>
 
     </div>
 
