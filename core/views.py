@@ -1,8 +1,7 @@
 import io
 import os
-import json
+from datetime import datetime
 
-import numpy as np
 import pandas as pd
 import folium
 import branca.colormap as cm
@@ -11,7 +10,6 @@ import logging
 import matplotlib.pyplot as plt
 
 from PIL import Image
-from djgeojson.views import GeoJSONLayerView
 
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
@@ -435,7 +433,38 @@ class MapView(TemplateView):
 
 
 def indicators(request):
-    return HttpResponse()
+    mpa = int(request.GET.get('mpa', 0))
+    date_string = request.GET.get('date', None)
+    if date_string is None:
+        return JsonResponse({})
+
+    date = datetime.strptime(date_string, '%Y-%m-%d')
+
+    depth = request.GET.get('depth', None)
+    depth = int(depth) if depth else None
+
+    mpa_zone = models.MPAZone.objects.get(pk=mpa)
+    df = get_timeseries_dataframe(mpa_zone, depth)
+
+    if df is None:
+        return None
+
+    # using a 30 year timeseries for the climatology from 1993-01-01 to 2022-120-31
+    clim = df[(df.index<='2022-12-31')]
+    clim = clim.groupby([clim.index.month, clim.index.day]).quantile()
+    upper_c = df.groupby([df.index.month, df.index.day]).quantile(q=0.9)
+    lower_c = df.groupby([df.index.month, df.index.day]).quantile(q=0.1)
+
+    max_val = df[(df.value==df.max().value)]
+    min_val = df[(df.value==df.min().value)]
+
+    min_ts = round(df.min().value - clim.at[(min_val.index.month[0], min_val.index.day[0]), 'value'], 3)
+    max_ts = round(df.max().value - clim.at[(max_val.index.month[0], max_val.index.day[0]), 'value'], 3)
+    current = round(df.at[date, "value"] - clim.at[(date.month, date.day), 'value'], 3)
+    upper = round(upper_c.at[(date.month, date.day), "value"] - clim.at[(date.month, date.day), 'value'], 3)
+    lower = round(lower_c.at[(date.month, date.day), "value"] - clim.at[(date.month, date.day), 'value'], 3)
+
+    return JsonResponse({"mpa":mpa, "date":date.strftime('%Y-%m-%d'), "min":min_ts, "max":max_ts, "current":current, "lower":lower, "upper":upper})
 
 def get_polygons(request):
     page_size = 5

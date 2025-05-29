@@ -58,15 +58,15 @@
                                     </div>
                                     <div class="col">
                                         <label for="zoom_min" class="form-label">{% trans 'Start Date' %}</label>
-                                        <input id="zoom_min" type="date" class="form-control" value="2019-01-01" />
+                                        <input id="zoom_min" type="date" class="form-control" value="2019-01-01" max="9999-12-31" />
                                     </div>
                                     <div class="col">
                                         <label for="selected_date" class="form-label">{% trans 'Selected Date' %}</label>
-                                        <input id="selected_date" type="date" class="form-control" value="" />
+                                        <input id="selected_date" type="date" class="form-control" value="" max="9999-12-31"/>
                                     </div>
                                     <div class="col">
                                         <label for="zoom_max" class="form-label">{% trans 'End Date' %}</label>
-                                        <input id="zoom_max" type="date" class="form-control" value="2024-01-01" />
+                                        <input id="zoom_max" type="date" class="form-control" value="2024-01-01" max="9999-12-31" />
                                     </div>
                                     <div class="col-auto align-content-center mt-4">
                                         <button type="button" class="btn btn-secondary" title="+5 years" onclick="pan_frame(5)">{% trans '>' %}</button>
@@ -174,6 +174,50 @@
         let previous_layers = [];
 
 
+        function get_selected_date() {
+            let selected_date = null;
+            try {
+                selected_date = new Date($('#selected_date').val());
+                {# if the user entered a date like 202 by mistake, the selected date trigger could have been sprung #}
+                if(selected_date.getFullYear() < 1900) {
+                    return null;
+                }
+                selected_date.setDate(selected_date.getDate() + 1);
+            } catch(err) {
+                console.error("Could not parse date")
+            }
+            if(selected_date == 'Invalid Date') {
+                return null;
+            }
+
+            return selected_date
+        }
+
+        function set_selected_date() {
+            let selected_date = get_selected_date();
+
+            if(!isNaN(selected_date)) {
+                for (const key in charts) {
+                    charts[key].set_selected_date(selected_date);
+                    charts[key].timeseries_chart.update();
+                }
+
+                add_network_indicators()
+            }
+        }
+
+        function get_selected_date_string() {
+            let date = get_selected_date();
+            if( date == null) {
+                return null;
+            }
+
+            let year = date.getFullYear();
+            let month = String(date.getMonth()+1).padStart(2, '0');
+            let day = String(date.getDate()).padStart(2, '0');
+
+            return year + '-' + month + '-' + day;
+        }
         function add_indicators() {
             let $indicator_card = $("#div_id_indicator_card");
             $indicator_card.empty();
@@ -196,20 +240,61 @@
             });
         }
 
-        function update_network_indicators() {
+        function add_network_indicators() {
+            let date_string = get_selected_date_string();
+
             let $indicator_card = $("#div_id_network_card");
             $indicator_card.empty();
             let $indicator_card_row = $('<div></div>', {class:"row"}).appendTo($indicator_card);
 
+            if(date_string == null) {
+                return;
+            }
+
+
             previous_layers.forEach(layer => {
-                let min = -10;
-                let max = 10;
-                let current = Math.floor(Math.random() * (max - min + 1) + min)
+                let min = layer.indicator.min;
+                let max = layer.indicator.max;
+                let current = layer.indicator.current;
+                let date = layer.indicator.date;
 
                 let column = add_indicator(layer.feature.properties.name, layer.feature.id, min, max, current);
                 column.appendTo($indicator_card_row)
-            });
 
+                let $indicator =  $("#" + get_indicator_id(layer.feature.id));
+
+                if(date == null || date != date_string) {
+                    query_indicator(layer.feature.id)
+                } else {
+                    set_dial_color($indicator, layer.indicator.upper, layer.indicator.lower)
+                }
+            });
+        }
+
+        async function query_indicator(mpa_id) {
+            let date = get_selected_date_string()
+            if(date==null) {
+                return;
+            }
+
+            let url = "{% url 'core:get_indicators' %}?mpa=" + mpa_id + "&date=" + date;
+            $.ajax({
+                method: "GET",
+                url: url,
+                beforeSend: function () {
+                },
+                success: function(data) {
+                    previous_layers.filter(layer => layer.feature.id === data.mpa)[0].indicator = data
+                    let $indicator = $("#" + get_indicator_id(data.mpa));
+                    $indicator.trigger('configure', {"min": data.min, "max": data.max});
+                    $indicator.val(data.current).trigger('change')
+                    set_dial_color($indicator, data.upper, data.lower)
+                },
+                error: function (error_data) {
+                    console.log("error");
+                    console.log(error_data);
+                }
+            });
         }
 
         function pan_frame(pan) {
@@ -258,24 +343,6 @@
             }
         }
 
-        function set_selected_date() {
-            let selected_date = null;
-            try {
-                selected_date = new Date($("#selected_date").val());
-                selected_date.setDate(selected_date.getDate() + 1);
-                console.info(selected_date);
-            } catch(err) {
-                console.error("Could not parse date")
-            }
-
-            if(!isNaN(selected_date)) {
-                for (const key in charts) {
-                    charts[key].set_selected_date(selected_date);
-                    charts[key].timeseries_chart.update();
-                }
-            }
-        }
-
         function add_range_chart() {
             const min_date = $("#zoom_min").val();
             const max_date = $("#zoom_max").val();
@@ -287,7 +354,7 @@
                 charts[label] = new RangeChart(label, "{% url 'core:range_chart' %}");
                 charts[label].initialized = function() {
                     let chart_obj = this;
-                    let selected_date = null;
+                    let selected_date = get_selected_date();
 
                     this.ctx.onclick = function(e) { handle_set_date(e, chart_obj)};
 
@@ -297,14 +364,7 @@
                         charts[label].update_timeseries_data(date_labels, ts_data, climate_data);
                     }
 
-                    try {
-                        selected_date = new Date($("#selected_date").val());
-                        selected_date.setDate(selected_date.getDate() + 1);
-                        console.info(selected_date);
-                    } catch(err) {
-                        console.error("Could not parse date")
-                    }
-                    if(!isNaN(selected_date)) {
+                    if(selected_date != null) {
                         charts[label].set_selected_date(selected_date);
                     }
 
@@ -366,19 +426,7 @@
             const min_date = $("#zoom_min").val();
             const max_date = $("#zoom_max").val();
             const btm_depth = $("#btm_depth").val();
-            {#const selected_date = $("#selected_date").val();#}
-
-            {#  JavaScript does weird things with dates. If it comes in the format YYYY-MM-DD it subtracts one day #}
-            {#  if it comes in the format YYYY/MM/DD it'll give the correct date. For me, during local development #}
-            {#  I get the date in the YYYY-MM-DD format #}
-            let selected_date = null;
-            try {
-                selected_date = new Date($("#selected_date").val());
-                selected_date.setDate(selected_date.getDate() + 1);
-                console.info(selected_date);
-            } catch(err) {
-                console.error("Could not parse date")
-            }
+            let selected_date = get_selected_date();
 
             $("#btn_id_pdf").attr('href', get_link('{% url 'core:generate_pdf' %}'))
 
@@ -408,7 +456,7 @@
                         chart.dial_max = data.max_delta;
                         chart.dial_min = data.min_delta;
                         chart.update_timeseries_data(date_labels, ts_data, climate_data);
-                        if(!isNaN(selected_date)) {
+                        if(selected_date != null) {
                             chart.set_selected_date(selected_date);
                         }
                     }
@@ -425,6 +473,7 @@
             });
         }
 
+        {# click handler for chartjs charts to set the selected date and cause a refresh of date dependent components #}
         function handle_set_date(e, chart) {
             const canvasPosition = Chart.helpers.getRelativePosition(e, chart.timeseries_chart);
 
@@ -436,7 +485,6 @@
 
             $('#selected_date').val(selected);
             set_selected_date();
-            console.log(e);
         }
 
         $(document).ready( function() {
@@ -453,10 +501,18 @@
                     }
                 });
 
+                function init_global_indicator(mpa) {
+                    let indicator = {"mpa":mpa, "date": null, "min":-10, "max":10, "current":0, "lower":-5, "upper":5}
+                    indicator.current = Math.floor(Math.random() * (indicator.max - indicator.min + 1) + indicator.min);
+                    return indicator
+                }
+
                 geo.on('click', function (e) {
 
                     let reset_color = e.layer.feature.style.color
                     if(e.originalEvent.ctrlKey) {
+                        e.layer.indicator = init_global_indicator(e.layer.feature.id)
+
                         if(!previous_layers.includes(e.layer)) {
                             previous_layers.push(e.layer);
                         } else {
@@ -468,6 +524,7 @@
                             layer.setStyle({fillColor: reset_color});
                         });
                         previous_layers = []
+                        e.layer.indicator = init_global_indicator(e.layer.feature.id)
 
                         previous_layers.push(e.layer);
                     }
@@ -484,12 +541,14 @@
                     let feature = selectedLayer.feature
                     mpa_id = feature.id;
 
-                    update_network_indicators()
+                    add_indicators();
+                    add_network_indicators()
+
                     clear_timeseries();
+
                     get_depths();
                     set_zoom();
                     //get_timeseries(); // Timeseries is updated in the set_zoom() function
-                    add_indicators();
 
                     let $btn_pdf = $("#btn_id_pdf")
                     $btn_pdf.attr("href", get_link('{% url 'core:generate_pdf' %}'))
@@ -504,8 +563,35 @@
                     $("#mpa_km2").text(feature.properties.km2);
                 });
 
-                geo.bindTooltip('<b>' + mpa.properties.name + '</b>');
+                {#geo.bindPopup('<div class="row"><div class="col"><b>' + mpa.properties.name + '</b></div></div>');#}
+                geo.bindTooltip('<div class="row"><div class="col"><b>' + mpa.properties.name + '</b></div></div>');
                 geo.on('mouseover', function(e){
+                    let date = get_selected_date_string();
+                    if(date != null) {
+                        let url = "{% url 'core:get_indicators' %}?mpa=" + e.layer.feature.id + "&date=" + date;
+                        $.ajax({
+                            method: 'GET',
+                            url: url,
+                            success: function(data) {
+                                let style = 'success';
+                                if( data.current < data.lower ) {
+                                    style = 'info';
+                                } else if (data.current > data.upper) {
+                                    style = 'danger';
+                                }
+                                let html = '<div class="row">' +
+                                    '<div class="col"><b>' + mpa.properties.name + '</b></div>' +
+                                    '</div><div class="row">' +
+                                    '<div class="col">' +
+                                    '<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="' + data.current + '" aria-valuemin="' + data.min + '" aria-valuemax="' + data.max + '">' +
+                                    '<div class="progress-bar bg-' + style + '" style="width: 25%">' + data.current + '</div>' +
+                                    '</div></div>'
+                                    '</div>';
+                                {#geo.setPopupContent(html);#}
+                                geo.setTooltipContent(html);
+                            }
+                        });
+                    }
                     this.openPopup();
                 });
                 geo.on('mouseout', function(e){
@@ -568,7 +654,9 @@
                 clearTimeout(updateDateTimer);
 
                 updateDateTimer = setTimeout(function() {
-                    set_selected_date();
+                    if(get_selected_date() != null) {
+                        set_selected_date();
+                    }
                 }, 500)
             });
 

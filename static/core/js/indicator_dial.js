@@ -1,7 +1,9 @@
-function add_indicator(label, indicator_key, min, max, current) {
-    console.log(indicator_key)
+function get_indicator_id(indicator_key) {
+    return 'indicator_dial_' + indicator_key;
+}
 
-    let $indicator_id = 'indicator_dial_' + indicator_key
+function add_indicator(label, indicator_key, min, max, current) {
+    let $indicator_id = get_indicator_id(indicator_key)
 
     let $indicator_column = $('<div></div>', {class:"col"}); //.appendTo($indicator_card_row)
 
@@ -37,4 +39,18 @@ function add_indicator(label, indicator_key, min, max, current) {
     $indicator_input.val(current).trigger('change');
 
     return $indicator_column;
+}
+
+function set_dial_color(dial, upper, lower) {
+    let color = "rgb(55, 255, 55)"
+    let value = dial.val();
+    let upper_tolerance = Number(upper);
+    let lower_tolerance = Number(lower);
+    if(value < lower_tolerance) {
+        color = "rgb(55, 55, 255)"
+    } else if(value > upper_tolerance) {
+        color = "rgb(255, 55, 55)"
+    }
+
+    dial.trigger('configure', {"fgColor": color});
 }
