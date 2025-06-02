@@ -46,7 +46,7 @@
                                 <div class="row">
                                     <div class="col align-content-center">
                                         <label for="btm_depth">{% trans "Bottom Depth" %}</label>
-                                        <select class="form-select" id="btm_depth" onchange="get_timeseries()">
+                                        <select class="form-select" id="btm_depth" onchange="get_timeseries({% url 'core:timeseries' %})">
                                             <option value="">{% trans "Total Average Bottom Timeseries" %}</option>
                                         </select>
                                     </div>
@@ -118,7 +118,7 @@
             <div id="div_id_range_card">
                 <div class="row">
                     <div class="col">
-                        <button id="btn_id_add_chart" class="btn btn-primary btn-sm" onclick="add_range_chart()" title="{% trans "Add a Chart" %}">{% trans "Add a Chart" %}</button>
+                        <button id="btn_id_add_chart" class="btn btn-primary btn-sm" onclick="add_range_chart({% url 'core:range_chart' %})" title="{% trans "Add a Chart" %}">{% trans "Add a Chart" %}</button>
                         <div id="btn_id_add_chart_loading"></div>
                     </div>
                 </div>
@@ -157,449 +157,128 @@
     <script src="{% static 'core/js/range_chart.js' %}"></script>
     <script src="{% static 'core/js/quantile_chart.js' %}"></script>
     <script src="{% static 'core/js/indicator_dial.js' %}"></script>
+    <script src="{% static 'core/js/map.js' %}"></script>
     <script>
+        const charts = { };
 
-        const initialized = false;
-        const charts = {
-            'mpa_ts_quantile_chart': new QuantileChart('mpa_ts_quantile_chart', "{% url 'core:quantile_chart' %}"),
-            {#'mpa_ts_range_chart': new RangeChart('mpa_ts_range_chart', "{% url 'core:range_chart' %}"),#}
-        };
-
-        let range_charts = 1;
-        let mpa_id = null;
-        let date_labels = [];
-        let ts_data = [];
-        let climate_data = [];
-        let selectedLayer = null;
-        let previous_layers = [];
-
-
-        function get_selected_date() {
-            let selected_date = null;
-            try {
-                selected_date = new Date($('#selected_date').val());
-                {# if the user entered a date like 202 by mistake, the selected date trigger could have been sprung #}
-                if(selected_date.getFullYear() < 1900) {
-                    return null;
-                }
-                selected_date.setDate(selected_date.getDate() + 1);
-            } catch(err) {
-                console.error("Could not parse date")
-            }
-            if(selected_date == 'Invalid Date') {
-                return null;
-            }
-
-            return selected_date
-        }
-
-        function set_selected_date() {
-            let selected_date = get_selected_date();
-
-            if(!isNaN(selected_date)) {
-                for (const key in charts) {
-                    charts[key].set_selected_date(selected_date);
-                    charts[key].timeseries_chart.update();
-                }
-
-                add_network_indicators()
-            }
-        }
-
-        function get_selected_date_string() {
-            let date = get_selected_date();
-            if( date == null) {
-                return null;
-            }
-
-            let year = date.getFullYear();
-            let month = String(date.getMonth()+1).padStart(2, '0');
-            let day = String(date.getDate()).padStart(2, '0');
-
-            return year + '-' + month + '-' + day;
-        }
-        function add_indicators() {
-            let $indicator_card = $("#div_id_indicator_card");
-            $indicator_card.empty();
-            let $indicator_card_row = $('<div></div>', {class:"row"}).appendTo($indicator_card);
-
-            // This will eventually be done through an AJAX query that will return the indicator and its
-            // min/max/current values. The current value will be dependent on the user clicking on a time
-            // series chart or selecting a "Current Date" on the conditions card
-            let min = -10;
-            let max = 10;
-            let indicators = [
-                ['Temperature', 'temperature', min, max, Math.floor(Math.random() * (max - min + 1) + min)],
-                ['Salinity', 'salinity', min, max, Math.floor(Math.random() * (max - min + 1) + min)],
-                ['CHL', 'chlorophyll', min, max, Math.floor(Math.random() * (max - min + 1) + min)]
-            ];
-
-            indicators.forEach(indicator => {
-                let column = add_indicator(indicator[0], indicator[1], indicator[2], indicator[3], indicator[4]);
-                column.appendTo($indicator_card_row)
-            });
-        }
-
-        function add_network_indicators() {
-            let date_string = get_selected_date_string();
-
-            let $indicator_card = $("#div_id_network_card");
-            $indicator_card.empty();
-            let $indicator_card_row = $('<div></div>', {class:"row"}).appendTo($indicator_card);
-
-            if(date_string == null) {
-                return;
-            }
-
-
-            previous_layers.forEach(layer => {
-                let min = layer.indicator.min;
-                let max = layer.indicator.max;
-                let current = layer.indicator.current;
-                let date = layer.indicator.date;
-
-                let column = add_indicator(layer.feature.properties.name, layer.feature.id, min, max, current);
-                column.appendTo($indicator_card_row)
-
-                let $indicator =  $("#" + get_indicator_id(layer.feature.id));
-
-                if(date == null || date != date_string) {
-                    query_indicator(layer.feature.id)
-                } else {
-                    set_dial_color($indicator, layer.indicator.upper, layer.indicator.lower)
-                }
-            });
-        }
-
-        async function query_indicator(mpa_id) {
-            let date = get_selected_date_string()
-            if(date==null) {
-                return;
-            }
-
-            let url = "{% url 'core:get_indicators' %}?mpa=" + mpa_id + "&date=" + date;
+        function init_polygons(map, base_url) {
             $.ajax({
                 method: "GET",
-                url: url,
+                url: base_url,
                 beforeSend: function () {
+                    $("#map").hide();
+                    $("#map_loading").addClass("loader-lg");
                 },
                 success: function(data) {
-                    previous_layers.filter(layer => layer.feature.id === data.mpa)[0].indicator = data
-                    let $indicator = $("#" + get_indicator_id(data.mpa));
-                    $indicator.trigger('configure', {"min": data.min, "max": data.max});
-                    $indicator.val(data.current).trigger('change')
-                    set_dial_color($indicator, data.upper, data.lower)
-                },
-                error: function (error_data) {
-                    console.log("error");
-                    console.log(error_data);
-                }
-            });
-        }
-
-        function pan_frame(pan) {
-            const min_date = $("#zoom_min").val();
-            const max_date = $("#zoom_max").val();
-
-            let min_d = new Date(min_date);
-            let max_d = new Date(max_date);
-
-            min_d.setFullYear(min_d.getFullYear()+pan);
-            max_d.setFullYear(max_d.getFullYear()+pan);
-
-            $("#zoom_min").val(min_d.toISOString().substring(0, 10));
-            $("#zoom_max").val(max_d.toISOString().substring(0, 10));
-
-            set_zoom();
-            {#for (const key in charts) {#}
-            {#    charts[key].timeseries_chart.pan({x: 100}, undefined, 'default');#}
-            {#    charts[key].timeseries_chart.update();#}
-            {# } #}
-        }
-
-        function get_link(base_url) {
-            const min_date = $("#zoom_min").val();
-            const max_date = $("#zoom_max").val();
-            const btm_depth = $("#btm_depth").val();
-
-            let url = base_url + "?mpa=" + mpa_id;
-            url = url + "&depth=" + btm_depth;
-            url = url + "&start_date=" + min_date;
-            url = url + "&end_date=" + max_date;
-
-            return url;
-        }
-
-        function set_zoom() {
-            const min_date = $("#zoom_min").val();
-            const max_date = $("#zoom_max").val();
-
-            for (const key in charts) {
-                charts[key].set_zoom(min_date, max_date);
-            }
-
-            if(mpa_id) {
-                get_timeseries();
-            }
-        }
-
-        function add_range_chart() {
-            const min_date = $("#zoom_min").val();
-            const max_date = $("#zoom_max").val();
-
-            set_chart_loading(true).then(function() {
-                range_charts += 1;
-
-                const label = 'mpa_ts_range_chart_' + range_charts.toString();
-                charts[label] = new RangeChart(label, "{% url 'core:range_chart' %}");
-                charts[label].initialized = function() {
-                    let chart_obj = this;
-                    let selected_date = get_selected_date();
-
-                    this.ctx.onclick = function(e) { handle_set_date(e, chart_obj)};
-
-                    charts[label].set_zoom(min_date, max_date);
-                    if(mpa_id) {
-                        charts[label].mpa_id = mpa_id;
-                        charts[label].update_timeseries_data(date_labels, ts_data, climate_data);
-                    }
-
-                    if(selected_date != null) {
-                        charts[label].set_selected_date(selected_date);
-                    }
-
-                    set_chart_loading(false);
-                }
-            });
-        }
-
-        async function set_chart_loading(loading) {
-            if(loading) {
-                $("#btn_id_add_chart").hide();
-                $("#btn_id_add_chart_loading").addClass("loader-sm");
-            } else {
-                $("#btn_id_add_chart_loading").removeClass("loader-sm");
-                $("#btn_id_add_chart").show();
-            }
-        }
-
-        function clear_timeseries() {
-            qs_data = [];
-
-            for (const key in charts) {
-                charts[key].clear_timeseries();
-            }
-        }
-
-        function get_depths() {
-            let url = "{% url 'core:get_depths' %}?mpa=" + mpa_id
-
-            $.ajax({
-                method: "GET",
-                url: url,
-                beforeSend: function () {
-                    for (const key in charts) {
-                        charts[key].set_loading(true);
-                    }
-                },
-                success: function(data) {
-                    var select = $("#btm_depth");
-                    select.empty();
-                    select.append($('<option>', { value: '', text: '{% trans "Total Average Bottom Timeseries" %}' }));
-
-                    for(let i = 0; i < data['depths'].length; i++) {
-                        let opt = data['depths'][i];
-                        if(opt !== '' && opt != null) {
-                            select.append($('<option>', { value: opt, text: (opt + " m") }));
-                        }
-                    }
-                },
-                error: function (error_data) {
-                    console.log("error");
-                    console.log(error_data);
-                }
-            });
-        }
-
-        {# The timeseries should update for all charts #}
-        function get_timeseries() {
-            const min_date = $("#zoom_min").val();
-            const max_date = $("#zoom_max").val();
-            const btm_depth = $("#btm_depth").val();
-            let selected_date = get_selected_date();
-
-            $("#btn_id_pdf").attr('href', get_link('{% url 'core:generate_pdf' %}'))
-
-            charts['mpa_ts_quantile_chart'].set_depth(btm_depth);
-
-            let url = "{% url 'core:timeseries' %}?mpa=" + mpa_id + "&depth=" + btm_depth +
-                "&start_date=" + min_date + "&end_date=" + max_date
-
-            $.ajax({
-                method: "GET",
-                url: url,
-                beforeSend: function () {
-                    for (const key in charts) {
-                       charts[key].set_zoom(min_date, max_date)
-                       charts[key].set_loading(true);
-                    }
-                },
-                success: function(data) {
-                    const qs_data = data.data;
-                    date_labels = $.map(qs_data, function (value, key) { return Date.parse(value.date); });
-                    ts_data = $.map(qs_data, function (value, key) { return value.ts_data; });
-                    climate_data = $.map(qs_data, function (value, key) { return value.clim; });
-
-                    for (const key in charts) {
-                        let chart = charts[key];
-                        chart.mpa_id = mpa_id;
-                        chart.dial_max = data.max_delta;
-                        chart.dial_min = data.min_delta;
-                        chart.update_timeseries_data(date_labels, ts_data, climate_data);
-                        if(selected_date != null) {
-                            chart.set_selected_date(selected_date);
-                        }
-                    }
+                    data.forEach(mpa => parse_polygon_data(map, mpa));
                 },
                 error: function (error_data) {
                     console.log("error");
                     console.log(error_data);
                 },
                 complete: function () {
-                    for (const key in charts) {
-                        charts[key].set_loading(false);
-                    }
+                    $("#map_loading").removeClass("loader-lg");
+                    $("#map").show();
                 }
             });
         }
 
-        {# click handler for chartjs charts to set the selected date and cause a refresh of date dependent components #}
-        function handle_set_date(e, chart) {
-            const canvasPosition = Chart.helpers.getRelativePosition(e, chart.timeseries_chart);
+        function parse_polygon_data(map, mpa) {
+            let geo = L.geoJson(mpa, {
+                style: function (feature) {
+                    return {
+                        fillColor: feature.style.color,
+                        fillOpacity: '0.8',
+                    }
+                }
+            });
 
-            let selected_date = new Date(chart.timeseries_chart.scales.x.getValueForPixel(canvasPosition.x))
+            geo.on('click', function (e) {
 
-            let day = ("0" + selected_date.getDate()).slice(-2);
-            let month = ("0" + (selected_date.getMonth() + 1)).slice(-2);
-            let selected = selected_date.getFullYear()+"-"+(month)+"-"+(day) ;
+                let reset_color = e.layer.feature.style.color
+                if(e.originalEvent.ctrlKey) {
+                    e.layer.indicator = init_global_indicator(e.layer.feature.id)
 
-            $('#selected_date').val(selected);
-            set_selected_date();
+                    if(!previous_layers.includes(e.layer)) {
+                        previous_layers.push(e.layer);
+                    } else {
+                        previous_layers = previous_layers.filter(layer => layer !== e.layer)
+                        e.layer.setStyle({fillColor: reset_color});
+                    }
+                } else if(e.layer) {
+                    previous_layers.forEach(layer => {
+                        layer.setStyle({fillColor: reset_color});
+                    });
+                    previous_layers = []
+                    e.layer.indicator = init_global_indicator(e.layer.feature.id)
+
+                    previous_layers.push(e.layer);
+                }
+
+                if(selectedLayer) {
+                    selectedLayer.setStyle({fillColor: reset_color});
+                }
+
+                previous_layers.forEach(layer => {
+                    layer.setStyle({fillColor: "#00ffff"})
+                })
+                selectedLayer = e.layer
+                selectedLayer.setStyle({fillColor: "#ffff00"});
+                let feature = selectedLayer.feature
+                mpa_id = feature.id;
+
+                add_indicators();
+                let date = get_selected_date_string(get_selected_date());
+                if (date != null) {
+                    add_network_indicators({% url 'core:get_indicators' %}, date)
+                }
+
+                clear_timeseries();
+
+                get_depths({% url 'core:get_depths' %});
+                set_zoom({% url 'core:timeseries' %});
+
+                //get_timeseries(); // Timeseries is updated in the set_zoom() function
+
+                let $btn_pdf = $("#btn_id_pdf")
+                $btn_pdf.attr("href", get_link({% url 'core:generate_pdf' %}))
+                $btn_pdf.show();
+
+                $("#mpa_name").text(feature.properties.name);
+
+                let $mpa_url = $("#mpa_url a");
+                $mpa_url.attr("href", feature.properties.url)
+                $mpa_url.text(feature.properties.url);
+
+                $("#mpa_km2").text(feature.properties.km2);
+            });
+
+            let title_html = '<div class="row"><div class="col"><b>' + mpa.properties.name + '</b></div></div>'
+            {#geo.bindPopup(title_html);#}
+            geo.bindTooltip(title_html);
+            geo.on('mouseover', function(e){
+                let date = get_selected_date_string(get_selected_date());
+                if(date != null) {
+                    update_polygons_properties({% url 'core:get_indicators' %}, geo, mpa, date);
+                }
+                this.openPopup();
+            });
+            geo.on('mouseout', function(e){
+                this.openPopup();
+            });
+
+            geo.addTo(map);
+        }
+
+        function init_global_indicator(mpa) {
+            let indicator = {"mpa":mpa, "date": null, "min":-10, "max":10, "current":0, "lower":-5, "upper":5}
+            indicator.current = Math.floor(Math.random() * (indicator.max - indicator.min + 1) + indicator.min);
+            return indicator
         }
 
         $(document).ready( function() {
             let updateDateTimer;
             let map = L.map('map').setView([44.666830, -61.531500], 5)
-
-            function parse_polygon_data(mpa) {
-                let geo = L.geoJson(mpa, {
-                    style: function (feature) {
-                        return {
-                            fillColor: feature.style.color,
-                            fillOpacity: '0.8',
-                        }
-                    }
-                });
-
-                function init_global_indicator(mpa) {
-                    let indicator = {"mpa":mpa, "date": null, "min":-10, "max":10, "current":0, "lower":-5, "upper":5}
-                    indicator.current = Math.floor(Math.random() * (indicator.max - indicator.min + 1) + indicator.min);
-                    return indicator
-                }
-
-                geo.on('click', function (e) {
-
-                    let reset_color = e.layer.feature.style.color
-                    if(e.originalEvent.ctrlKey) {
-                        e.layer.indicator = init_global_indicator(e.layer.feature.id)
-
-                        if(!previous_layers.includes(e.layer)) {
-                            previous_layers.push(e.layer);
-                        } else {
-                            previous_layers = previous_layers.filter(layer => layer !== e.layer)
-                            e.layer.setStyle({fillColor: reset_color});
-                        }
-                    } else if(e.layer) {
-                        previous_layers.forEach(layer => {
-                            layer.setStyle({fillColor: reset_color});
-                        });
-                        previous_layers = []
-                        e.layer.indicator = init_global_indicator(e.layer.feature.id)
-
-                        previous_layers.push(e.layer);
-                    }
-
-                    if(selectedLayer) {
-                        selectedLayer.setStyle({fillColor: reset_color});
-                    }
-
-                    previous_layers.forEach(layer => {
-                        layer.setStyle({fillColor: "#00ffff"})
-                    })
-                    selectedLayer = e.layer
-                    selectedLayer.setStyle({fillColor: "#ffff00"});
-                    let feature = selectedLayer.feature
-                    mpa_id = feature.id;
-
-                    add_indicators();
-                    add_network_indicators()
-
-                    clear_timeseries();
-
-                    get_depths();
-                    set_zoom();
-                    //get_timeseries(); // Timeseries is updated in the set_zoom() function
-
-                    let $btn_pdf = $("#btn_id_pdf")
-                    $btn_pdf.attr("href", get_link('{% url 'core:generate_pdf' %}'))
-                    $btn_pdf.show();
-
-                    $("#mpa_name").text(feature.properties.name);
-
-                    let $mpa_url = $("#mpa_url a");
-                    $mpa_url.attr("href", feature.properties.url)
-                    $mpa_url.text(feature.properties.url);
-
-                    $("#mpa_km2").text(feature.properties.km2);
-                });
-
-                {#geo.bindPopup('<div class="row"><div class="col"><b>' + mpa.properties.name + '</b></div></div>');#}
-                geo.bindTooltip('<div class="row"><div class="col"><b>' + mpa.properties.name + '</b></div></div>');
-                geo.on('mouseover', function(e){
-                    let date = get_selected_date_string();
-                    if(date != null) {
-                        let url = "{% url 'core:get_indicators' %}?mpa=" + e.layer.feature.id + "&date=" + date;
-                        $.ajax({
-                            method: 'GET',
-                            url: url,
-                            success: function(data) {
-                                let style = 'success';
-                                if( data.current < data.lower ) {
-                                    style = 'info';
-                                } else if (data.current > data.upper) {
-                                    style = 'danger';
-                                }
-                                let html = '<div class="row">' +
-                                    '<div class="col"><b>' + mpa.properties.name + '</b></div>' +
-                                    '</div><div class="row">' +
-                                    '<div class="col">' +
-                                    '<div class="progress" role="progressbar" aria-label="Basic example" aria-valuenow="' + data.current + '" aria-valuemin="' + data.min + '" aria-valuemax="' + data.max + '">' +
-                                    '<div class="progress-bar bg-' + style + '" style="width: 25%">' + data.current + '</div>' +
-                                    '</div></div>'
-                                    '</div>';
-                                {#geo.setPopupContent(html);#}
-                                geo.setTooltipContent(html);
-                            }
-                        });
-                    }
-                    this.openPopup();
-                });
-                geo.on('mouseout', function(e){
-                    this.openPopup();
-                });
-
-                geo.addTo(map);
-            }
 
             L.tileLayer(
                 "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -616,25 +295,7 @@
                 }
             ).addTo(map);
 
-            $.ajax({
-                method: "GET",
-                url: '{%  url 'core:get_polygons' %}',
-                beforeSend: function () {
-                    $("#map").hide();
-                    $("#map_loading").addClass("loader-lg");
-                },
-                success: function(data) {
-                    data.forEach(mpa => parse_polygon_data(mpa));
-                },
-                error: function (error_data) {
-                    console.log("error");
-                    console.log(error_data);
-                },
-                complete: function () {
-                    $("#map_loading").removeClass("loader-lg");
-                    $("#map").show();
-                }
-            });
+            init_polygons(map, "{%  url 'core:get_polygons' %}");
 
             $("#zoom_min").on('change', function() {
                 clearTimeout(updateDateTimer);
@@ -660,10 +321,20 @@
                 }, 500)
             });
 
+            charts['mpa_ts_quantile_chart'] = new QuantileChart('mpa_ts_quantile_chart', "{% url 'core:quantile_chart' %}");
             charts['mpa_ts_quantile_chart'].initialized = function() {
                 let chart_obj = this;
                 this.ctx.onclick = function(e) { handle_set_date(e, chart_obj)};
+                date_update_listeners.push(function(selected_date) {
+                    charts['mpa_ts_quantile_chart'].set_selected_date(selected_date)
+                });
             };
+
+            date_update_listeners.push(function(selected_date) {
+                let date_string = get_selected_date_string(selected_date)
+                add_network_indicators({% url 'core:get_indicators' %}, date_string)
+            });
+
         });
     </script>
 

@@ -353,7 +353,6 @@ class RangeChart {
             }
 
             current_index = Math.floor((min_index + max_index) / 2);
-            console.log("current date: " + current_index)
         }
 
         this.date_indicator.value = labels[current_index];
