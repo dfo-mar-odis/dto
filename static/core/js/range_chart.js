@@ -322,19 +322,6 @@ class RangeChart {
         this.update_chart();
     }
 
-    // clickHandler(e) {
-    //     const canvasPosition = Chart.helpers.getRelativePosition(e, this.timeseries_chart);
-    //     const points = this.timeseries_chart.getElementsAtEventForMode(e, 'nearest', { intersect: false }, true);
-    //
-    //     this.date_indicator.value = this.timeseries_chart.scales.x.getValueForPixel(canvasPosition.x);
-    //     this.timeseries_chart.update();
-    //
-    //     this.dial_target = 0;
-    //     if(points.length) {
-    //         this.set_selected_point(points[0]);
-    //     }
-    // }
-
     set_selected_date(targetDate) {
         let labels = this.timeseries_chart.data.labels;
         let min_index = 0;
