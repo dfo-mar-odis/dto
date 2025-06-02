@@ -19,6 +19,7 @@ from reportlab.lib.pagesizes import letter
 from django.conf import settings
 from django.http import JsonResponse, HttpResponse, FileResponse
 from django.shortcuts import render
+from django.utils.translation import gettext as _
 
 from django.views.generic import TemplateView
 from django.contrib.gis.db.models.functions import Transform
@@ -369,8 +370,8 @@ def get_depths(request):
     mpa_id = int(request.GET.get('mpa', -1))
     mpa = models.MPAZone.objects.get(pk=mpa_id).name
     depths = models.Timeseries.objects.filter(mpa=mpa).order_by('depth').values_list('depth', flat=True).distinct()
-    depth_array = [d for d in depths if d is not None]
-    depth_array.insert(0, None)
+    depth_array = [(d, f'{d} m') for d in depths if d is not None]
+    depth_array.insert(0, ('', _("Total Average Bottom Timeseries")))
     return JsonResponse({'depths': depth_array})
 
 
