@@ -283,7 +283,7 @@ class RangeChart {
         });
     }
 
-    update_thresholds() {
+    async update_thresholds() {
         const chart_obj = this
 
         $("#" + chart_obj.chart_name + "_q_upper").on('input', function (e) {
