@@ -1,4 +1,11 @@
-const initialized = false;
+let timeseries_update_url = null;
+let anomaly_update_url = null;
+
+// Charts are for any chart that takes the timeseries and climatology data
+const charts = {};
+
+// Anomaly charts take computed yearly binned data
+let standard_anomalies_chart = null
 
 let range_charts = 1;
 let mpa_id = null;
@@ -8,7 +15,6 @@ let climate_data = [];
 let selectedLayer = null;
 let previous_layers = [];
 let date_update_listeners = [];
-
 
 function update_polygons_properties(base_url, layer, mpa, date) {
     let mpa_id = mpa.id;
@@ -75,6 +81,7 @@ function get_selected_date_string(date) {
 
     return year + '-' + month + '-' + day;
 }
+
 function add_indicators() {
     let $indicator_card = $("#div_id_indicator_card");
     $indicator_card.empty();
@@ -155,11 +162,10 @@ function pan_frame(pan) {
     $("#zoom_min").val(min_d.toISOString().substring(0, 10));
     $("#zoom_max").val(max_d.toISOString().substring(0, 10));
 
-    set_zoom();
-    // for (const key in charts) {
-    //    charts[key].timeseries_chart.pan({x: 100}, undefined, 'default');
-    //    charts[key].timeseries_chart.update();
-    // }
+    for (const key in charts) {
+        set_chart_zoom(charts[key]);
+    }
+    get_data();
 }
 
 function get_link(base_url) {
@@ -175,23 +181,16 @@ function get_link(base_url) {
     return url;
 }
 
-function set_zoom(base_url) {
+function set_chart_zoom(chart) {
     const min_date = $("#zoom_min").val();
     const max_date = $("#zoom_max").val();
 
-    for (const key in charts) {
-        charts[key].set_zoom(min_date, max_date);
-    }
-
-    if(mpa_id) {
-        get_timeseries(base_url);
-    }
+    chart.set_zoom(min_date, max_date);
 }
 
 function add_range_chart(chart_base_url) {
-    const min_date = $("#zoom_min").val();
-    const max_date = $("#zoom_max").val();
 
+    set_chart_loading(true);
     set_chart_loading(true).then(function() {
         range_charts += 1;
 
@@ -203,10 +202,9 @@ function add_range_chart(chart_base_url) {
 
             this.ctx.onclick = function(e) { handle_set_date(e, chart_obj)};
 
-            charts[label].set_zoom(min_date, max_date);
             if(mpa_id) {
                 charts[label].mpa_id = mpa_id;
-                charts[label].update_timeseries_data(date_labels, ts_data, climate_data);
+                charts[label].update_data(date_labels, ts_data, climate_data);
             }
 
             if(selected_date != null) {
@@ -217,11 +215,13 @@ function add_range_chart(chart_base_url) {
                 charts[label].set_selected_date(selected_date);
             });
             set_chart_loading(false);
+            set_chart_zoom(chart_obj)
         }
     });
 }
 
 async function set_chart_loading(loading) {
+    // Sets the 'Add Chart' button to loading or not
     if(loading) {
         $("#btn_id_add_chart").hide();
         $("#btn_id_add_chart_loading").addClass("loader-sm");
@@ -231,9 +231,10 @@ async function set_chart_loading(loading) {
     }
 }
 
-function clear_timeseries() {
+function clear_data() {
     qs_data = [];
 
+    standard_anomalies_chart.clear_data();
     for (const key in charts) {
         charts[key].clear_timeseries();
     }
@@ -246,9 +247,6 @@ function get_depths(base_url) {
         method: "GET",
         url: url,
         beforeSend: function () {
-            for (const key in charts) {
-                charts[key].set_loading(true);
-            }
         },
         success: function(data) {
             let select = $("#btm_depth");
@@ -267,26 +265,20 @@ function get_depths(base_url) {
 }
 
 // The timeseries should update for all charts
-function get_timeseries(base_url) {
+function get_data() {
     const min_date = $("#zoom_min").val();
     const max_date = $("#zoom_max").val();
     const btm_depth = $("#btm_depth").val();
+
     let selected_date = get_selected_date();
-
-    charts['mpa_ts_quantile_chart'].set_depth(btm_depth);
-
-    let url = base_url + "?mpa=" + mpa_id + "&depth=" + btm_depth +
+    let timeseries_url = timeseries_update_url + "?mpa=" + mpa_id + "&depth=" + btm_depth +
         "&start_date=" + min_date + "&end_date=" + max_date
+    let anomaly_url = anomaly_update_url + "?mpa=" + mpa_id + "&depth=" + btm_depth
+    clear_data();
 
     $.ajax({
         method: "GET",
-        url: url,
-        beforeSend: function () {
-            for (const key in charts) {
-               charts[key].set_zoom(min_date, max_date)
-               charts[key].set_loading(true);
-            }
-        },
+        url: timeseries_url,
         success: function(data) {
             if(data == null || data.data == null) {
                 console.error("No data returned from timeseries query");
@@ -302,7 +294,9 @@ function get_timeseries(base_url) {
                 chart.mpa_id = mpa_id;
                 chart.dial_max = data.max_delta;
                 chart.dial_min = data.min_delta;
-                chart.update_timeseries_data(date_labels, ts_data, climate_data);
+                chart.set_depth(btm_depth);
+                chart.update_data(date_labels, ts_data, climate_data);
+                set_chart_zoom(chart);
                 if(selected_date != null) {
                     chart.set_selected_date(selected_date);
                 }
@@ -312,12 +306,18 @@ function get_timeseries(base_url) {
             console.log("error");
             console.log(error_data);
         },
-        complete: function () {
-            for (const key in charts) {
-                charts[key].set_loading(false);
-            }
-        }
     });
+    $.ajax({
+        method: "GET",
+        url: anomaly_url,
+        success: function(data) {
+            standard_anomalies_chart.update_data(data['depth'], data['dates'], data['values'])
+        },
+        error: function (error_data) {
+            console.log("error");
+            console.log(error_data);
+        },
+    })
 }
 
 // click handler for chartjs charts to set the selected date and cause a refresh of date dependent components

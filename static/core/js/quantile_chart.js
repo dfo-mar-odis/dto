@@ -1,7 +1,5 @@
 class QuantileChart extends RangeChart {
 
-    depth = '';
-
     constructor(ctx_element, data_url, upper_limit=0.9, lower_limit=0.1) {
         super(ctx_element, data_url, upper_limit, lower_limit);
     }

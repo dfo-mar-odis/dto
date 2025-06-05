@@ -261,6 +261,37 @@ def generate_pdf(request):
     return FileResponse(buffer, as_attachment=True, filename="DTO_Save.pdf")
 
 
+def get_anomaly(request):
+    mpa_id, depth, start_date, end_date = parse_request_variables(request)
+
+    mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
+    df = get_timeseries_dataframe(mpa_zone, depth)
+
+    # Assume df has a DateTimeIndex and a 'value' column (temperature)
+    df['doy'] = df.index.dayofyear
+
+    # Step 1: Climatology (mean and std for each day-of-year)
+    clim_mean = df.groupby('doy')['value'].mean()
+    clim_std = df.groupby('doy')['value'].std()
+
+    # Step 2: Compute daily anomaly (z-score)
+    df['clim_mean'] = df['doy'].map(clim_mean)
+    df['clim_std'] = df['doy'].map(clim_std)
+    df['anomaly'] = (df['value'] - df['clim_mean']) / df['clim_std']
+
+    # Step 3: Aggregate by year (mean annual anomaly)
+    df['year'] = df.index.year
+    annual_anomaly = df.groupby('year')['anomaly'].mean()
+
+    data ={
+        'depth': depth,
+        'dates': [str(year) for year in annual_anomaly.index],
+        'values': annual_anomaly.values.tolist()
+    }
+
+    return JsonResponse(data)
+
+
 def get_quantiles(request):
 
     timeseries = {'data': []}
@@ -373,6 +404,14 @@ def get_depths(request):
     depth_array = [(d, f'{d} m') for d in depths if d is not None]
     depth_array.insert(0, ('', _("Total Average Bottom Timeseries")))
     return JsonResponse({'depths': depth_array})
+
+
+def get_standard_anomalies_chart(request):
+    chart_id = request.GET.get('chart_name')
+
+    context = {'id': chart_id, 'proxy_url': settings.PROXY_URL}
+    html = render(request, 'core/partials/stda_chart_row.html', context)
+    return HttpResponse(html)
 
 
 def get_range_chart(request):

@@ -181,12 +181,15 @@ class RangeChart {
         );
 
         $("#" + ctx_element + "_select_id_species").on('change', function(e) {chart_obj.get_species_range(e)});
-
-        this.set_zoom("x", "y");
     }
 
     initialized() {};
     post_initialize() {};
+    set_loading(loading) {}
+    set_depth(depth) {
+        this.depth = depth
+    }
+
 
     get_chart_html(chart_name, append_to="div_id_range_card") {
         const chart_obj = this;
@@ -206,20 +209,6 @@ class RangeChart {
                 chart_obj.post_initialize()
             }
         });
-    }
-
-    set_loading(loading) {
-        // if(loading) {
-        //     $("#" + this.chart_name + "_loading_chart").addClass("loader");
-        //     $("#" + this.chart_name).hide();
-        // } else {
-        //     $("#" + this.chart_name + "_loading_chart").removeClass("loader");
-        //     $("#" + this.chart_name).show();
-        // }
-    }
-
-    set_depth(depth) {
-        this.depth = depth
     }
 
     set_zoom(start_date, end_date) {
@@ -294,7 +283,7 @@ class RangeChart {
         });
     }
 
-    async update_thresholds() {
+    update_thresholds() {
         const chart_obj = this
 
         $("#" + chart_obj.chart_name + "_q_upper").on('input', function (e) {
@@ -311,10 +300,13 @@ class RangeChart {
         chart_obj.timeseries_chart.update();
     }
 
-    update_timeseries_data(date_labels, temp_data, climate_data) {
+    update_data(date_labels, temp_data, climate_data) {
         this.configure_dial();
 
         this.timeseries_chart.data.labels = date_labels;
+        this.timeseries_chart.options.scales.x.min = date_labels[0];
+        this.timeseries_chart.options.scales.x.max = date_labels[date_labels.length - 1]
+
         this.ds_timeseries.data = temp_data;
         this.ds_climatology.data = climate_data;
 

@@ -17,7 +17,8 @@
                                     <h2>MPA Description</h2>
                                 </div>
                                 <div class="col-auto">
-                                    <a id="btn_id_pdf" class="btn btn-primary" style="display: none" href="{% url 'core:generate_pdf' %}">Generate PDF</a>
+                                    <a id="btn_id_pdf" class="btn btn-primary" style="display: none"
+                                       href="{% url 'core:generate_pdf' %}">Generate PDF</a>
                                 </div>
                             </div>
                         </div>
@@ -46,31 +47,40 @@
                                 <div class="row">
                                     <div class="col align-content-center">
                                         <label for="btm_depth">{% trans "Bottom Depth" %}</label>
-                                        <select class="form-select" id="btm_depth" onchange="get_timeseries('{% url 'core:timeseries' %}')">
+                                        <select class="form-select" id="btm_depth"
+                                                onchange="get_data()">
                                             <option value="">{% trans "Total Average Bottom Timeseries" %}</option>
                                         </select>
                                     </div>
                                 </div>
                                 <div class="row mt-2">
                                     <div class="col-auto align-content-center mt-4">
-                                        <button type="button" class="btn btn-secondary" title="-10 years" onclick="pan_frame(-10)">{% trans '<<' %}</button>
-                                        <button type="button" class="btn btn-secondary" title="-5 years" onclick="pan_frame(-5)">{% trans '<' %}</button>
+                                        <button type="button" class="btn btn-secondary" title="-10 years"
+                                                onclick="pan_frame(-10)">{% trans '<<' %}</button>
+                                        <button type="button" class="btn btn-secondary" title="-5 years"
+                                                onclick="pan_frame(-5)">{% trans '<' %}</button>
                                     </div>
                                     <div class="col">
                                         <label for="zoom_min" class="form-label">{% trans 'Start Date' %}</label>
-                                        <input id="zoom_min" type="date" class="form-control" value="2019-01-01" max="9999-12-31" />
+                                        <input id="zoom_min" type="date" class="form-control" value="2019-01-01"
+                                               max="9999-12-31"/>
                                     </div>
                                     <div class="col">
-                                        <label for="selected_date" class="form-label">{% trans 'Selected Date' %}</label>
-                                        <input id="selected_date" type="date" class="form-control" value="" max="9999-12-31"/>
+                                        <label for="selected_date"
+                                               class="form-label">{% trans 'Selected Date' %}</label>
+                                        <input id="selected_date" type="date" class="form-control" value=""
+                                               max="9999-12-31"/>
                                     </div>
                                     <div class="col">
                                         <label for="zoom_max" class="form-label">{% trans 'End Date' %}</label>
-                                        <input id="zoom_max" type="date" class="form-control" value="2024-01-01" max="9999-12-31" />
+                                        <input id="zoom_max" type="date" class="form-control" value="2024-01-01"
+                                               max="9999-12-31"/>
                                     </div>
                                     <div class="col-auto align-content-center mt-4">
-                                        <button type="button" class="btn btn-secondary" title="+5 years" onclick="pan_frame(5)">{% trans '>' %}</button>
-                                        <button type="button" class="btn btn-secondary" title="+10 years" onclick="pan_frame(10)">{% trans '>>' %}</button>
+                                        <button type="button" class="btn btn-secondary" title="+5 years"
+                                                onclick="pan_frame(5)">{% trans '>' %}</button>
+                                        <button type="button" class="btn btn-secondary" title="+10 years"
+                                                onclick="pan_frame(10)">{% trans '>>' %}</button>
                                     </div>
                                 </div>
                             </div>
@@ -88,37 +98,54 @@
     <ul class="nav nav-tabs mt-2" id="chart_types" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="ocean_data_tab" data-bs-toggle="tab" data-bs-target="#ocean_data"
-                    type="button" role="tab" aria-controls="ocean_data" aria-selected="true">{%  trans "Ocean Data" %}
+                    type="button" role="tab" aria-controls="ocean_data" aria-selected="true">{% trans "Ocean Data" %}
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="species_data_tab" data-bs-toggle="tab" data-bs-target="#species_data"
-                    type="button" role="tab" aria-controls="specieis_data" aria-selected="false">{%  trans "Species Data" %}
+                    type="button" role="tab" aria-controls="specieis_data"
+                    aria-selected="false">{% trans "Species Data" %}
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="network_data_tab" data-bs-toggle="tab" data-bs-target="#network_data"
-                    type="button" role="tab" aria-controls="network_data" aria-selected="false">{%  trans "Network Comparison" %}
+                    type="button" role="tab" aria-controls="network_data"
+                    aria-selected="false">{% trans "Network Comparison" %}
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="indicator_data_tab" data-bs-toggle="tab" data-bs-target="#indicator_data"
-                    type="button" role="tab" aria-controls="indicator_data" aria-selected="false">{%  trans "Indicator Data" %}
+                    type="button" role="tab" aria-controls="indicator_data"
+                    aria-selected="false">{% trans "Indicator Data" %}
             </button>
         </li>
     </ul>
     <div class="tab-content" id="chart_tabs">
         <div class="tab-pane fade show active" id="ocean_data">
-            <div id="div_id_quantile_card">
-                {# Ocean data is populated by javascript functions #}
+            <div class="row">
+                <div class="col">
+                    <div id="div_id_quantile_card">
+                        {# Ocean data is populated by javascript functions #}
+                    </div>
+                </div>
             </div>
+            <div class="row">
+                <div class="col">
+                    <div id="div_id_stda_card">
+
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <div class="tab-pane fade" id="species_data">
             <div id="div_id_range_card">
                 <div class="row">
                     <div class="col">
-                        <button id="btn_id_add_chart" class="btn btn-primary btn-sm" onclick="add_range_chart('{% url 'core:range_chart' %}')" title="{% trans "Add a Chart" %}">{% trans "Add a Chart" %}</button>
+                        <button id="btn_id_add_chart" class="btn btn-primary btn-sm"
+                                onclick="add_range_chart('{% url 'core:range_chart' %}')"
+                                title="{% trans "Add Chart" %}">{% trans "Add Chart" %}</button>
                         <div id="btn_id_add_chart_loading"></div>
                     </div>
                 </div>
@@ -131,7 +158,9 @@
                     </div>
                 </div>
                 <div class="card-body">
-        Shaylyn A. Lewis, Christine H. Stortini, Daniel G. Boyce, and Ryan R.E. Stanley. 2023. Climate change, species thermal emergence, and conservation design: a case study in the Canadian Northwest Atlantic. FACETS. 8: 1-16. <a href="https://doi.org/10.1139/facets-2022-0191">https://doi.org/10.1139/facets-2022-0191</a>
+                    Shaylyn A. Lewis, Christine H. Stortini, Daniel G. Boyce, and Ryan R.E. Stanley. 2023. Climate
+                    change, species thermal emergence, and conservation design: a case study in the Canadian Northwest
+                    Atlantic. FACETS. 8: 1-16. <a href="https://doi.org/10.1139/facets-2022-0191">https://doi.org/10.1139/facets-2022-0191</a>
                 </div>
             </div>
         </div>
@@ -156,11 +185,13 @@
 {% block scripts %}
     <script src="{% static 'core/js/range_chart.js' %}"></script>
     <script src="{% static 'core/js/quantile_chart.js' %}"></script>
+    <script src="{% static 'core/js/standard_anomalies.js' %}"></script>
     <script src="{% static 'core/js/indicator_dial.js' %}"></script>
     <script src="{% static 'core/js/map.js' %}"></script>
     <script>
-        const charts = { };
 
+        timeseries_update_url = "{% url 'core:timeseries' %}"
+        anomaly_update_url = "{% url 'core:anomaly' %}"
         function init_polygons(map, base_url) {
             $.ajax({
                 method: "GET",
@@ -169,7 +200,7 @@
                     $("#map").hide();
                     $("#map_loading").addClass("loader-lg");
                 },
-                success: function(data) {
+                success: function (data) {
                     data.forEach(mpa => parse_polygon_data(map, mpa));
                 },
                 error: function (error_data) {
@@ -196,16 +227,16 @@
             geo.on('click', function (e) {
 
                 let reset_color = e.layer.feature.style.color
-                if(e.originalEvent.ctrlKey) {
+                if (e.originalEvent.ctrlKey) {
                     e.layer.indicator = init_global_indicator(e.layer.feature.id)
 
-                    if(!previous_layers.includes(e.layer)) {
+                    if (!previous_layers.includes(e.layer)) {
                         previous_layers.push(e.layer);
                     } else {
                         previous_layers = previous_layers.filter(layer => layer !== e.layer)
                         e.layer.setStyle({fillColor: reset_color});
                     }
-                } else if(e.layer) {
+                } else if (e.layer) {
                     previous_layers.forEach(layer => {
                         layer.setStyle({fillColor: reset_color});
                     });
@@ -215,7 +246,7 @@
                     previous_layers.push(e.layer);
                 }
 
-                if(selectedLayer) {
+                if (selectedLayer) {
                     selectedLayer.setStyle({fillColor: reset_color});
                 }
 
@@ -233,12 +264,8 @@
                     add_network_indicators("{% url 'core:get_indicators' %}", date)
                 }
 
-                clear_timeseries();
-
+                get_data();
                 get_depths("{% url 'core:get_depths' %}");
-                set_zoom("{% url 'core:timeseries' %}");
-
-                //get_timeseries(); // Timeseries is updated in the set_zoom() function
 
                 let $btn_pdf = $("#btn_id_pdf")
                 $btn_pdf.attr("href", get_link("{% url 'core:generate_pdf' %}"))
@@ -256,14 +283,14 @@
             let title_html = '<div class="row"><div class="col"><b>' + mpa.properties.name + '</b></div></div>'
             {#geo.bindPopup(title_html);#}
             geo.bindTooltip(title_html);
-            geo.on('mouseover', function(e){
+            geo.on('mouseover', function (e) {
                 let date = get_selected_date_string(get_selected_date());
-                if(date != null) {
+                if (date != null) {
                     update_polygons_properties("{% url 'core:get_indicators' %}", geo, mpa, date);
                 }
                 this.openPopup();
             });
-            geo.on('mouseout', function(e){
+            geo.on('mouseout', function (e) {
                 this.openPopup();
             });
 
@@ -271,12 +298,12 @@
         }
 
         function init_global_indicator(mpa) {
-            let indicator = {"mpa":mpa, "date": null, "min":-10, "max":10, "current":0, "lower":-5, "upper":5}
+            let indicator = {"mpa": mpa, "date": null, "min": -10, "max": 10, "current": 0, "lower": -5, "upper": 5}
             indicator.current = Math.floor(Math.random() * (indicator.max - indicator.min + 1) + indicator.min);
             return indicator
         }
 
-        $(document).ready( function() {
+        $(document).ready(function () {
             let updateDateTimer;
             let map = L.map('map').setView([44.666830, -61.531500], 5)
 
@@ -297,43 +324,48 @@
 
             init_polygons(map, "{%  url 'core:get_polygons' %}");
 
-            $("#zoom_min").on('change', function() {
+            $("#zoom_min").on('change', function () {
                 clearTimeout(updateDateTimer);
 
-                updateDateTimer = setTimeout(function() {
+                updateDateTimer = setTimeout(function () {
                     set_zoom();
                 }, 500)
             });
-            $("#zoom_max").on('change', function() {
+            $("#zoom_max").on('change', function () {
                 clearTimeout(updateDateTimer);
 
-                updateDateTimer = setTimeout(function() {
+                updateDateTimer = setTimeout(function () {
                     set_zoom();
                 }, 500)
             });
-            $("#selected_date").on('change', function() {
+            $("#selected_date").on('change', function () {
                 clearTimeout(updateDateTimer);
 
-                updateDateTimer = setTimeout(function() {
-                    if(get_selected_date() != null) {
+                updateDateTimer = setTimeout(function () {
+                    if (get_selected_date() != null) {
                         set_selected_date();
                     }
                 }, 500)
             });
 
             charts['mpa_ts_quantile_chart'] = new QuantileChart('mpa_ts_quantile_chart', "{% url 'core:quantile_chart' %}");
-            charts['mpa_ts_quantile_chart'].initialized = function() {
+            charts['mpa_ts_quantile_chart'].initialized = function () {
                 let chart_obj = this;
-                this.ctx.onclick = function(e) { handle_set_date(e, chart_obj)};
-                date_update_listeners.push(function(selected_date) {
+                this.ctx.onclick = function (e) {
+                    handle_set_date(e, chart_obj)
+                };
+                date_update_listeners.push(function (selected_date) {
                     charts['mpa_ts_quantile_chart'].set_selected_date(selected_date)
                 });
+                set_chart_zoom(this);
             };
 
-            date_update_listeners.push(function(selected_date) {
+            date_update_listeners.push(function (selected_date) {
                 let date_string = get_selected_date_string(selected_date)
                 add_network_indicators("{% url 'core:get_indicators' %}", date_string)
             });
+
+            standard_anomalies_chart = new StandardAnomaliesChart('mpa_ts_stda_chart', "{% url 'core:stda_chart' %}");
 
         });
     </script>
