@@ -265,7 +265,7 @@ def get_anomaly(request):
     mpa_id, depth, start_date, end_date = parse_request_variables(request)
     mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
 
-    mpa_timeseries = mpa_zone.name.timeseries.filter(indicator=1).exclude(depth=None).order_by('date_time')
+    mpa_timeseries = mpa_zone.name.timeseries.filter(indicator=1, depth=None).order_by('date_time')
 
     df = pd.DataFrame(list(mpa_timeseries.values('date_time', 'depth', 'value')))
     df['date_time'] = pd.to_datetime(df['date_time'])
@@ -284,22 +284,6 @@ def get_anomaly(request):
 
     # Step 4: Annual standardized anomaly
     anomaly = (annual_means - climatology_mean) / climatology_std
-
-    # # Assume df has a DateTimeIndex and a 'value' column (temperature)
-    # df['doy'] = df.index.dayofyear
-    #
-    # # Step 1: Climatology (mean and std for each day-of-year)
-    # clim_mean = df.groupby('doy')['value'].mean()
-    # clim_std = df.groupby('doy')['value'].std()
-    #
-    # # Step 2: Compute daily anomaly (z-score)
-    # df['clim_mean'] = df['doy'].map(clim_mean)
-    # df['clim_std'] = df['doy'].map(clim_std)
-    # df['anomaly'] = (df['value'] - df['clim_mean']) / df['clim_std']
-    #
-    # # Step 3: Aggregate by year (mean annual anomaly)
-    # df['year'] = df.index.year
-    # annual_anomaly = df.groupby('year')['anomaly'].mean()
 
     data ={
         'dates': [str(year) for year in anomaly.index],
@@ -467,14 +451,6 @@ class MapView(TemplateView):
         logger.debug("Initializing View")
         figure = folium.Figure()
 
-        # Add a Marker
-        # for station in models.Station.objects.all():
-        #     folium.Marker(
-        #         location=station.position,
-        #         popup=str(station),
-        #     ).add_to(map)
-
-        # Make the map
         map = folium.Map(location=[44.666830, -63.631500], zoom_start=6)
         map.add_to(figure)
 

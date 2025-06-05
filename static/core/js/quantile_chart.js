@@ -26,11 +26,9 @@ class QuantileChart extends RangeChart {
 
         url += '?mpa=' + this.mpa_id;
 
-        const date_scale = this.timeseries_chart.scales.x.ticks;
-
         url = url + "&depth=" + ((this.depth) ? this.depth : "");
-        url = url + "&start_date=" + (new Date(date_scale[0].value)).toLocaleDateString();
-        url = url + "&end_date=" + (new Date(date_scale[date_scale.length-1].value)).toLocaleDateString();
+        url = url + "&start_date=" + (new Date(this.timeseries_chart.options.scales.x.min)).toLocaleDateString();
+        url = url + "&end_date=" + (new Date(this.timeseries_chart.options.scales.x.max)).toLocaleDateString();
         url = url + '&upper=' + this.q_upper;
         url = url + '&lower=' + this.q_lower
 
@@ -47,14 +45,13 @@ class QuantileChart extends RangeChart {
 
                 chart_obj.ds_upper_threshold.data = u_qunat;
                 chart_obj.ds_lower_threshold.data = l_quant;
-
-                chart_obj.timeseries_chart.update();
             },
             error: function (error_data) {
                 console.log("error");
                 console.log(error_data);
             },
             complete: function () {
+                chart_obj.timeseries_chart.update();
                 $("#" + chart_obj.chart_name + "_loading_threshold").removeClass("loader-sm");
             }
         });

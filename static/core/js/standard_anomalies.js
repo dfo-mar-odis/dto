@@ -14,7 +14,7 @@ class StandardAnomaliesChart {
     );
 
     ds_temperatureAnomalies = {
-        label: 'Temperature Anomaly (°C)',
+        label: 'Temperature Anomaly (σ)',
         data: this.temperatureAnomalies,
         backgroundColor: this.backgroundColors,
         borderColor: this.borderColors,
@@ -61,7 +61,7 @@ class StandardAnomaliesChart {
                                 }
                                 const value = context.parsed.y;
                                 label += value > 0 ? '+' + value.toFixed(2) : value.toFixed(2);
-                                label += '°C';
+                                label += ' σ';
                                 return label;
                             }
                         }
@@ -86,12 +86,12 @@ class StandardAnomaliesChart {
                         },
                         ticks: {
                             callback: function (value) {
-                                return value + '°C';
+                                return value + ' σ';
                             }
                         },
                         title: {
                             display: true,
-                            text: 'Temperature Anomaly (°C)'
+                            text: 'Temperature Anomaly (σ)'
                         }
                     },
                     x: {
@@ -147,7 +147,13 @@ class StandardAnomaliesChart {
 
         // Update backgroundColor and borderColor based on new data
         this.backgroundColors = temp_data.map(value =>
-            value >= 0 ? 'rgba(255, 99, 132, 0.6)' : 'rgba(54, 162, 235, 0.6)'
+            value >= 0 ?
+                (value < 1 ?
+                        (value < 0.5 ? 'rgba(255, 99, 99, 0.4)' : 'rgba(255, 99, 99, 0.6)') :
+                        (value < 1.5 ? 'rgba(255, 99, 99, 0.8)' : 'rgba(255, 99, 99, 1.0)')) :
+                (value > -1 ?
+                        (value > -0.5 ? 'rgba(99, 99, 255, 0.4)' : 'rgba(99, 99, 255, 0.6)') :
+                        (value > -1.5 ? 'rgba(99, 99, 255, 0.8)' : 'rgba(99, 99, 255, 1.0)'))
         );
         this.borderColors = temp_data.map(value =>
             value >= 0 ? 'rgba(255, 99, 132, 1)' : 'rgba(54, 162, 235, 1)'

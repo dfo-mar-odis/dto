@@ -190,37 +190,43 @@ function set_chart_zoom(chart) {
 
 function add_range_chart(chart_base_url) {
 
+    const min_date = $("#zoom_min").val();
+    const max_date = $("#zoom_max").val();
+    const btm_depth = $("#btm_depth").val();
+
     set_chart_loading(true);
-    set_chart_loading(true).then(function() {
-        range_charts += 1;
+    range_charts += 1;
 
-        const label = 'mpa_ts_range_chart_' + range_charts.toString();
-        charts[label] = new RangeChart(label, chart_base_url);
-        charts[label].initialized = function() {
-            let chart_obj = this;
-            let selected_date = get_selected_date();
+    const label = 'mpa_ts_range_chart_' + range_charts.toString();
+    charts[label] = new RangeChart(label, chart_base_url);
+    charts[label].initialized = function() {
+        let chart_obj = this;
+        let selected_date = get_selected_date();
 
-            this.ctx.onclick = function(e) { handle_set_date(e, chart_obj)};
+        this.ctx.onclick = function(e) { handle_set_date(e, chart_obj)};
 
-            if(mpa_id) {
-                charts[label].mpa_id = mpa_id;
-                charts[label].update_data(date_labels, ts_data, climate_data);
-            }
-
-            if(selected_date != null) {
-                charts[label].set_selected_date(selected_date);
-            }
-
-            date_update_listeners.push(function(selected_date) {
-                charts[label].set_selected_date(selected_date);
-            });
-            set_chart_loading(false);
-            set_chart_zoom(chart_obj)
+        if(mpa_id) {
+            charts[label].mpa_id = mpa_id;
+            charts[label].set_zoom(min_date, max_date);
+            charts[label].set_depth(btm_depth);
+            charts[label].update_data(date_labels, ts_data, climate_data);
+            charts[label].update_thresholds();
+            charts[label].update_chart();
         }
-    });
+
+        if(selected_date != null) {
+            charts[label].set_selected_date(selected_date);
+        }
+
+        date_update_listeners.push(function(selected_date) {
+            charts[label].set_selected_date(selected_date);
+        });
+        set_chart_loading(false);
+        set_chart_zoom(chart_obj)
+    }
 }
 
-async function set_chart_loading(loading) {
+function set_chart_loading(loading) {
     // Sets the 'Add Chart' button to loading or not
     if(loading) {
         $("#btn_id_add_chart").hide();
@@ -265,7 +271,7 @@ function get_depths(base_url) {
 }
 
 // The timeseries should update for all charts
-function get_data() {
+async function get_data() {
     const min_date = $("#zoom_min").val();
     const max_date = $("#zoom_max").val();
     const btm_depth = $("#btm_depth").val();
@@ -276,10 +282,10 @@ function get_data() {
     let anomaly_url = anomaly_update_url + "?mpa=" + mpa_id + "&depth=" + btm_depth
     clear_data();
 
-    $.ajax({
+    await $.ajax({
         method: "GET",
         url: timeseries_url,
-        success: function(data) {
+        success: async function(data) {
             if(data == null || data.data == null) {
                 console.error("No data returned from timeseries query");
                 return;
@@ -294,9 +300,11 @@ function get_data() {
                 chart.mpa_id = mpa_id;
                 chart.dial_max = data.max_delta;
                 chart.dial_min = data.min_delta;
-                chart.set_depth(btm_depth);
-                chart.update_data(date_labels, ts_data, climate_data);
-                set_chart_zoom(chart);
+                await chart.set_zoom(min_date, max_date);
+                await chart.set_depth(btm_depth);
+                await chart.update_data(date_labels, ts_data, climate_data);
+                await chart.update_thresholds();
+                await chart.update_chart();
                 if(selected_date != null) {
                     chart.set_selected_date(selected_date);
                 }
@@ -307,6 +315,7 @@ function get_data() {
             console.log(error_data);
         },
     });
+
     $.ajax({
         method: "GET",
         url: anomaly_url,

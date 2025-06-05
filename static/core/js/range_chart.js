@@ -211,13 +211,9 @@ class RangeChart {
         });
     }
 
-    set_zoom(start_date, end_date) {
-        this.timeseries_chart.zoomScale('x',
-            {
-                min: new Date(start_date).valueOf(),
-                max: new Date(end_date).valueOf(),
-            },
-            'default');
+    async set_zoom(start_date, end_date) {
+        this.timeseries_chart.options.scales.x.min = new Date(start_date).valueOf();
+        this.timeseries_chart.options.scales.x.max = new Date(end_date).valueOf();
         // this.timeseries_chart.update();
     }
 
@@ -229,12 +225,12 @@ class RangeChart {
         return legendItem;
     }
 
-    update_chart() {
+    async update_chart() {
         this.timeseries_chart.update();
         this.timeseries_chart.resetZoom();
     }
 
-    clear_timeseries() {
+    async clear_timeseries() {
         this.dial_cur = 0;
         this.configure_dial();
 
@@ -244,9 +240,8 @@ class RangeChart {
         this.ds_climatology.data = [];
 
         this.date_indicator.value = "undefined";
-        this.update_chart();
+        await this.update_chart();
     }
-
 
     async get_species_range(event) {
         const selected_id = event.target.value
@@ -254,10 +249,9 @@ class RangeChart {
 
         let url = "/" + this.update_btn.data('url') + selected_id + "/?";
 
-        const date_scale = this.timeseries_chart.scales.x.ticks;
         url = url + "depth=" + ((this.depth) ? this.depth : "");
-        url = url + "&start_date=" + (new Date(date_scale[0].value)).toLocaleDateString();
-        url = url + "&end_date=" + (new Date(date_scale[date_scale.length-1].value)).toLocaleDateString();
+        url = url + "&start_date=" + (new Date(this.timeseries_chart.options.scales.x.min)).toLocaleDateString();
+        url = url + "&end_date=" + (new Date(this.timeseries_chart.options.scales.x.max)).toLocaleDateString();
 
         await $.ajax({
             method: "GET",
@@ -268,18 +262,18 @@ class RangeChart {
             success: function(data) {
                 chart_obj.q_upper = data.upper;
                 chart_obj.q_lower = data.lower;
-            },
+           },
             error: function (error_data) {
                 console.log("error");
                 console.log(error_data);
             },
             complete: function () {
+                $("#" + chart_obj.chart_name + "_q_upper").val(chart_obj.q_upper);
+                $("#" + chart_obj.chart_name + "_q_lower").val(chart_obj.q_lower);
+                chart_obj.update_thresholds();
+                chart_obj.update_chart();
                 $("#" + chart_obj.chart_name + "_loading_threshold").removeClass("loader-sm");
             }
-        }).then(function() {
-            $("#" + chart_obj.chart_name + "_q_upper").val(chart_obj.q_upper);
-            $("#" + chart_obj.chart_name + "_q_lower").val(chart_obj.q_lower);
-            chart_obj.update_thresholds();
         });
     }
 
@@ -296,22 +290,17 @@ class RangeChart {
 
         chart_obj.ds_upper_threshold.data = chart_obj.timeseries_chart.data.labels.map((x) => chart_obj.q_upper);
         chart_obj.ds_lower_threshold.data = chart_obj.timeseries_chart.data.labels.map((x) => chart_obj.q_lower);
-
-        chart_obj.timeseries_chart.update();
     }
 
-    update_data(date_labels, temp_data, climate_data) {
+    async update_data(date_labels, temp_data, climate_data) {
         this.configure_dial();
 
-        this.timeseries_chart.data.labels = date_labels;
         this.timeseries_chart.options.scales.x.min = date_labels[0];
         this.timeseries_chart.options.scales.x.max = date_labels[date_labels.length - 1]
+        this.timeseries_chart.data.labels = date_labels;
 
         this.ds_timeseries.data = temp_data;
         this.ds_climatology.data = climate_data;
-
-        this.update_thresholds();
-        this.update_chart();
     }
 
     set_selected_date(targetDate) {
