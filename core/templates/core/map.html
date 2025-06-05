@@ -97,7 +97,12 @@
 
     <ul class="nav nav-tabs mt-2" id="chart_types" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="ocean_data_tab" data-bs-toggle="tab" data-bs-target="#ocean_data"
+            <button class="nav-link active" id="standard_anomaly_data_tab" data-bs-toggle="tab" data-bs-target="#standard_anomaly_data"
+                    type="button" role="tab" aria-controls="standard_anomaly_data" aria-selected="true">{% trans "Standard Anomaly" %}
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="ocean_data_tab" data-bs-toggle="tab" data-bs-target="#ocean_data"
                     type="button" role="tab" aria-controls="ocean_data" aria-selected="true">{% trans "Ocean Data" %}
             </button>
         </li>
@@ -121,14 +126,8 @@
         </li>
     </ul>
     <div class="tab-content" id="chart_tabs">
-        <div class="tab-pane fade show active" id="ocean_data">
-            <div class="row">
-                <div class="col">
-                    <div id="div_id_quantile_card">
-                        {# Ocean data is populated by javascript functions #}
-                    </div>
-                </div>
-            </div>
+
+        <div class="tab-pane fade show active" id="standard_anomaly_data">
             <div class="row">
                 <div class="col">
                     <div id="div_id_stda_card">
@@ -136,7 +135,16 @@
                     </div>
                 </div>
             </div>
+        </div>
 
+        <div class="tab-pane fade" id="ocean_data">
+            <div class="row">
+                <div class="col">
+                    <div id="div_id_quantile_card">
+                        {# Ocean data is populated by javascript functions #}
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="tab-pane fade" id="species_data">

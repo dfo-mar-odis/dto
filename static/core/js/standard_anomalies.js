@@ -140,13 +140,7 @@ class StandardAnomaliesChart {
         this.update_chart();
     }
 
-    update_data(depth, date_labels, temp_data) {
-
-        let subtitle = depth === null ? 'Total Average Bottom' : `Depth: ${depth} m`;
-        this.timeseries_chart.options.plugins.title.text = [
-            'Yearly Temperature Standard Anomaly',
-            subtitle
-        ];
+    update_data(date_labels, temp_data) {
 
         this.timeseries_chart.data.labels = date_labels;
         this.ds_temperatureAnomalies.data = temp_data

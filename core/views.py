@@ -263,30 +263,47 @@ def generate_pdf(request):
 
 def get_anomaly(request):
     mpa_id, depth, start_date, end_date = parse_request_variables(request)
-
     mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
-    df = get_timeseries_dataframe(mpa_zone, depth)
 
-    # Assume df has a DateTimeIndex and a 'value' column (temperature)
-    df['doy'] = df.index.dayofyear
+    mpa_timeseries = mpa_zone.name.timeseries.filter(indicator=1).exclude(depth=None).order_by('date_time')
 
-    # Step 1: Climatology (mean and std for each day-of-year)
-    clim_mean = df.groupby('doy')['value'].mean()
-    clim_std = df.groupby('doy')['value'].std()
+    df = pd.DataFrame(list(mpa_timeseries.values('date_time', 'depth', 'value')))
+    df['date_time'] = pd.to_datetime(df['date_time'])
+    df.set_index('date_time', inplace=True)
 
-    # Step 2: Compute daily anomaly (z-score)
-    df['clim_mean'] = df['doy'].map(clim_mean)
-    df['clim_std'] = df['doy'].map(clim_std)
-    df['anomaly'] = (df['value'] - df['clim_mean']) / df['clim_std']
-
-    # Step 3: Aggregate by year (mean annual anomaly)
+    # Step 1: Calculate annual mean temperatures for each year
     df['year'] = df.index.year
-    annual_anomaly = df.groupby('year')['anomaly'].mean()
+    annual_means = df.groupby('year')['value'].mean()
+
+    # Step 2: Calculate annual climatology (mean of annual means from 1993 to 2021)
+    climatology_years = annual_means.iloc[:30]
+    climatology_mean = climatology_years.mean()
+
+    # Step 3: Calculate standard deviation for climatology (std of the 30 points)
+    climatology_std = climatology_years.std()
+
+    # Step 4: Annual standardized anomaly
+    anomaly = (annual_means - climatology_mean) / climatology_std
+
+    # # Assume df has a DateTimeIndex and a 'value' column (temperature)
+    # df['doy'] = df.index.dayofyear
+    #
+    # # Step 1: Climatology (mean and std for each day-of-year)
+    # clim_mean = df.groupby('doy')['value'].mean()
+    # clim_std = df.groupby('doy')['value'].std()
+    #
+    # # Step 2: Compute daily anomaly (z-score)
+    # df['clim_mean'] = df['doy'].map(clim_mean)
+    # df['clim_std'] = df['doy'].map(clim_std)
+    # df['anomaly'] = (df['value'] - df['clim_mean']) / df['clim_std']
+    #
+    # # Step 3: Aggregate by year (mean annual anomaly)
+    # df['year'] = df.index.year
+    # annual_anomaly = df.groupby('year')['anomaly'].mean()
 
     data ={
-        'depth': depth,
-        'dates': [str(year) for year in annual_anomaly.index],
-        'values': annual_anomaly.values.tolist()
+        'dates': [str(year) for year in anomaly.index],
+        'values': anomaly.values.tolist()
     }
 
     return JsonResponse(data)
@@ -516,6 +533,6 @@ def get_polygons(request):
     else:
         ids = models.Timeseries.objects.values_list('mpa', flat=True).distinct()
 
-    json_data = [add_attributes(mpa) for mpa in models.MPAZone.objects.filter(name__in=ids)]
+    json_data = [add_attributes(mpa) for mpa in models.MPAZone.objects.filter(name__in=ids).order_by('-km2')]
 
     return JsonResponse(json_data, safe=False)

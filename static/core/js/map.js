@@ -311,7 +311,7 @@ function get_data() {
         method: "GET",
         url: anomaly_url,
         success: function(data) {
-            standard_anomalies_chart.update_data(data['depth'], data['dates'], data['values'])
+            standard_anomalies_chart.update_data(data['dates'], data['values'])
         },
         error: function (error_data) {
             console.log("error");
