@@ -26,17 +26,9 @@ from core import views
 
 # {settings.PROXY_URL}
 
-# automatically load URLs for all registered apps
-def get_registered_app_urls():
-    url_list = {}
-    for app in settings.REGISTERED_APPS:
-        url = importlib.util.find_spec(app + ".urls")
-        if url is not None:
-            url_list[app] = path("", include(app+'.urls'))
-
-    return url_list
-
 urlpatterns = [
     path(f'', views.index, name='index'),
     path(f'', include('core.urls'))
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+pass
