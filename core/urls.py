@@ -9,6 +9,7 @@ urlpatterns = [
     path('timeseries/', views.get_timeseries, name='timeseries'),
     path('anomaly/', views.get_anomaly, name='anomaly'),
     path('quantiles/', views.get_quantiles, name='quantiles'),
+    path('species_range/', views.get_species_range, name='species_range'),
     path('species_range/<int:species_id>/', views.get_species_range, name='species_range'),
     path('standard_anomalies_chart/', views.get_standard_anomalies_chart, name='stda_chart'),
     path('range_chart/', views.get_range_chart, name='range_chart'),

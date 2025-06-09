@@ -437,7 +437,7 @@ def get_quantile_chart(request):
     return HttpResponse(html)
 
 
-def get_species_range(request, species_id):
+def get_species_range(request, species_id=None):
     upper = 5
     lower = 2
     if models.Species.objects.filter(pk=species_id).exists():
