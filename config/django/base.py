@@ -122,8 +122,6 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-PROXY_URL = ''
-
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
@@ -144,10 +142,13 @@ LOGGING = {
             "formatter": "verbose",
         },
         "file": {
-            "class": "logging.FileHandler",
+            "class": "concurrent_log_handler.ConcurrentRotatingFileHandler",
             "filename": env.str('DJANGO_LOG_FILE', os.getenv('DJANGO_LOG_FILE', 'errors.log')),
+            "maxBytes": 1024 * 1024 * 10,  # 10 MB
+            "backupCount": 5,
             "level": env.str('DJANGO_LOG_LEVEL', os.getenv('DJANGO_LOG_LEVEL', 'ERROR')),
             "formatter": "verbose",
+            "encoding": "utf-8"
         }
     },
     "loggers": {

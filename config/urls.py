@@ -37,6 +37,6 @@ def get_registered_app_urls():
     return url_list
 
 urlpatterns = [
-    path(f'{settings.PROXY_URL}', views.index, name='index'),
-    path(f'{settings.PROXY_URL}', include('core.urls'))
+    path(f'', views.index, name='index'),
+    path(f'', include('core.urls'))
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

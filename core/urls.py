@@ -4,8 +4,6 @@ from . import views, models
 from djgeojson.views import GeoJSONLayerView
 
 app_name = 'core'
-
-url_prefix = ""
 urlpatterns = [
     # path(f'', views.index, name='map'),
     path('timeseries/', views.get_timeseries, name='timeseries'),
