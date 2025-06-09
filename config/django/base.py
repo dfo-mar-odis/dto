@@ -143,12 +143,12 @@ LOGGING = {
         },
         "file": {
             "class": "concurrent_log_handler.ConcurrentRotatingFileHandler",
-            "filename": env.str('DJANGO_LOG_FILE', os.getenv('DJANGO_LOG_FILE', 'errors.log')),
-            "maxBytes": 1024 * 1024 * 10,  # 10 MB
+            "filename": f"{BASE_DIR}/error.log",
+            "mode": "a",
+            "encoding": "utf-8",
+            "formatter": "simple",
             "backupCount": 5,
-            "level": env.str('DJANGO_LOG_LEVEL', os.getenv('DJANGO_LOG_LEVEL', 'ERROR')),
-            "formatter": "verbose",
-            "encoding": "utf-8"
+            "maxBytes": 1024 * 1024 * 2  # 2 MB
         }
     },
     "loggers": {
