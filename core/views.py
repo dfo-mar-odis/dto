@@ -32,7 +32,6 @@ colormap = cm.linear.Paired_07.scale(-2, 35)
 
 
 def add_attributes(mpa):
-
     value = 20
     simplified_poly = mpa.geom
     if simplified_poly.num_coords > 10000:
@@ -51,13 +50,12 @@ def add_attributes(mpa):
             'ts_value': value,
         },
         "geometry": {
-            "type":  simplified_poly.geom_type,
+            "type": simplified_poly.geom_type,
             "coordinates": simplified_poly.coords,
         }
     }
 
     return geo_json
-
 
 
 def index(request):
@@ -66,7 +64,7 @@ def index(request):
     #         models.MPAZone.objects.filter(name__in=ids)]
     context = {
         # 'mpas': mpas,
-        'proxy_url': settings.PROXY_URL,
+        # 'proxy_url': settings.PROXY_URL,
     }
 
     return render(request, 'core/map.html', context)
@@ -105,7 +103,7 @@ def add_plot(title, mpa_id, depth=None, start_date='2020-01-01', end_date='2023-
     indicator = models.Indicator.objects.get(pk=indicator)
     df = get_timeseries_dataframe(mpa_zone, depth, indicator=indicator)
 
-    clim = df[(df.index<='2022-12-31')]
+    clim = df[(df.index <= '2022-12-31')]
     clim = clim.groupby([clim.index.month, clim.index.day]).quantile()['value']
     grouped = df.groupby([df.index.month, df.index.day])
     upper = grouped.quantile(q=q_upper)['value']
@@ -169,7 +167,6 @@ def add_plot(title, mpa_id, depth=None, start_date='2020-01-01', end_date='2023-
 
 
 def generate_pdf(request):
-
     mpa_id, depth, start_date, end_date = parse_request_variables(request)
 
     if not start_date:
@@ -193,7 +190,7 @@ def generate_pdf(request):
 
     # align map from the bottom right of the page
     thumbnail_map_size = 200, 200
-    thumbnail_map_position = (page_top-thumbnail_map_size[0]), page_right-thumbnail_map_size[1]
+    thumbnail_map_position = (page_top - thumbnail_map_size[0]), page_right - thumbnail_map_size[1]
 
     p = canvas.Canvas(buffer, pagesize=letter)
 
@@ -221,7 +218,7 @@ def generate_pdf(request):
 
     # df.set_index('date_time', inplace=True)
 
-    year_span = 30/6
+    year_span = 30 / 6
     year = 1993
     plot = add_plot("Quartile Chart", mpa_id, depth, start_date=start_date, end_date=end_date)
     year += year_span
@@ -234,18 +231,17 @@ def generate_pdf(request):
     row_offset -= height
 
     if row_offset - margin < 0:
-
         rect_height = 100
 
         textob = p.beginText()
-        textob.setTextOrigin(page_left+margin, row_offset+height-(rect_height/2))
+        textob.setTextOrigin(page_left + margin, row_offset + height - (rect_height / 2))
         textob.setFont("Helvetica", 8)
         textob.textLine("This is an example citation at the bottom of a page because we've run out of space here")
 
         p.drawText(textob)
 
         p.setFillGray(gray=0.5, alpha=0.5)
-        p.rect(margin, row_offset + height - rect_height, letter[0] - (margin*2), rect_height, fill=1)
+        p.rect(margin, row_offset + height - rect_height, letter[0] - (margin * 2), rect_height, fill=1)
 
         p.showPage()
         row_offset = letter[1] - margin - height
@@ -285,7 +281,7 @@ def get_anomaly(request):
     # Step 4: Annual standardized anomaly
     anomaly = (annual_means - climatology_mean) / climatology_std
 
-    data ={
+    data = {
         'dates': [str(year) for year in anomaly.index],
         'values': anomaly.values.tolist()
     }
@@ -294,7 +290,6 @@ def get_anomaly(request):
 
 
 def get_quantiles(request):
-
     timeseries = {'data': []}
     mpa_id, depth, start_date, end_date = parse_request_variables(request)
 
@@ -363,11 +358,11 @@ def get_timeseries_data(mpa_id, depth=None, start_date=None, end_date=None, indi
     if df is None:
         return None
 
-    clim = df[(df.index<='2022-12-31')]
+    clim = df[(df.index <= '2022-12-31')]
     clim = clim.groupby([clim.index.month, clim.index.day]).quantile()
 
-    max_val = df[(df.value==df.max().value)]
-    min_val = df[(df.value==df.min().value)]
+    max_val = df[(df.value == df.max().value)]
+    min_val = df[(df.value == df.min().value)]
 
     timeseries['max_delta'] = df.max().value - clim.loc[(max_val.index.month[0], max_val.index.day[0])].value
     timeseries['min_delta'] = df.min().value - clim.loc[(min_val.index.month[0], min_val.index.day[0])].value
@@ -410,7 +405,10 @@ def get_depths(request):
 def get_standard_anomalies_chart(request):
     chart_id = request.GET.get('chart_name')
 
-    context = {'id': chart_id, 'proxy_url': settings.PROXY_URL}
+    context = {
+        'id': chart_id,
+        # 'proxy_url': settings.PROXY_URL
+    }
     html = render(request, 'core/partials/stda_chart_row.html', context)
     return HttpResponse(html)
 
@@ -419,7 +417,11 @@ def get_range_chart(request):
     chart_id = request.GET.get('chart_name')
     species = models.Species.objects.all().order_by('name')
 
-    context = {'id': chart_id, 'species': species, 'proxy_url': settings.PROXY_URL}
+    context = {
+        'id': chart_id,
+        'species': species,
+        # 'proxy_url': settings.PROXY_URL
+    }
     html = render(request, 'core/partials/range_chart_row.html', context)
     return HttpResponse(html)
 
@@ -427,7 +429,10 @@ def get_range_chart(request):
 def get_quantile_chart(request):
     chart_id = request.GET.get('chart_name')
 
-    context = {'id': chart_id, 'proxy_url': settings.PROXY_URL}
+    context = {
+        'id': chart_id,
+        # 'proxy_url': settings.PROXY_URL
+    }
     html = render(request, 'core/partials/quantile_chart_row.html', context)
     return HttpResponse(html)
 
@@ -483,13 +488,13 @@ def indicators(request):
         return None
 
     # using a 30 year timeseries for the climatology from 1993-01-01 to 2022-120-31
-    clim = df[(df.index<='2022-12-31')]
+    clim = df[(df.index <= '2022-12-31')]
     clim = clim.groupby([clim.index.month, clim.index.day]).quantile()
     upper_c = df.groupby([df.index.month, df.index.day]).quantile(q=0.9)
     lower_c = df.groupby([df.index.month, df.index.day]).quantile(q=0.1)
 
-    max_val = df[(df.value==df.max().value)]
-    min_val = df[(df.value==df.min().value)]
+    max_val = df[(df.value == df.max().value)]
+    min_val = df[(df.value == df.min().value)]
 
     min_ts = round(df.min().value - clim.at[(min_val.index.month[0], min_val.index.day[0]), 'value'], 3)
     max_ts = round(df.max().value - clim.at[(max_val.index.month[0], max_val.index.day[0]), 'value'], 3)
@@ -497,7 +502,10 @@ def indicators(request):
     upper = round(upper_c.at[(date.month, date.day), "value"] - clim.at[(date.month, date.day), 'value'], 3)
     lower = round(lower_c.at[(date.month, date.day), "value"] - clim.at[(date.month, date.day), 'value'], 3)
 
-    return JsonResponse({"mpa":mpa, "date":date.strftime('%Y-%m-%d'), "min":min_ts, "max":max_ts, "current":current, "lower":lower, "upper":upper})
+    return JsonResponse(
+        {"mpa": mpa, "date": date.strftime('%Y-%m-%d'), "min": min_ts, "max": max_ts, "current": current,
+         "lower": lower, "upper": upper})
+
 
 def get_polygons(request):
     page_size = 5
