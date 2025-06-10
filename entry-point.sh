@@ -6,4 +6,4 @@
 #python manage.py check
 python manage.py collectstatic --noinput
 python manage.py migrate --noinput
-/usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+python -m gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3
