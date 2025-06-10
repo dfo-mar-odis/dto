@@ -6,8 +6,6 @@ services:
       - "80:80"
     volumes:
       - static_volume:/opt/project/staticfiles
-    depends_on:
-      - dto-django
 
   dto-django:
     image: ghcr.io/dfo-mar-odis/dto:latest
@@ -27,6 +25,8 @@ services:
       - "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
     volumes:
       - static_volume:/opt/project/staticfiles
+    depends_on:
+      - dto-nginx
 
 volumes:
   static_volume:
