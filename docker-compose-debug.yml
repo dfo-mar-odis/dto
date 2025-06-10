@@ -1,12 +1,21 @@
 version: "3.9"
 services:
-  dto-django-debug:
+  dto-nginx:
+    build: ./nginx
+    ports:
+      - 8000:80
+    volumes:
+      - static_volume:/opt/project/staticfiles
+    depends_on:
+      - dto-django
+
+  dto-django:
     build: .
     container_name: dto-django-debug
     restart: always
     ports:
-      - "8000:8000"
-    command: /bin/bash entry-point.sh
+      - "8000"
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --reload
     environment:
       - "SECRET_KEY=${SECRET_KEY}"
       - "DJANGO_LOG_FILE=${DJANGO_LOG_FILE}"
@@ -22,11 +31,12 @@ services:
       - "POSTGIS_PORT=${POSTGIS_PORT}"
     volumes:
       - .:/opt/project
+      - static_volume:/opt/project/staticfiles
     depends_on:
-      dto-postgis-debug:
+      dto-postgis:
         condition: service_healthy
 
-  dto-postgis-debug:
+  dto-postgis:
     image: postgis/postgis:13-3.4
     container_name: dto-postgis-debug
     restart: always
@@ -40,7 +50,8 @@ services:
       timeout: 10s
       retries: 10
     volumes:
-      - pgdata-debug:/var/lib/postgresql/data/
+      - pgdata:/var/lib/postgresql/data/
 
 volumes:
-  pgdata-debug:
+  pgdata:
+  static_volume:

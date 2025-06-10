@@ -83,6 +83,7 @@ pip-selfcheck.json
 
 # additional ignores
 *.conf
+!nginx/*
 *.sqlite3
 /local_css/*
 /staticfiles/*

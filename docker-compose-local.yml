@@ -1,5 +1,12 @@
 version: "3.9"
 services:
+  dto-nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
+    volumes:
+      - static_volume:/opt/project/staticfiles
+
   dto-django:
     build: .
     container_name: dto-django
@@ -21,10 +28,13 @@ services:
       - "POSTGIS_ADDR=${POSTGIS_ADDR}"
       - "POSTGIS_PORT=${POSTGIS_PORT}"
     volumes:
+      - static_volume:/opt/project/staticfiles
       - .:/opt/project
     depends_on:
       dto-postgis:
-        condition: service_healthy
+          condition: service_healthy
+      dto-nginx:
+        condition: service_started
 
   dto-postgis:
     image: postgis/postgis:13-3.4
@@ -44,3 +54,4 @@ services:
 
 volumes:
   pgdata:
+  static_volume:
