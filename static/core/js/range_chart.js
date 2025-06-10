@@ -247,7 +247,7 @@ class RangeChart {
         const selected_id = event.target.value
         const chart_obj = this;
 
-        let url = "/" + this.update_btn.data('url') + selected_id + "/?";
+        let url = this.update_btn.data('url') + selected_id + "/?";
 
         url = url + "depth=" + ((this.depth) ? this.depth : "");
         url = url + "&start_date=" + (new Date(this.timeseries_chart.options.scales.x.min)).toLocaleDateString();
