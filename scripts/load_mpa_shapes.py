@@ -48,30 +48,58 @@ def merge_zones():
         print(merged_zone.zone_e)
 
 
+def list_shapefile_fields(shapefile_path=mpa_shape, encoding='ISO-8859-1', show_dtypes=False):
+    """
+    List all fields/columns in a shapefile.
+
+    Parameters:
+    shapefile_path (str): Path to the shapefile
+    encoding (str): File encoding (default: ISO-8859-1)
+    show_dtypes (bool): Whether to show data types for each field
+
+    Returns:
+    dict: Field names with their data types if show_dtypes=True
+          Otherwise, a list of field names
+    """
+    try:
+        # Read the shapefile
+        data = gpd.read_file(shapefile_path, encoding=encoding)
+
+        # Get fields
+        fields = list(data.columns)
+
+        if show_dtypes:
+            # Return dictionary of field names and their data types
+            field_types = {field: str(data[field].dtype) for field in fields}
+            return field_types
+        else:
+            # Just return list of field names
+            return fields
+
+    except FileNotFoundError:
+        print(f"Error: Shapefile not found at {shapefile_path}")
+        return None
+    except Exception as e:
+        print(f"Error reading shapefile: {str(e)}")
+        return None
+
+
 def load_mpas():
     data = gpd.read_file(mpa_shape, encoding='ISO-8859-1')
 
-    for shp in data.iterrows():
-        print(shp[1])
-        if not (mpa_name := models.MPAName.objects.filter(name_e=shp[1].SitNm_E)).exists():
-            mpa_name = models.MPAName(name_e=shp[1].SitNm_E, name_f=shp[1].NmDSt_F)
-            mpa_name.save()
-        else:
-            mpa_name = mpa_name.first()
+    for _, shp in data.iterrows():
+        models.MPAZones.objects.filter(site_id=shp.OBJECTI).delete()
 
-        if not (mpa_zone := models.MPAZone.objects.filter(name=mpa_name)).exists():
-            mpa_zone = models.MPAZone(name=mpa_name)
-            mpa_zone.url_e = shp[1].URL_E
-            mpa_zone.url_f = shp[1].URL_F
-            mpa_zone.km2 = shp[1].Km2
-            try:
-                geo = str(shp[1].geometry)
-                if geo.startswith('MULTIPOLYGON'):
-                    mpa_zone.geom = GEOSGeometry(geo)
-                else:
-                    mpa_zone.geom = MultiPolygon(GEOSGeometry(geo))
-                mpa_zone.save()
-            except:
-                print(f"Could not load zone {mpa_name.name_e} - {shp[1].ZONE_E}")
-                print(f"{str(shp[1].geometry)}")
+        mpa = models.MPAZones(site_id=shp.OBJECTI, name_e=shp.SitNm_E, name_f=shp.NmDSt_F,
+                              url_e=shp.URL_E, url_f=shp.URL_F, km2=shp.Km2)
+        try:
+            geo = str(shp.geometry)
+            if geo.startswith('MULTIPOLYGON'):
+                mpa.geom = GEOSGeometry(geo)
+            else:
+                mpa.geom = MultiPolygon(GEOSGeometry(geo))
+            mpa.save()
+        except Exception as e:
+            print(f"Could not load zone {mpa.name_e} - {shp.OBJECTI}")
+            print(str(e))
 

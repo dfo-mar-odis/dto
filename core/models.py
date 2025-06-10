@@ -2,20 +2,14 @@ from django.contrib.gis.db import models
 from django.utils.translation import gettext as _
 
 
-class MPAName(models.Model):
+class MPAZones(models.Model):
+    site_id = models.IntegerField(primary_key=True)
     name_e = models.CharField(max_length=254, null=True)
     name_f = models.CharField(max_length=254, null=True)
-
-    def __str__(self) -> str:
-        return self.name_e
-
-
-class MPAZone(models.Model):
-    name = models.ForeignKey(MPAName, on_delete=models.CASCADE, related_name='zones')
     url_e = models.CharField(max_length=254, null=True)
     url_f = models.CharField(max_length=254, null=True)
     km2 = models.FloatField(null=True)
-    geom = models.MultiPolygonField(srid=102001)
+    geom = models.MultiPolygonField()
 
     def __str__(self):
         return f"{self.name.name_e}"
@@ -26,7 +20,7 @@ class Indicator(models.Model):
 
 
 class Timeseries(models.Model):
-    mpa = models.ForeignKey(MPAName, on_delete=models.CASCADE, related_name='timeseries')
+    mpa = models.ForeignKey(MPAZones, on_delete=models.CASCADE, related_name='timeseries')
     date_time = models.DateField(verbose_name="Date")
     value = models.FloatField(verbose_name="Value")
     depth = models.IntegerField(verbose_name="Depth", null=True)

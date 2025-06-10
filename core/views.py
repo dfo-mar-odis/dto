@@ -44,7 +44,7 @@ def add_attributes(mpa):
         },
         "id": mpa.pk,
         "properties": {
-            'name': mpa.name.name_e,
+            'name': mpa.name_e,
             'url': mpa.url_e,
             'km2': round(mpa.km2, 0),
             'ts_value': value,
@@ -71,10 +71,10 @@ def index(request):
 
 
 def get_mpa_zone_info(mpa_id):
-    mpa = models.MPAZone.objects.get(pk=mpa_id)
+    mpa = models.MPAZones.objects.get(pk=mpa_id)
 
     mpa_name_label = "MPA Name:"
-    mpa_name_text = mpa.name.name_e
+    mpa_name_text = mpa.name_e
 
     mpa_url_label = "MPA URL:"
     mpa_url_text = f"{mpa.url_e}"
@@ -83,7 +83,7 @@ def get_mpa_zone_info(mpa_id):
     mpa_area_text = f"{mpa.km2}"
 
     map = None
-    if mpa.name.name_e.lower() == 'st. anns bank marine protected area':
+    if mpa.name_e.lower() == 'st. anns bank marine protected area':
         map = "st_anns_bank_mpa.png"
 
     zone_info = [
@@ -99,7 +99,7 @@ def add_plot(title, mpa_id, depth=None, start_date='2020-01-01', end_date='2023-
     q_upper = 0.9
     q_lower = 0.1
 
-    mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
+    mpa_zone = models.MPAZones.objects.get(pk=mpa_id)
     indicator = models.Indicator.objects.get(pk=indicator)
     df = get_timeseries_dataframe(mpa_zone, depth, indicator=indicator)
 
@@ -259,9 +259,9 @@ def generate_pdf(request):
 
 def get_anomaly(request):
     mpa_id, depth, start_date, end_date = parse_request_variables(request)
-    mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
+    mpa_zone = models.MPAZones.objects.get(pk=mpa_id)
 
-    mpa_timeseries = mpa_zone.name.timeseries.filter(indicator=1, depth=None).order_by('date_time')
+    mpa_timeseries = mpa_zone.timeseries.filter(indicator=1, depth=None).order_by('date_time')
 
     df = pd.DataFrame(list(mpa_timeseries.values('date_time', 'depth', 'value')))
     df['date_time'] = pd.to_datetime(df['date_time'])
@@ -299,11 +299,11 @@ def get_quantiles(request):
     if mpa_id == -1:
         return JsonResponse(timeseries)
 
-    if not models.MPAZone.objects.filter(pk=mpa_id).exists():
+    if not models.MPAZones.objects.filter(pk=mpa_id).exists():
         return JsonResponse(timeseries)
 
-    mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
-    timeseries['name'] = mpa_zone.name.name_e
+    mpa_zone = models.MPAZones.objects.get(pk=mpa_id)
+    timeseries['name'] = mpa_zone.name_e
 
     df = get_timeseries_dataframe(mpa_zone, depth)
 
@@ -322,8 +322,8 @@ def get_quantiles(request):
     return JsonResponse(timeseries)
 
 
-def get_timeseries_dataframe(mpa_zone: models.MPAZone, depth=None, start_date=None, end_date=None, indicator=1):
-    mpa_timeseries = mpa_zone.name.timeseries.filter(depth=depth, indicator=indicator).order_by('date_time')
+def get_timeseries_dataframe(mpa_zone: models.MPAZones, depth=None, start_date=None, end_date=None, indicator=1):
+    mpa_timeseries = mpa_zone.timeseries.filter(depth=depth, indicator=indicator).order_by('date_time')
 
     if start_date:
         mpa_timeseries = mpa_timeseries.filter(date_time__gte=start_date)
@@ -347,12 +347,12 @@ def get_timeseries_data(mpa_id, depth=None, start_date=None, end_date=None, indi
     if mpa_id == -1:
         return timeseries
 
-    if not models.MPAZone.objects.filter(pk=mpa_id).exists():
+    if not models.MPAZones.objects.filter(pk=mpa_id).exists():
         return timeseries
 
-    mpa_zone = models.MPAZone.objects.get(pk=mpa_id)
+    mpa_zone = models.MPAZones.objects.get(pk=mpa_id)
 
-    timeseries['name'] = mpa_zone.name.name_e
+    timeseries['name'] = mpa_zone.name_e
 
     df = get_timeseries_dataframe(mpa_zone, depth, indicator=indicator)
     if df is None:
@@ -395,7 +395,7 @@ def parse_request_variables(request):
 
 def get_depths(request):
     mpa_id = int(request.GET.get('mpa', -1))
-    mpa = models.MPAZone.objects.get(pk=mpa_id).name
+    mpa = models.MPAZones.objects.get(pk=mpa_id)
     depths = models.Timeseries.objects.filter(mpa=mpa).order_by('depth').values_list('depth', flat=True).distinct()
     depth_array = [(d, f'{d} m') for d in depths if d is not None]
     depth_array.insert(0, ('', _("Total Average Bottom Timeseries")))
@@ -459,7 +459,7 @@ class MapView(TemplateView):
         map = folium.Map(location=[44.666830, -63.631500], zoom_start=6)
         map.add_to(figure)
 
-        for mpa in models.MPA.objects.annotate(trans=Transform('geom', srid=4326)):
+        for mpa in models.MPAZones.objects.annotate(trans=Transform('geom', srid=4326)):
             geo_j = folium.GeoJson(data=mpa.trans.geojson)
             folium.Popup(mpa.name_e).add_to(geo_j)
             geo_j.add_to(map)
@@ -481,7 +481,7 @@ def indicators(request):
     depth = request.GET.get('depth', None)
     depth = int(depth) if depth else None
 
-    mpa_zone = models.MPAZone.objects.get(pk=mpa)
+    mpa_zone = models.MPAZones.objects.get(pk=mpa)
     df = get_timeseries_dataframe(mpa_zone, depth)
 
     if df is None:
@@ -517,6 +517,6 @@ def get_polygons(request):
     else:
         ids = models.Timeseries.objects.values_list('mpa', flat=True).distinct()
 
-    json_data = [add_attributes(mpa) for mpa in models.MPAZone.objects.filter(name__in=ids).order_by('-km2')]
+    json_data = [add_attributes(mpa) for mpa in models.MPAZones.objects.filter(pk__in=ids).order_by('-km2')]
 
     return JsonResponse(json_data, safe=False)

@@ -1,6 +1,9 @@
 # server
 gunicorn~=21.2.0
 
+# For data loading scripts
+tqdm>=4.60.0,<5.0.0
+
 # needed to read Shapefiles into the DB
 boto3
 
