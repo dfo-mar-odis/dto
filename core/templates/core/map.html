@@ -34,6 +34,10 @@
                             <div class="col" id="mpa_name" v-text="state.mpa.name"></div>
                         </div>
                         <div class="row">
+                            <div class="col-2"><b>Classification:</b></div>
+                            <div class="col" id="mpa_class" v-text="state.mpa.class"></div>
+                        </div>
+                        <div class="row">
                             <div class="col-2"><b>URL:</b></div>
                             <div class="col" id="mpa_url">
                                 <a :href="state.mpa.url" v-text="state.mpa.url"></a>

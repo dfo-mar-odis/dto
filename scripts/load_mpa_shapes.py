@@ -83,23 +83,76 @@ def list_shapefile_fields(shapefile_path=mpa_shape, encoding='ISO-8859-1', show_
         print(f"Error reading shapefile: {str(e)}")
         return None
 
-
-def load_mpas():
+def print_mpas():
     data = gpd.read_file(mpa_shape, encoding='ISO-8859-1')
 
     for _, shp in data.iterrows():
-        models.MPAZones.objects.filter(site_id=shp.OBJECTI).delete()
+        print(f"{shp}")
 
-        mpa = models.MPAZones(site_id=shp.OBJECTI, name_e=shp.SitNm_E, name_f=shp.NmDSt_F,
-                              url_e=shp.URL_E, url_f=shp.URL_F, km2=shp.Km2)
+def load_indicators():
+    models.Indicators.objects.get_or_create(name__iexact="temperature")
+
+def load_mpa_classifications(data):
+    if data is None:
+        data = gpd.read_file(mpa_shape, encoding='ISO-8859-1')
+
+    # Get unique values in the Clssf_E field
+    unique_classifications = data[['Clssf_E', 'Clssf_F']].drop_duplicates()
+
+    # Print the distinct classification values
+    print("Distinct Classifications (Clssf_E):")
+    for _, row in unique_classifications.iterrows():
+        print(f"- {row.loc['Clssf_E']} : {row.loc['Clssf_F']}")
+        models.Classifications.objects.get_or_create(name_e=row.loc['Clssf_E'].lower(), name_f=row.loc['Clssf_F'].lower())
+
+    # Print the count of distinct values
+    print(f"\nTotal distinct classifications: {len(unique_classifications)}")
+
+
+def load_mpas():
+    update_mpas()
+
+def update_mpas(reload=False):
+    # if reload is true this will delete the timeseries and recreate the MPA
+
+    data = gpd.read_file(mpa_shape, encoding='ISO-8859-1')
+
+    load_indicators()
+    load_mpa_classifications(data)
+
+    update_mpa_list = []
+    new_mpa_list = []
+    for _, shp in data.iterrows():
+        if reload:
+            models.MPAZones.objects.filter(site_id=shp.OBJECTI).delete()
+
+            mpa = models.MPAZones(site_id=shp.OBJECTI)
+            new_mpa_list.append(mpa)
+        else:
+            mpa = models.MPAZones.objects.get_or_create(site_id=shp.OBJECTI)
+            if mpa[1]:
+                new_mpa_list.append(mpa[0])
+            else:
+                update_mpa_list.append(mpa[0])
+
+            mpa = mpa[0]
+
+        mpa.name_e=shp.SitNm_E
+        mpa.name_f=shp.NmDSt_F
+        mpa.url_e=shp.URL_E
+        mpa.url_f=shp.URL_F
+        mpa.km2=shp.Km2
+        mpa.classification = models.Classifications.objects.get(name_e__iexact=shp.Clssf_E)
+
         try:
             geo = str(shp.geometry)
             if geo.startswith('MULTIPOLYGON'):
                 mpa.geom = GEOSGeometry(geo)
             else:
                 mpa.geom = MultiPolygon(GEOSGeometry(geo))
-            mpa.save()
         except Exception as e:
             print(f"Could not load zone {mpa.name_e} - {shp.OBJECTI}")
             print(str(e))
 
+    models.MPAZones.objects.bulk_create(new_mpa_list)
+    models.MPAZones.objects.bulk_update(update_mpa_list, ['name_e', 'name_f', 'url_e', 'url_f', 'km2', 'classification', 'geom'])

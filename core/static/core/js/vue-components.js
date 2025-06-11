@@ -24,6 +24,10 @@ const MPAInfo = {
           <div class="col">{{ mpa.name }}</div>
         </div>
         <div class="row">
+          <div class="col-2"><b>Classification:</b></div>
+          <div class="col"><a :href="mpa.classification">{{ mpa.class }}</a></div>
+        </div>
+        <div class="row">
           <div class="col-2"><b>URL:</b></div>
           <div class="col"><a :href="mpa.url">{{ mpa.url }}</a></div>
         </div>

@@ -11,6 +11,7 @@ const mapApp = createApp({
                 id: 0,
                 name: '',
                 url: '',
+                class: '',
                 km2: 0
             },
             dates: {
@@ -44,13 +45,19 @@ const mapApp = createApp({
 
         // Initialize everything
         onMounted(() => {
-            // Initialize map
-            state.map = L.map('map').setView([43.75, -63.5], 5); // Center on world view
 
-            // Add base tile layer
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(state.map);
+            // Using Esri World Imagery as satellite base map
+            const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+              attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+              maxZoom: 19
+            });
+
+            // Initialize map
+            state.map = L.map('map', {
+                center: [43.75, -63.5],
+                zoom: 5,
+                layers: [satellite],
+            }); // Center on world view
 
             loadMPAPolygons();
 
@@ -138,13 +145,7 @@ const mapApp = createApp({
             mpas.forEach(mpa => {
                 if (mpa.geometry) {
                     L.geoJSON(mpa.geometry, {
-                        style: {
-                            color: '#E06377',
-                            weight: 2,
-                            opacity: 0.7,
-                            fillColor: '#FF7F50',
-                            fillOpacity: 0.4
-                        },
+                        style: mpa.style,
                         onEachFeature: (feature, layer) => {
                             layer.bindPopup(mpa.properties.name_e || "Unnamed MPA");
                             layer.on('click', () => {
@@ -175,7 +176,8 @@ const mapApp = createApp({
                                     id: mpa.properties.id,
                                     name: mpa.properties.name_e || 'Unknown MPA',
                                     url: mpa.properties.url_e || '',
-                                    km2: mpa.properties.area_km2 || 0
+                                    class: mpa.properties.class || '',
+                                    km2: mpa.properties.area_km2 || ''
                                 });
                             });
                         }
@@ -188,6 +190,7 @@ const mapApp = createApp({
             state.mpa.id = mpa.id
             state.mpa.name = mpa.name;
             state.mpa.url = mpa.url;
+            state.mpa.class = mpa.class;
             state.mpa.km2 = mpa.km2;
             getData();
         }

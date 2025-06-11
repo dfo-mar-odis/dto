@@ -2,6 +2,13 @@ from django.contrib.gis.db import models
 from django.utils.translation import gettext as _
 
 
+class Classifications(models.Model):
+    name_e = models.CharField(max_length=50, verbose_name=_('Classification Name (English)'))
+    name_f = models.CharField(max_length=50, verbose_name=_('Classification Name (French)'))
+
+    def __str__(self):
+        return f"{self.name_e}"
+
 class MPAZones(models.Model):
     site_id = models.IntegerField(primary_key=True)
     name_e = models.CharField(max_length=254, null=True)
@@ -9,13 +16,14 @@ class MPAZones(models.Model):
     url_e = models.CharField(max_length=254, null=True)
     url_f = models.CharField(max_length=254, null=True)
     km2 = models.FloatField(null=True)
+    classification = models.ForeignKey(Classifications, on_delete=models.PROTECT, null=True)
     geom = models.MultiPolygonField()
 
     def __str__(self):
         return f"{self.name_e}"
 
 
-class Indicator(models.Model):
+class Indicators(models.Model):
     name = models.CharField(max_length=50, verbose_name=_('Indicator Name'))
 
 
@@ -24,7 +32,7 @@ class Timeseries(models.Model):
     date_time = models.DateField(verbose_name="Date")
     value = models.FloatField(verbose_name="Value")
     depth = models.IntegerField(verbose_name="Depth", null=True)
-    indicator = models.ForeignKey(Indicator, on_delete=models.CASCADE, related_name='timeseries')
+    indicator = models.ForeignKey(Indicators, on_delete=models.CASCADE, related_name='timeseries')
 
 
 class SpeciesGrouping(models.IntegerChoices):
