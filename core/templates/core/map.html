@@ -2,7 +2,12 @@
 {% load i18n %}
 {% load static %}
 
+{% block custom_css %}
+    <link rel="stylesheet" href="{% static 'core/css/main.css' %}" />
+{% endblock %}
+
 {% block content %}
+<div id="app">
     <div class="row mt-2">
         <div class="col d-flex flex-wrap">
             <div class="flex-grow-1">
@@ -26,15 +31,17 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-2"><b>Name:</b></div>
-                            <div class="col" id="mpa_name"></div>
+                            <div class="col" id="mpa_name" v-text="state.mpa.name"></div>
                         </div>
                         <div class="row">
                             <div class="col-2"><b>URL:</b></div>
-                            <div class="col" id="mpa_url"><a></a></div>
+                            <div class="col" id="mpa_url">
+                                <a :href="state.mpa.url" v-text="state.mpa.url"></a>
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-2"><b>km^2:</b></div>
-                            <div class="col" id="mpa_km2"></div>
+                            <div class="col" id="mpa_km2" v-text="state.mpa.km2"></div>
                         </div>
                     </div>
                 </div>
@@ -48,39 +55,46 @@
                                     <div class="col align-content-center">
                                         <label for="btm_depth">{% trans "Bottom Depth" %}</label>
                                         <select class="form-select" id="btm_depth"
-                                                onchange="get_data()">
+                                                v-model="state.depth"
+                                                @change="getData">
                                             <option value="">{% trans "Total Average Bottom Timeseries" %}</option>
                                         </select>
                                     </div>
                                 </div>
                                 <div class="row mt-2">
                                     <div class="col-auto align-content-center mt-4">
-                                        <button type="button" class="btn btn-secondary" title="-10 years"
-                                                onclick="pan_frame(-10)">{% trans '<<' %}</button>
+                                        <button type="button" class="btn btn-secondary me-1" title="-10 years"
+                                                @click="panFrame(-10)">{% trans '<<' %}</button>
                                         <button type="button" class="btn btn-secondary" title="-5 years"
-                                                onclick="pan_frame(-5)">{% trans '<' %}</button>
+                                                @click="panFrame(-5)">{% trans '<' %}</button>
                                     </div>
                                     <div class="col">
                                         <label for="zoom_min" class="form-label">{% trans 'Start Date' %}</label>
-                                        <input id="zoom_min" type="date" class="form-control" value="2019-01-01"
+                                        <input id="zoom_min" type="date" class="form-control"
+                                               v-model="state.dates.zoomMin"
+                                               @change="setZoom"
                                                max="9999-12-31"/>
                                     </div>
                                     <div class="col">
                                         <label for="selected_date"
                                                class="form-label">{% trans 'Selected Date' %}</label>
-                                        <input id="selected_date" type="date" class="form-control" value=""
+                                        <input id="selected_date" type="date" class="form-control"
+                                               v-model="state.dates.selected"
+                                               @change="setSelectedDate(state.dates.selected)"
                                                max="9999-12-31"/>
                                     </div>
                                     <div class="col">
                                         <label for="zoom_max" class="form-label">{% trans 'End Date' %}</label>
-                                        <input id="zoom_max" type="date" class="form-control" value="2024-01-01"
+                                        <input id="zoom_max" type="date" class="form-control"
+                                               v-model="state.dates.zoomMax"
+                                               @change="setZoom"
                                                max="9999-12-31"/>
                                     </div>
                                     <div class="col-auto align-content-center mt-4">
-                                        <button type="button" class="btn btn-secondary" title="+5 years"
-                                                onclick="pan_frame(5)">{% trans '>' %}</button>
+                                        <button type="button" class="btn btn-secondary me-1" title="+5 years"
+                                                @click="panFrame(5)">{% trans '>' %}</button>
                                         <button type="button" class="btn btn-secondary" title="+10 years"
-                                                onclick="pan_frame(10)">{% trans '>>' %}</button>
+                                                @click="panFrame(10)">{% trans '>>' %}</button>
                                     </div>
                                 </div>
                             </div>
@@ -90,38 +104,28 @@
             </div>
         </div>
         <div class="col-auto">
-            <div id="map" class="folium-map"></div>
-            <div id="map_loading"></div>
+            <div id="map" class="map-container">
+              <div class="map-loading-overlay" v-if="state.mapLoading">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              </div>
+            </div>
         </div>
     </div>
 
+    <!-- Tabs navigation -->
     <ul class="nav nav-tabs mt-2" id="chart_types" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="standard_anomaly_data_tab" data-bs-toggle="tab" data-bs-target="#standard_anomaly_data"
-                    type="button" role="tab" aria-controls="standard_anomaly_data" aria-selected="true">{% trans "Standard Anomaly" %}
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="ocean_data_tab" data-bs-toggle="tab" data-bs-target="#ocean_data"
-                    type="button" role="tab" aria-controls="ocean_data" aria-selected="true">{% trans "Ocean Data" %}
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="species_data_tab" data-bs-toggle="tab" data-bs-target="#species_data"
-                    type="button" role="tab" aria-controls="specieis_data"
-                    aria-selected="false">{% trans "Species Data" %}
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="network_data_tab" data-bs-toggle="tab" data-bs-target="#network_data"
-                    type="button" role="tab" aria-controls="network_data"
-                    aria-selected="false">{% trans "Network Comparison" %}
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="indicator_data_tab" data-bs-toggle="tab" data-bs-target="#indicator_data"
-                    type="button" role="tab" aria-controls="indicator_data"
-                    aria-selected="false">{% trans "Indicator Data" %}
+        <li class="nav-item" role="presentation" v-for="(tab, id) in tabs" :key="id">
+            <button class="nav-link" :class="{ active: state.activeTab === id }"
+                    :id="`${id}_tab`"
+                    data-bs-toggle="tab"
+                    :data-bs-target="`#${id}`"
+                    type="button"
+                    role="tab"
+                    @click="state.activeTab = id"
+                    :aria-selected="state.activeTab === id">
+                ${tab.title}
             </button>
         </li>
     </ul>
@@ -131,7 +135,14 @@
             <div class="row">
                 <div class="col">
                     <div id="div_id_stda_card">
-
+                        <standard-anomaly-chart
+                            :mpa="state.mpa"
+                            :start-date="state.dates.zoomMin"
+                            :end-date="state.dates.zoomMax"
+                            :depth="state.depth"
+                            :chart-url="state.urls.anomalyUrl"
+                            :is-active="state.activeTab === 'standard_anomaly_data'"
+                        ></standard-anomaly-chart>
                     </div>
                 </div>
             </div>
@@ -193,79 +204,36 @@
 {% block scripts %}
     <script src="{% static 'core/js/range_chart.js' %}"></script>
     <script src="{% static 'core/js/quantile_chart.js' %}"></script>
-    <script src="{% static 'core/js/standard_anomalies.js' %}"></script>
     <script src="{% static 'core/js/indicator_dial.js' %}"></script>
     <script src="{% static 'core/js/map.js' %}"></script>
-    <script src="{% static 'core/js/map-utils.js' %}"></script>
+
+    <!-- Add Vue app script -->
+    <script src="{% static 'core/js/vue-app.js' %}"></script>
+    <script src="{% static 'core/js/vue-standard-anomaly-chart.js' %}"></script>
+    <script src="{% static 'core/js/vue-components.js' %}"></script>
+
     <script>
-        // Initialize just the map for now
         document.addEventListener('DOMContentLoaded', function() {
-            standard_anomalies_chart = new StandardAnomaliesChart('mpa_ts_stda_chart', "{% url 'core:stda_chart' %}");
-            MapApp.init(
+            // Initialize Vue app
+            const app = mapApp.mount('#app');
+
+            app.initializeUrls(
                 "{% url 'api:mpas-with-timeseries-list' %}",
                 "{% url 'core:timeseries' %}",
-                standard_anomalies_chart,
                 "{% url 'core:anomaly' %}",
-                "{% url 'core:get_depths' %}"
+                "{% url 'core:get_depths' %}",
+                "{% url 'core:stda_chart' %}"
             );
-        });
-    </script>
-    <script>
+            app.loadMPAPolygons()
 
-        timeseries_update_url = "{% url 'core:timeseries' %}"
-        anomaly_update_url = "{% url 'core:anomaly' %}"
-
-        function init_global_indicator(mpa) {
-            let indicator = {"mpa": mpa, "date": null, "min": -10, "max": 10, "current": 0, "lower": -5, "upper": 5}
-            indicator.current = Math.floor(Math.random() * (indicator.max - indicator.min + 1) + indicator.min);
-            return indicator
-        }
-
-        $(document).ready(function () {
-            let updateDateTimer;
-
-
-            $("#zoom_min").on('change', function () {
-                clearTimeout(updateDateTimer);
-
-                updateDateTimer = setTimeout(function () {
-                    set_zoom();
-                }, 500)
-            });
-            $("#zoom_max").on('change', function () {
-                clearTimeout(updateDateTimer);
-
-                updateDateTimer = setTimeout(function () {
-                    set_zoom();
-                }, 500)
-            });
-            $("#selected_date").on('change', function () {
-                clearTimeout(updateDateTimer);
-
-                updateDateTimer = setTimeout(function () {
-                    if (get_selected_date() != null) {
-                        set_selected_date();
-                    }
-                }, 500)
-            });
-
-            charts['mpa_ts_quantile_chart'] = new QuantileChart('mpa_ts_quantile_chart', "{% url 'core:quantile_chart' %}");
-            charts['mpa_ts_quantile_chart'].initialized = function () {
-                let chart_obj = this;
-                this.ctx.onclick = function (e) {
-                    handle_set_date(e, chart_obj)
-                };
-                date_update_listeners.push(function (selected_date) {
-                    charts['mpa_ts_quantile_chart'].set_selected_date(selected_date)
-                });
-                set_chart_zoom(this);
-            };
-
-            date_update_listeners.push(function (selected_date) {
-                let date_string = get_selected_date_string(selected_date)
-                add_network_indicators("{% url 'core:get_indicators' %}", date_string)
-            });
-
+            // Initialize your existing code as well during transition
+            {#window.standard_anomalies_chart = new StandardAnomaliesChart('mpa_ts_stda_chart', "{% url 'core:stda_chart' %}");#}
+            {#MapApp.init(#}
+            {#    "{% url 'api:mpas-with-timeseries-list' %}",#}
+            {#    "{% url 'core:timeseries' %}",#}
+            {#    "{% url 'core:anomaly' %}",#}
+            {#    "{% url 'core:get_depths' %}"#}
+            {#);#}
         });
     </script>
 

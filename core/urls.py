@@ -1,7 +1,6 @@
 from django.urls import path
 
 from . import views, models
-from djgeojson.views import GeoJSONLayerView
 
 app_name = 'core'
 urlpatterns = [
