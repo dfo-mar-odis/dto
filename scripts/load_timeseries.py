@@ -191,7 +191,7 @@ def load_mpas_from_dict(data: dict):
 
                 mpa_pbar.update(1)
 
-            except models.MPAName.DoesNotExist:
+            except models.MPAZones.DoesNotExist:
                 print(f"Warning: MPA with ID {mpa_id} not found in database")
             except Exception as e:
                 print(f"Error processing MPA {mpa_id}: {str(e)}")

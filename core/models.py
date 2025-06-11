@@ -12,7 +12,7 @@ class MPAZones(models.Model):
     geom = models.MultiPolygonField()
 
     def __str__(self):
-        return f"{self.name.name_e}"
+        return f"{self.name_e}"
 
 
 class Indicator(models.Model):
