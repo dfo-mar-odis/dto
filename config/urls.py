@@ -23,10 +23,13 @@ from django.conf import settings
 from django.urls import path, include
 
 from core import views
+from core.api.urls import router
+
 
 # {settings.PROXY_URL}
 
 urlpatterns = [
     path(f'', views.index, name='index'),
-    path(f'', include('core.urls'))
+    path(f'', include('core.urls')),
+    path('api/v1/', include((router.urls, 'api'), namespace='api')),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

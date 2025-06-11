@@ -43,7 +43,7 @@ services:
     container_name: dto-postgis
     restart: always
     env_file:
-      - .env.local
+      - .env
     ports:
       - "5432:5432"
     healthcheck:

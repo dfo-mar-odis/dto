@@ -92,3 +92,5 @@ pip-selfcheck.json
 !core/scripts/
 core/scripts/data/GLORYS/bottomT.nc
 core/scripts/data/GLORYS/depth.nc
+
+docker-compose-home.yml

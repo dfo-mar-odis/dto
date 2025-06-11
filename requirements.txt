@@ -29,6 +29,7 @@ psycopg2-binary==2.9.9
 
 # data manipulation
 pandas==2.2.2
+djangorestframework==3.16.0
 
 # used for manipulating netcdf data
 netCDF4==1.6.5
