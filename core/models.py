@@ -5,6 +5,7 @@ from django.utils.translation import gettext as _
 class Classifications(models.Model):
     name_e = models.CharField(max_length=50, verbose_name=_('Classification Name (English)'))
     name_f = models.CharField(max_length=50, verbose_name=_('Classification Name (French)'))
+    colour = models.CharField(max_length=10, blank=True, null=True, verbose_name=_('Classification Colour'))
 
     def __str__(self):
         return f"{self.name_e}"

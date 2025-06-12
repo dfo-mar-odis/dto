@@ -43,3 +43,39 @@
     font-size: 7px;
     padding: 2px 4px;
 }
+
+.legend {
+  background: white;
+  padding: 10px;
+  border-radius: 3px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+}
+
+.legend h4 {
+  margin: 0 0 5px;
+}
+
+.legend span {
+  width: 18px;
+  height: 18px;
+  float: left;
+  margin-right: 8px;
+  opacity: 0.7;
+}
+
+.legend.hidden {
+  display: none;
+}
+
+.legend-toggle a {
+  width: 26px;
+  height: 26px;
+  line-height: 26px;
+  text-align: center;
+  text-decoration: none;
+  color: black;
+}
+
+.legend-toggle a:hover {
+  background-color: #f4f4f4;
+}

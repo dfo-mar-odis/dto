@@ -5,7 +5,6 @@ from rest_framework import serializers
 from core import models
 
 class MPAZonesSerializer(serializers.ModelSerializer):
-    classification_colours = ["#4285F4", "#34A853", "#FBBC05", "#EA4335", "#7C4DFF"]
     class Meta:
         model = models.MPAZones
         fields = ['id', 'name_e', 'url_e', 'km2', 'classification', 'geometry']
@@ -13,15 +12,15 @@ class MPAZonesSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         # Create a proper GeoJSON Feature object
-        style_color = self.classification_colours[instance.classification.pk-1]
+        style_color = instance.classification.colour
         representation = {
             "type": "Feature",
             "style": {
                 'color': style_color,
                 'weight': 2,
-                'opacity': 0.7,
+                'opacity': 0.9,
                 'fillColor': style_color,
-                'fillOpacity': 0.4
+                'fillOpacity': 0.7
             },
             "properties": {
                 "id": instance.site_id,

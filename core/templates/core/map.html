@@ -3,117 +3,36 @@
 {% load static %}
 
 {% block custom_css %}
-    <link rel="stylesheet" href="{% static 'core/css/main.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/main.css' %}"/>
 {% endblock %}
 
 {% block content %}
-<div id="app">
+    <div id="app">
     <div class="row mt-2">
         <div class="col d-flex flex-wrap">
             <div class="flex-grow-1">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <div class="row">
-                                <div class="col-1">
-                                    <img class="img-fluid" src="{% static 'icons/favicon.png' %}">
-                                </div>
-                                <div class="col">
-                                    <h2>MPA Description</h2>
-                                </div>
-                                <div class="col-auto">
-                                    <a id="btn_id_pdf" class="btn btn-primary" style="display: none"
-                                       href="{% url 'core:generate_pdf' %}">Generate PDF</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-2"><b>Name:</b></div>
-                            <div class="col" id="mpa_name" v-text="state.mpa.name"></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-2"><b>Classification:</b></div>
-                            <div class="col" id="mpa_class" v-text="state.mpa.class"></div>
-                        </div>
-                        <div class="row">
-                            <div class="col-2"><b>URL:</b></div>
-                            <div class="col" id="mpa_url">
-                                <a :href="state.mpa.url" v-text="state.mpa.url"></a>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-2"><b>km^2:</b></div>
-                            <div class="col" id="mpa_km2" v-text="state.mpa.km2"></div>
-                        </div>
-                    </div>
-                </div>
+                <mpa-info :mpa="state.mpa"></mpa-info>
             </div>
             <div class="flex-grow-1 align-self-end">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="row justify-content-center">
-                            <div class="col">
-                                <div class="row">
-                                    <div class="col align-content-center">
-                                        <label for="btm_depth">{% trans "Bottom Depth" %}</label>
-                                        <select class="form-select" id="btm_depth"
-                                                v-model="state.depth"
-                                                @change="getData">
-                                            <option value="">{% trans "Total Average Bottom Timeseries" %}</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="row mt-2">
-                                    <div class="col-auto align-content-center mt-4">
-                                        <button type="button" class="btn btn-secondary me-1" title="-10 years"
-                                                @click="panFrame(-10)">{% trans '<<' %}</button>
-                                        <button type="button" class="btn btn-secondary" title="-5 years"
-                                                @click="panFrame(-5)">{% trans '<' %}</button>
-                                    </div>
-                                    <div class="col">
-                                        <label for="zoom_min" class="form-label">{% trans 'Start Date' %}</label>
-                                        <input id="zoom_min" type="date" class="form-control"
-                                               v-model="state.dates.zoomMin"
-                                               @change="setZoom"
-                                               max="9999-12-31"/>
-                                    </div>
-                                    <div class="col">
-                                        <label for="selected_date"
-                                               class="form-label">{% trans 'Selected Date' %}</label>
-                                        <input id="selected_date" type="date" class="form-control"
-                                               v-model="state.dates.selected"
-                                               @change="setSelectedDate(state.dates.selected)"
-                                               max="9999-12-31"/>
-                                    </div>
-                                    <div class="col">
-                                        <label for="zoom_max" class="form-label">{% trans 'End Date' %}</label>
-                                        <input id="zoom_max" type="date" class="form-control"
-                                               v-model="state.dates.zoomMax"
-                                               @change="setZoom"
-                                               max="9999-12-31"/>
-                                    </div>
-                                    <div class="col-auto align-content-center mt-4">
-                                        <button type="button" class="btn btn-secondary me-1" title="+5 years"
-                                                @click="panFrame(5)">{% trans '>' %}</button>
-                                        <button type="button" class="btn btn-secondary" title="+10 years"
-                                                @click="panFrame(10)">{% trans '>>' %}</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <mpa-controls
+                        :mpa="state.mpa"
+                        max-date-url="{% url 'core:get_max_date' %}"
+                        :initial-start-date="state.dates.startDate"
+                        :initial-end-date="state.dates.endDate"
+                        @get-data="getData"
+                        @set-zoom="setZoom"
+                        @pan-frame="panFrame"
+                        @date-selected="setSelectedDate">
+                </mpa-controls>
             </div>
         </div>
         <div class="col-auto">
             <div id="map" class="map-container">
-              <div class="map-loading-overlay" v-if="state.mapLoading">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Loading...</span>
+                <div class="map-loading-overlay" v-if="state.mapLoading">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
                 </div>
-              </div>
             </div>
         </div>
     </div>
@@ -140,12 +59,12 @@
                 <div class="col">
                     <div id="div_id_stda_card">
                         <standard-anomaly-chart
-                            :mpa="state.mpa"
-                            :start-date="state.dates.zoomMin"
-                            :end-date="state.dates.zoomMax"
-                            :depth="state.depth"
-                            :chart-url="state.urls.anomalyUrl"
-                            :is-active="state.activeTab === 'standard_anomaly_data'"
+                                :mpa="state.mpa"
+                                :start-date="state.dates.zoomMin"
+                                :end-date="state.dates.zoomMax"
+                                :depth="state.depth"
+                                chart-url="{% url 'core:anomaly' %}"
+                                :is-active="state.activeTab === 'standard_anomaly_data'"
                         ></standard-anomaly-chart>
                     </div>
                 </div>
@@ -156,7 +75,16 @@
             <div class="row">
                 <div class="col">
                     <div id="div_id_quantile_card">
-                        {# Ocean data is populated by javascript functions #}
+                        <timeseries-chart
+                                :mpa="state.mpa"
+                                :start-date="state.dates.zoomMin"
+                                :end-date="state.dates.zoomMax"
+                                :depth="state.depth"
+                                chart-url="{% url 'core:timeseries' %}"
+                                :is-active="state.activeTab === 'ocean_data'"
+                                :timeseries-data="state.timeseriesData"
+                                :is-loading="state.loading"
+                        ></timeseries-chart>
                     </div>
                 </div>
             </div>
@@ -212,21 +140,18 @@
     <script src="{% static 'core/js/map.js' %}"></script>
 
     <!-- Add Vue app script -->
-    <script src="{% static 'core/js/vue-app.js' %}"></script>
-    <script src="{% static 'core/js/vue-standard-anomaly-chart.js' %}"></script>
-    <script src="{% static 'core/js/vue-components.js' %}"></script>
+    <script type="module" src="{% static 'core/js/vue-app.js' %}"></script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Initialize Vue app
             const app = mapApp.mount('#app');
 
             app.initializeUrls(
                 "{% url 'api:mpas-with-timeseries-list' %}",
                 "{% url 'core:timeseries' %}",
-                "{% url 'core:anomaly' %}",
                 "{% url 'core:get_depths' %}",
-                "{% url 'core:stda_chart' %}"
+                "{% url 'core:get_classification_colours' %}"
             );
             app.loadMPAPolygons()
 

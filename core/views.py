@@ -10,6 +10,7 @@ import logging
 import matplotlib.pyplot as plt
 
 from PIL import Image
+from django.db.models import Max
 
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
@@ -393,15 +394,6 @@ def parse_request_variables(request):
     return mpa_id, depth, start_date, end_date
 
 
-def get_depths(request):
-    mpa_id = int(request.GET.get('mpa', -1))
-    mpa = models.MPAZones.objects.get(pk=mpa_id)
-    depths = models.Timeseries.objects.filter(mpa=mpa).order_by('depth').values_list('depth', flat=True).distinct()
-    depth_array = [(d, f'{d} m') for d in depths if d is not None]
-    depth_array.insert(0, ('', _("Total Average Bottom Timeseries")))
-    return JsonResponse({'depths': depth_array})
-
-
 def get_standard_anomalies_chart(request):
     chart_id = request.GET.get('chart_name')
 
@@ -520,3 +512,22 @@ def get_polygons(request):
     json_data = [add_attributes(mpa) for mpa in models.MPAZones.objects.filter(pk__in=ids).order_by('-km2')]
 
     return JsonResponse(json_data, safe=False)
+
+
+def get_classification_colours(request):
+    cla = models.Classifications.objects.all()
+
+    return JsonResponse([{'name': c.name_e, 'colour': c.colour} for c in cla], safe=False)
+
+
+def get_max_date(request):
+    return JsonResponse({'max_date': models.Timeseries.objects.aggregate(Max('date_time'))["date_time__max"]})
+
+
+def get_depths(request):
+    mpa_id = int(request.GET.get('mpa', -1))
+    mpa = models.MPAZones.objects.get(pk=mpa_id)
+    depths = models.Timeseries.objects.filter(mpa=mpa).order_by('depth').values_list('depth', flat=True).distinct()
+    depth_array = [(d, f'{d} m') for d in depths if d is not None]
+    depth_array.insert(0, ('', _("Total Average Bottom Timeseries")))
+    return JsonResponse({'depths': depth_array})

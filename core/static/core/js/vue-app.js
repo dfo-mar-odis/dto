@@ -1,4 +1,9 @@
-const {createApp, ref, reactive, watch, computed, onMounted} = Vue;
+import {StandardAnomalyChart} from "./vue-chart-standard-anomaly.js";
+import {TimeseriesChart} from "./vue-chart-timeseries.js";
+import {MPAInfo} from "./vue-components-mpa-info.js";
+import {MPAControls} from "./vue-components-mpa-controls.js";
+
+const {createApp, ref, reactive, watch, computed, onMounted, nextTick} = Vue;
 
 const mapApp = createApp({
     delimiters: ['${', '}'],
@@ -16,8 +21,8 @@ const mapApp = createApp({
             },
             dates: {
                 selected: null,
-                zoomMin: '2019-01-01',
-                zoomMax: '2024-01-01'
+                startDate: '',
+                endDate: ''
             },
             depth: '',
             loading: false,
@@ -25,19 +30,57 @@ const mapApp = createApp({
             urls: {
                 mpasWithTimeseriesList: '', // Will be populated from template
                 timeseriesUrl: '',
-                anomalyUrl: '',
                 depthsUrl: '',
-                stdaChartUrl: ''
+                legendUrl: '',
             },
             charts: {
-                standardAnomalies: null
-            }
+                standardAnomalies: null,
+                timeseries: null,
+            },
+            timeseriesData: null
         });
+
+        let chart = null;
+
+        function initChart() {
+            const canvas = document.getElementById('chart-canvas');
+            if (!canvas) {
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                console.warn("Failed to get canvas context, retrying...");
+                setTimeout(initChart, 200);
+                return;
+            }
+
+            // Create chart only when canvas is ready
+            try {
+                chart = new Chart(ctx, {
+                    // Your chart configuration
+                });
+            } catch (err) {
+                console.error("Chart initialization error:", err);
+            }
+        }
+
+        function setZoom(dateRange) {
+            state.dates.startDate = dateRange.min;
+            state.dates.endDate = dateRange.max;
+
+            // Only update chart if it exists
+            if (chart) {
+                getData();
+            } else {
+                initChart();
+            }
+        }
 
         // Populate the tabs data structure
         const tabs = reactive({
             standard_anomaly_data: {title: 'Standard Anomalies'},
-            ocean_data: {title: 'Ocean Data'},
+            ocean_data: {title: 'Timeseries'},
             species_data: {title: 'Species Data'},
             network_data: {title: 'Network Data'},
             indicator_data: {title: 'Indicators'}
@@ -45,11 +88,18 @@ const mapApp = createApp({
 
         // Initialize everything
         onMounted(() => {
+            setTimeout(() => {
+                initChart();
+            }, 300);
+
+            nextTick(() => {
+                initChart();
+            })
 
             // Using Esri World Imagery as satellite base map
             const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-              attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
-              maxZoom: 19
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+                maxZoom: 19
             });
 
             // Initialize map
@@ -61,21 +111,24 @@ const mapApp = createApp({
 
             loadMPAPolygons();
 
-            // Initialize charts
-            if (window.ChartComponents && window.ChartComponents.StandardAnomaliesChart) {
-                state.charts.standardAnomalies = new ChartComponents.StandardAnomaliesChart(
-                    'mpa_ts_stda_chart',
-                    state.urls.anomalyUrl
-                );
-            }
+            // Initialize Anomaly chart with a check that the element exists
+            setTimeout(() => {
+                const anomalyChartElement = document.getElementById('mpa_ts_stda_chart');
+                if (anomalyChartElement) {
+                    state.charts.standardAnomalies = new StandardAnomalyChart(
+                        'mpa_ts_stda_chart',
+                        state.urls.anomalyUrl
+                    );
+                }
+            }, 100);
 
             // Initialize map
             if (typeof MapApp !== 'undefined') {
                 MapApp.init(
                     state.urls.mpasWithTimeseriesList,
                     state.urls.timeseriesUrl,
-                    state.urls.anomalyUrl,
-                    state.urls.depthsUrl
+                    state.urls.depthsUrl,
+                    state.urls.legendUrl
                 );
             }
         });
@@ -85,6 +138,32 @@ const mapApp = createApp({
             if (state.map) {
                 state.map.setView([lat, lng], zoom);
             }
+        }
+
+        function handleSetZoom(dateRange) {
+            state.dates.startDate = dateRange.min;
+            state.dates.endDate = dateRange.max;
+
+            // Check if chart exists before updating
+            if (chart && document.getElementById('chart-canvas')) {
+                getData();
+            } else {
+                console.warn("Chart not ready, delaying update");
+                setTimeout(getData, 100);
+            }
+        }
+
+        function setZoom(dateRange) {
+            if (typeof dateRange === 'object' && dateRange !== null) {
+                // Handle dateRange object from MPAControls
+                state.dates.startDate = dateRange.min;
+                state.dates.endDate = dateRange.max;
+            } else {
+                // Handle direct min/max arguments
+                state.dates.startDate = arguments[0] || state.dates.startDate;
+                state.dates.endDate = arguments[1] || state.dates.endDate;
+            }
+            getData();
         }
 
         async function loadMPAPolygons() {
@@ -131,9 +210,9 @@ const mapApp = createApp({
 
                 // Load all remaining pages in parallel
                 await Promise.all(pagePromises);
-                8
 
                 state.mapLoading = false;
+                addLegend();
             } catch (error) {
                 console.error("Error loading MPA polygons:", error);
                 state.mapLoading = false; // Make sure to stop loading on error
@@ -151,13 +230,7 @@ const mapApp = createApp({
                             layer.on('click', () => {
                                 // Reset previously selected polygon if exists
                                 if (state.selectedPolygon) {
-                                    state.selectedPolygon.setStyle({
-                                        color: '#E06377',
-                                        weight: 2,
-                                        opacity: 0.7,
-                                        fillColor: '#FF7F50',
-                                        fillOpacity: 0.4
-                                    });
+                                    state.selectedPolygon.setStyle(state.selectedPolygon.mpa.style);
                                 }
 
                                 // Highlight the selected polygon
@@ -171,6 +244,7 @@ const mapApp = createApp({
 
                                 // Store reference to this polygon
                                 state.selectedPolygon = layer;
+                                state.selectedPolygon.mpa = mpa;
 
                                 setMPA({
                                     id: mpa.properties.id,
@@ -184,6 +258,60 @@ const mapApp = createApp({
                     }).addTo(state.map);
                 }
             });
+        }
+
+        function addLegend(map) {
+            if (!state.map || !state.urls.legendUrl) return;
+
+            // Create a custom button control
+            const legendToggle = L.Control.extend({
+                options: {
+                    position: 'bottomright'
+                },
+
+                onAdd: function () {
+                    const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control legend-toggle');
+                    container.innerHTML = '<a href="#" title="Toggle Legend"><i class="fa fa-list"></i></a>';
+
+                    L.DomEvent.on(container, 'click', function (e) {
+                        e.preventDefault();
+                        document.querySelector('.legend').classList.toggle('hidden');
+                    });
+
+                    return container;
+                }
+            });
+
+            // Create a legend control
+            const legend = L.control({position: 'bottomright'});
+
+            legend.onAdd = function () {
+                const div = L.DomUtil.create('div', 'info legend hidden');
+                div.innerHTML += '<h4>MPA Classifications</h4><div id="legend-content">Loading...</div>';
+                return div;
+            };
+
+            state.map.addControl(new legendToggle());
+            legend.addTo(state.map);
+
+            // Fetch classifications data from the endpoint
+            fetch(state.urls.legendUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const legendContent = document.getElementById('legend-content');
+                    legendContent.innerHTML = '';
+
+                    // Populate legend with classification data
+                    data.forEach(classification => {
+                        legendContent.innerHTML +=
+                            '<div><span style="background:' + classification.colour +
+                            '"></span> ' + classification.name + '</div>';
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching classifications:', error);
+                    document.getElementById('legend-content').innerHTML = 'Error loading legend data';
+                });
         }
 
         function setMPA(mpa) {
@@ -201,21 +329,15 @@ const mapApp = createApp({
             // window.set_selected_date();
         }
 
-        function setZoom(min, max) {
-            state.dates.zoomMin = min || state.dates.zoomMin;
-            state.dates.zoomMax = max || state.dates.zoomMax;
-            getData();
-        }
-
         function panFrame(years) {
-            const minDate = new Date(state.dates.zoomMin);
-            const maxDate = new Date(state.dates.zoomMax);
+            const minDate = new Date(state.dates.startDate);
+            const maxDate = new Date(state.dates.endDate);
 
             minDate.setFullYear(minDate.getFullYear() + years);
             maxDate.setFullYear(maxDate.getFullYear() + years);
 
-            state.dates.zoomMin = minDate.toISOString().split('T')[0];
-            state.dates.zoomMax = maxDate.toISOString().split('T')[0];
+            state.dates.startDate = minDate.toISOString().split('T')[0];
+            state.dates.endDate = maxDate.toISOString().split('T')[0];
 
             getData();
         }
@@ -229,28 +351,19 @@ const mapApp = createApp({
                     return;
                 }
 
-                // Set the standard anomalies tab as active when an MPA is selected
-                state.activeTab = 'standard_anomaly_data';
+                // This endpoint will return a timeseries and climatology that can be used in multiple charts
+                const tsUrl = new URL(state.urls.timeseriesUrl, window.location.origin);
+                tsUrl.searchParams.set('mpa', state.mpa.id);
+                tsUrl.searchParams.set('start_date', state.dates.startDate);
+                tsUrl.searchParams.set('end_date', state.dates.endDate);
 
-                // Check if we have a valid chart object
-                if (state.charts.standardAnomalies) {
-                    // Construct URL with MPA parameters
-                    const chartUrl = new URL(state.urls.anomalyUrl, window.location.origin);
-                    chartUrl.searchParams.set('mpa', state.mpa.id);
-                    chartUrl.searchParams.set('start_date', state.dates.zoomMin);
-                    chartUrl.searchParams.set('end_date', state.dates.zoomMax);
-
-                    if (state.depth) {
-                        chartUrl.searchParams.set('depth', state.depth);
-                    }
-
-                    // Update the chart with new data
-                    await state.charts.standardAnomalies.updateData(chartUrl.toString());
-
-                    // Update any UI elements with MPA info
-                    document.getElementById('selected-mpa-name').textContent = state.mpa.name;
-                    document.getElementById('selected-mpa-area').textContent = `${state.mpa.km2} km²`;
+                if (state.depth) {
+                    tsUrl.searchParams.set('depth', state.depth);
                 }
+
+                const response = await fetch(tsUrl.toString());
+                state.timeseriesData = await response.json();
+
             } catch (error) {
                 console.error("Error fetching chart data:", error);
             } finally {
@@ -258,13 +371,11 @@ const mapApp = createApp({
             }
         }
 
-        function initializeUrls(mpasUrl, timeseriesUrl, anomalyUrl, depthsUrl, stdaChartUrl) {
-            console.log("Initializing URLs:", {anomalyUrl});
+        function initializeUrls(mpasUrl, timeseriesUrl, depthsUrl, legendUrl) {
             state.urls.mpasWithTimeseriesList = mpasUrl;
             state.urls.timeseriesUrl = timeseriesUrl;
-            state.urls.anomalyUrl = anomalyUrl;
             state.urls.depthsUrl = depthsUrl;
-            state.urls.stdaChartUrl = stdaChartUrl;
+            state.urls.legendUrl = legendUrl;
         }
 
         return {
@@ -280,3 +391,10 @@ const mapApp = createApp({
         };
     },
 });
+
+mapApp.component('standard-anomaly-chart', StandardAnomalyChart);
+mapApp.component('timeseries-chart', TimeseriesChart);
+mapApp.component('mpa-info', MPAInfo);
+mapApp.component('mpa-controls', MPAControls);
+
+window.mapApp = mapApp;

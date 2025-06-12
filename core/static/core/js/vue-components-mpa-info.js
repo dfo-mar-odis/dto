@@ -1,4 +1,4 @@
-const MPAInfo = {
+export const MPAInfo = {
   props: ['mpa'],
   template: `
     <div class="card">

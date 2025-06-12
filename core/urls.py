@@ -18,4 +18,7 @@ urlpatterns = [
 
     path('mpa_polygons/', views.get_polygons, name='get_polygons'),
     path('indicators/', views.indicators, name='get_indicators'),
+    path('classifications/', views.get_classification_colours, name='get_classification_colours'),
+    path('max_date/', views.get_max_date, name='get_max_date'),
+
 ]
