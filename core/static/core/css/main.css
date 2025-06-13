@@ -22,7 +22,9 @@
 
 .chart-container {
   position: relative;
-  min-height: 350px;
+  min-height: 425px;
+  height: 425px;
+  overflow: hidden;
 }
 
 .chart-loading-overlay {

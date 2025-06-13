@@ -5,10 +5,7 @@ export const StandardAnomalyChart = {
             type: Object,
             default: () => ({})
         },
-        startDate: String,
-        endDate: String,
-        depth: [String, Number],
-        chartUrl: String,  // Make sure this prop is defined
+        dataUrl: String,  // Make sure this prop is defined
         isActive: Boolean
     },
 
@@ -20,27 +17,11 @@ export const StandardAnomalyChart = {
         };
     },
 
-    template: `
-        <div class="chart-container position-relative">
-          <div v-if="loading" class="chart-loading-overlay">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Loading...</span>
-            </div>
-          </div>
-          <canvas ref="chartCanvas"></canvas>
-          <div v-if="!mpa.name" class="text-center text-muted mt-5 pt-5">
-            <i class="bi bi-map"></i>
-            <p>Select an MPA on the map to view standard anomaly data</p>
-          </div>
-        </div>
-        `,
-
     watch: {
         mpa: {
             handler: 'fetchChartData',
             deep: true
         },
-        // Replace string reference with inline function
         isActive(newValue) {
             if (newValue && this.mpa.id) {
                 this.fetchChartData();
@@ -50,12 +31,12 @@ export const StandardAnomalyChart = {
 
     methods: {
         async fetchChartData() {
-            if (!this.mpa.id || !this.chartUrl) return;
+            if (!this.mpa.id || !this.dataUrl) return;
 
             this.loading = true;
 
             // Build the URL with parameters
-            const url = new URL(this.chartUrl, window.location.origin);
+            const url = new URL(this.dataUrl, window.location.origin);
             url.searchParams.set('mpa', this.mpa.id);
 
             // Fetch and update the chart
@@ -152,6 +133,7 @@ export const StandardAnomalyChart = {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: false,
                     plugins: {
                         title: {
                             display: true,
@@ -222,5 +204,20 @@ export const StandardAnomalyChart = {
         if (this.chart) {
             this.chart.destroy();
         }
-    }
+    },
+
+    template: `
+        <div class="chart-container position-relative">
+          <div v-if="loading" class="chart-loading-overlay">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <canvas ref="chartCanvas"></canvas>
+          <div v-if="!mpa.name" class="text-center text-muted mt-5 pt-5">
+            <i class="bi bi-map"></i>
+            <p>Select an MPA on the map to view standard anomaly data</p>
+          </div>
+        </div>
+        `,
 };

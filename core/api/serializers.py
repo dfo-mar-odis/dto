@@ -18,9 +18,9 @@ class MPAZonesSerializer(serializers.ModelSerializer):
             "style": {
                 'color': style_color,
                 'weight': 2,
-                'opacity': 0.9,
+                'opacity': 0.7,
                 'fillColor': style_color,
-                'fillOpacity': 0.7
+                'fillOpacity': 0.5
             },
             "properties": {
                 "id": instance.site_id,
@@ -32,3 +32,36 @@ class MPAZonesSerializer(serializers.ModelSerializer):
             "geometry": json.loads(instance.geom.geojson) if instance.geom else None
         }
         return representation
+
+
+class SpeciesSerializer(serializers.ModelSerializer):
+    # Create custom fields for choice fields
+    grouping = serializers.SerializerMethodField()
+    importance = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.Species
+        fields = "__all__"
+
+    def get_grouping(self, obj):
+        if obj.grouping is None:
+            return None
+        return {
+            'value': obj.grouping,
+            'display': obj.get_grouping_display()
+        }
+
+    def get_importance(self, obj):
+        if obj.importance is None:
+            return None
+        return {
+            'value': obj.importance,
+            'display': obj.get_importance_display()
+        }
+
+    def get_status(self, obj):
+        return {
+            'value': obj.status,
+            'display': obj.get_status_display()
+        }

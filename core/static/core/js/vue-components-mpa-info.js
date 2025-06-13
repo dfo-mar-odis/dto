@@ -29,11 +29,11 @@ export const MPAInfo = {
         </div>
         <div class="row">
           <div class="col-2"><b>URL:</b></div>
-          <div class="col"><a :href="mpa.url">{{ mpa.url }}</a></div>
+          <div class="col"><a v-if="mpa.url" :href="mpa.url">Additional Information</a></div>
         </div>
         <div class="row">
           <div class="col-2"><b>km^2:</b></div>
-          <div class="col">{{ mpa.km2 }}</div>
+          <div v-if="mpa.km2" class="col">{{ mpa.km2 }}</div>
         </div>
       </div>
     </div>

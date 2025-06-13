@@ -1,0 +1,23 @@
+.species-panel .card {
+    height: 100%;
+}
+
+.species-list {
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.species-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.species-item:hover {
+    background-color: #f8f9fa;
+}
+
+.species-item.selected {
+    background-color: #e9ecef;
+    font-weight: bold;
+}

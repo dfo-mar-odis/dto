@@ -4,6 +4,7 @@
 
 {% block custom_css %}
     <link rel="stylesheet" href="{% static 'core/css/main.css' %}"/>
+    <link rel="stylesheet" href="{% static 'core/css/species.css' %}"/>
 {% endblock %}
 
 {% block content %}
@@ -17,12 +18,14 @@
                 <mpa-controls
                         :mpa="state.mpa"
                         max-date-url="{% url 'core:get_max_date' %}"
+                        mpa-depths-url="{% url 'core:get_depths' %}"
                         :initial-start-date="state.dates.startDate"
                         :initial-end-date="state.dates.endDate"
+                        :selected-date="state.dates.selected"
                         @get-data="getData"
-                        @set-zoom="setZoom"
-                        @pan-frame="panFrame"
-                        @date-selected="setSelectedDate">
+                        @date-range-change="setSelectedDateRange"
+                        @date-selected="setSelectedDate"
+                        @depth-selected="setSelectedDepth">
                 </mpa-controls>
             </div>
         </div>
@@ -57,49 +60,50 @@
         <div class="tab-pane fade show active" id="standard_anomaly_data">
             <div class="row">
                 <div class="col">
-                    <div id="div_id_stda_card">
-                        <standard-anomaly-chart
-                                :mpa="state.mpa"
-                                :start-date="state.dates.zoomMin"
-                                :end-date="state.dates.zoomMax"
-                                :depth="state.depth"
-                                chart-url="{% url 'core:anomaly' %}"
-                                :is-active="state.activeTab === 'standard_anomaly_data'"
-                        ></standard-anomaly-chart>
-                    </div>
+                    <standard-anomaly-chart
+                            :mpa="state.mpa"
+                            data-url="{% url 'core:anomaly' %}"
+                            :is-active="state.activeTab === 'standard_anomaly_data'"
+                    ></standard-anomaly-chart>
                 </div>
             </div>
         </div>
 
-        <div class="tab-pane fade" id="ocean_data">
+        <div class="tab-pane fade" id="timeseries_data">
             <div class="row">
                 <div class="col">
-                    <div id="div_id_quantile_card">
-                        <timeseries-chart
-                                :mpa="state.mpa"
-                                :start-date="state.dates.zoomMin"
-                                :end-date="state.dates.zoomMax"
-                                :depth="state.depth"
-                                chart-url="{% url 'core:timeseries' %}"
-                                :is-active="state.activeTab === 'ocean_data'"
-                                :timeseries-data="state.timeseriesData"
-                                :is-loading="state.loading"
-                        ></timeseries-chart>
-                    </div>
+                    <quantile-chart
+                            :mpa="state.mpa"
+                            :selected-date="state.dates.selected"
+                            :timeseries-data="state.timeseriesData"
+                            data-url="{% url 'core:quantiles' %}"
+                            :is-active="state.activeTab === 'timeseries_data'"
+                            :is-loading="state.loading"
+                            @date-selected="setSelectedDate"
+                    ></quantile-chart>
                 </div>
             </div>
         </div>
 
         <div class="tab-pane fade" id="species_data">
-            <div id="div_id_range_card">
-                <div class="row">
-                    <div class="col">
-                        <button id="btn_id_add_chart" class="btn btn-primary btn-sm"
-                                onclick="add_range_chart('{% url 'core:range_chart' %}')"
-                                title="{% trans "Add Chart" %}">{% trans "Add Chart" %}</button>
-                        <div id="btn_id_add_chart_loading"></div>
-                    </div>
+            <div class="row mt-1 mb-1">
+                <div class="col">
+                    <button id="btn_id_add_chart" class="btn btn-primary btn-sm"
+                            onclick="add_range_chart('{% url 'core:range_chart' %}')"
+                            title="{% trans "Add Chart" %}">{% trans "Add Chart" %}</button>
+                    <div id="btn_id_add_chart_loading"></div>
                 </div>
+            </div>
+            <div id="div_id_species_charts">
+                <species-chart
+                        :mpa="state.mpa"
+                        :species-list="state.species"
+                        :timeseries-data="state.timeseriesData"
+                        :selected-date="state.dates.selected"
+                        :is-active="state.activeTab === 'species_data'"
+                        :is-loading="state.loading"
+                        @date-selected="setSelectedDate"
+                ></species-chart>
             </div>
 
             <div class="card mt-2">
@@ -134,11 +138,6 @@
 {% endblock %}
 
 {% block scripts %}
-    <script src="{% static 'core/js/range_chart.js' %}"></script>
-    <script src="{% static 'core/js/quantile_chart.js' %}"></script>
-    <script src="{% static 'core/js/indicator_dial.js' %}"></script>
-    <script src="{% static 'core/js/map.js' %}"></script>
-
     <!-- Add Vue app script -->
     <script type="module" src="{% static 'core/js/vue-app.js' %}"></script>
 
@@ -147,13 +146,12 @@
             // Initialize Vue app
             const app = mapApp.mount('#app');
 
-            app.initializeUrls(
-                "{% url 'api:mpas-with-timeseries-list' %}",
-                "{% url 'core:timeseries' %}",
-                "{% url 'core:get_depths' %}",
-                "{% url 'core:get_classification_colours' %}"
+            app.initialize(
+                "{% url 'api:mpas-with-timeseries-list' %}", // used to get the mpa polygons, bot only ones with a timeseries
+                "{% url 'core:timeseries' %}",  // retrieves the timeseries data that's used by multiple objects
+                "{% url 'core:get_classification_colours' %}", // adds the legend to the map
+                "{% url 'api:species-list' %}?all=true",  // used to get the list of species and assciated data
             );
-            app.loadMPAPolygons()
 
             // Initialize your existing code as well during transition
             {#window.standard_anomalies_chart = new StandardAnomaliesChart('mpa_ts_stda_chart', "{% url 'core:stda_chart' %}");#}

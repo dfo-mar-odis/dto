@@ -1,9 +1,10 @@
 import {StandardAnomalyChart} from "./vue-chart-standard-anomaly.js";
-import {TimeseriesChart} from "./vue-chart-timeseries.js";
+import {QuantileChart} from "./vue-chart-quantile.js";
+import {SpeciesChart} from "./vue-chart-species.js";
 import {MPAInfo} from "./vue-components-mpa-info.js";
 import {MPAControls} from "./vue-components-mpa-controls.js";
 
-const {createApp, ref, reactive, watch, computed, onMounted, nextTick} = Vue;
+const {createApp, ref, reactive, watch, computed, onMounted} = Vue;
 
 const mapApp = createApp({
     delimiters: ['${', '}'],
@@ -30,8 +31,8 @@ const mapApp = createApp({
             urls: {
                 mpasWithTimeseriesList: '', // Will be populated from template
                 timeseriesUrl: '',
-                depthsUrl: '',
                 legendUrl: '',
+                speciesUrl: '',
             },
             charts: {
                 standardAnomalies: null,
@@ -40,47 +41,10 @@ const mapApp = createApp({
             timeseriesData: null
         });
 
-        let chart = null;
-
-        function initChart() {
-            const canvas = document.getElementById('chart-canvas');
-            if (!canvas) {
-                return;
-            }
-
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-                console.warn("Failed to get canvas context, retrying...");
-                setTimeout(initChart, 200);
-                return;
-            }
-
-            // Create chart only when canvas is ready
-            try {
-                chart = new Chart(ctx, {
-                    // Your chart configuration
-                });
-            } catch (err) {
-                console.error("Chart initialization error:", err);
-            }
-        }
-
-        function setZoom(dateRange) {
-            state.dates.startDate = dateRange.min;
-            state.dates.endDate = dateRange.max;
-
-            // Only update chart if it exists
-            if (chart) {
-                getData();
-            } else {
-                initChart();
-            }
-        }
-
         // Populate the tabs data structure
         const tabs = reactive({
             standard_anomaly_data: {title: 'Standard Anomalies'},
-            ocean_data: {title: 'Timeseries'},
+            timeseries_data: {title: 'Timeseries'},
             species_data: {title: 'Species Data'},
             network_data: {title: 'Network Data'},
             indicator_data: {title: 'Indicators'}
@@ -88,14 +52,6 @@ const mapApp = createApp({
 
         // Initialize everything
         onMounted(() => {
-            setTimeout(() => {
-                initChart();
-            }, 300);
-
-            nextTick(() => {
-                initChart();
-            })
-
             // Using Esri World Imagery as satellite base map
             const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                 attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
@@ -109,61 +65,32 @@ const mapApp = createApp({
                 layers: [satellite],
             }); // Center on world view
 
-            loadMPAPolygons();
-
-            // Initialize Anomaly chart with a check that the element exists
-            setTimeout(() => {
-                const anomalyChartElement = document.getElementById('mpa_ts_stda_chart');
-                if (anomalyChartElement) {
-                    state.charts.standardAnomalies = new StandardAnomalyChart(
-                        'mpa_ts_stda_chart',
-                        state.urls.anomalyUrl
-                    );
-                }
-            }, 100);
-
             // Initialize map
             if (typeof MapApp !== 'undefined') {
                 MapApp.init(
                     state.urls.mpasWithTimeseriesList,
                     state.urls.timeseriesUrl,
-                    state.urls.depthsUrl,
-                    state.urls.legendUrl
+                    state.urls.legendUrl,
+                    state.urls.speciesURL,
                 );
             }
         });
+
+        function initialize(mpasUrl, timeseriesUrl, legendUrl, speciesUrl) {
+            state.urls.mpasWithTimeseriesList = mpasUrl;
+            state.urls.timeseriesUrl = timeseriesUrl;
+            state.urls.legendUrl = legendUrl;
+            state.urls.speciesUrl = speciesUrl;
+
+            loadMPAPolygons();
+            loadSpecies();
+        }
 
         // Methods
         function setMapView(lat, lng, zoom) {
             if (state.map) {
                 state.map.setView([lat, lng], zoom);
             }
-        }
-
-        function handleSetZoom(dateRange) {
-            state.dates.startDate = dateRange.min;
-            state.dates.endDate = dateRange.max;
-
-            // Check if chart exists before updating
-            if (chart && document.getElementById('chart-canvas')) {
-                getData();
-            } else {
-                console.warn("Chart not ready, delaying update");
-                setTimeout(getData, 100);
-            }
-        }
-
-        function setZoom(dateRange) {
-            if (typeof dateRange === 'object' && dateRange !== null) {
-                // Handle dateRange object from MPAControls
-                state.dates.startDate = dateRange.min;
-                state.dates.endDate = dateRange.max;
-            } else {
-                // Handle direct min/max arguments
-                state.dates.startDate = arguments[0] || state.dates.startDate;
-                state.dates.endDate = arguments[1] || state.dates.endDate;
-            }
-            getData();
         }
 
         async function loadMPAPolygons() {
@@ -216,6 +143,25 @@ const mapApp = createApp({
             } catch (error) {
                 console.error("Error loading MPA polygons:", error);
                 state.mapLoading = false; // Make sure to stop loading on error
+            }
+        }
+
+        async function loadSpecies() {
+            if (!state.urls.speciesUrl) return;
+
+            try {
+                // First fetch to get metadata and process first page
+                const initialResponse = await fetch(state.urls.speciesUrl);
+                const initialData = await initialResponse.json();
+
+                if (!initialData || !Array.isArray(initialData)) {
+                    console.error("Unexpected data format:", initialData);
+                    return;
+                }
+
+                state.species = initialData;
+            } catch (error) {
+                console.error("Error loading species dataset:", error);
             }
         }
 
@@ -323,22 +269,34 @@ const mapApp = createApp({
             getData();
         }
 
-        function setSelectedDate(date) {
-            state.dates.selected = date;
-            // You can still call your existing functions if needed during transition
-            // window.set_selected_date();
+        function setSelectedDateRange(dateRange) {
+            if (typeof dateRange === 'object' && dateRange !== null) {
+                // Handle dateRange object from MPAControls
+                state.dates.startDate = dateRange.min;
+                state.dates.endDate = dateRange.max;
+            } else {
+                // Handle direct min/max arguments
+                state.dates.startDate = arguments[0] || state.dates.startDate;
+                state.dates.endDate = arguments[1] || state.dates.endDate;
+            }
+
+            // Check canvas exists before attempting to draw
+            const canvas = document.getElementById('chart-canvas');
+            if (!canvas) {
+                console.warn("Canvas element not found, delaying chart update");
+                setTimeout(getData, 200);
+                return;
+            }
+
+            getData();
         }
 
-        function panFrame(years) {
-            const minDate = new Date(state.dates.startDate);
-            const maxDate = new Date(state.dates.endDate);
+        function setSelectedDate(date) {
+            state.dates.selected = date
+        }
 
-            minDate.setFullYear(minDate.getFullYear() + years);
-            maxDate.setFullYear(maxDate.getFullYear() + years);
-
-            state.dates.startDate = minDate.toISOString().split('T')[0];
-            state.dates.endDate = maxDate.toISOString().split('T')[0];
-
+        function setSelectedDepth(depth) {
+            state.depth = depth;
             getData();
         }
 
@@ -357,9 +315,9 @@ const mapApp = createApp({
                 tsUrl.searchParams.set('start_date', state.dates.startDate);
                 tsUrl.searchParams.set('end_date', state.dates.endDate);
 
-                if (state.depth) {
-                    tsUrl.searchParams.set('depth', state.depth);
-                }
+                // if depth isn't specified then it'll be None and will return the
+                // Total Average Bottom Timeseries
+                tsUrl.searchParams.set('depth', state.depth);
 
                 const response = await fetch(tsUrl.toString());
                 state.timeseriesData = await response.json();
@@ -371,29 +329,22 @@ const mapApp = createApp({
             }
         }
 
-        function initializeUrls(mpasUrl, timeseriesUrl, depthsUrl, legendUrl) {
-            state.urls.mpasWithTimeseriesList = mpasUrl;
-            state.urls.timeseriesUrl = timeseriesUrl;
-            state.urls.depthsUrl = depthsUrl;
-            state.urls.legendUrl = legendUrl;
-        }
-
         return {
             state,
             tabs,
-            initializeUrls,
-            loadMPAPolygons,
+            initialize,
             setMPA,
+            setSelectedDateRange,
             setSelectedDate,
-            setZoom,
-            panFrame,
+            setSelectedDepth,
             getData,
         };
     },
 });
 
 mapApp.component('standard-anomaly-chart', StandardAnomalyChart);
-mapApp.component('timeseries-chart', TimeseriesChart);
+mapApp.component('quantile-chart', QuantileChart);
+mapApp.component('species-chart', SpeciesChart);
 mapApp.component('mpa-info', MPAInfo);
 mapApp.component('mpa-controls', MPAControls);
 

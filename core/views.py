@@ -525,9 +525,8 @@ def get_max_date(request):
 
 
 def get_depths(request):
-    mpa_id = int(request.GET.get('mpa', -1))
-    mpa = models.MPAZones.objects.get(pk=mpa_id)
+    mpa_id = int(request.GET.get('mpa_id', -1))
+    mpa = models.MPAZones.objects.get(site_id=mpa_id)
     depths = models.Timeseries.objects.filter(mpa=mpa).order_by('depth').values_list('depth', flat=True).distinct()
     depth_array = [(d, f'{d} m') for d in depths if d is not None]
-    depth_array.insert(0, ('', _("Total Average Bottom Timeseries")))
     return JsonResponse({'depths': depth_array})
