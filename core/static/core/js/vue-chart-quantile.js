@@ -6,10 +6,7 @@ export const QuantileChart = {
     extends: TimeseriesChart,
     props: {
         dataUrl: String,
-        depth: {
-            type: String,
-            default: ''
-        },
+        depth: '',
         startDate: null,
         endDate: null,
     },
@@ -24,6 +21,7 @@ export const QuantileChart = {
             currentDelta: 0,
             currentPoint: null,
             currentQuantile: null,
+            currentTSValue: null,
         };
     },
     watch: {
@@ -53,6 +51,7 @@ export const QuantileChart = {
             // Calculate anomaly (timeseries value - climatology value)
             const tsValue = parseFloat(dataPoint.ts_data);
             const climValue = parseFloat(dataPoint.clim);
+            this.currentTSValue = tsValue
             this.currentDelta = tsValue - climValue;
             this.currentPoint = dataPoint;
             this.currentQuantile = this.quantileData.data.find(point => point.date === (dateStr + " 00:01"))
@@ -195,7 +194,7 @@ export const QuantileChart = {
     },
     // Override the template to add species selection panel
     template: `
-        <div class="row mb-1">
+        <div class="row mb-1 mt-1">
             <div class="col-md-3 species-panel">
                 <div class="card">
                     <div class="card-header">Quantile Settings</div>
@@ -224,20 +223,33 @@ export const QuantileChart = {
                             step="0.1"
                             class="form-control">
                         </div>
-                        <small class="form-text text-muted mt-1">Heat/Cold wave indicator</small>
-                        <div class="progress" style="height: 20px;" v-if="currentPoint">
-                            <div class="progress-bar" role="progressbar"
-                                 :class="{
-                                    'bg-danger': currentQuantile && parseFloat(currentPoint.ts_data) > parseFloat(currentQuantile.upperq),
-                                    'bg-info': currentQuantile && parseFloat(currentPoint.ts_data) < parseFloat(currentQuantile.lowerq),
-                                    'bg-success': currentQuantile && parseFloat(currentPoint.ts_data) <= parseFloat(currentQuantile.upperq) && 
-                                         parseFloat(currentPoint.ts_data) >= parseFloat(currentQuantile.lowerq)
-                                }"
-                                 :style="{width: calculateProgressWidth() + '%'}"
-                                 :aria-valuenow="currentDelta"
-                                 :aria-valuemin="quantileData?.min_delta"
-                                 :aria-valuemax="quantileData?.max_delta">
-                                {{currentPoint.ts_data.toFixed(2)}}°C
+                        <div class="row">
+                            <div class="row">
+                                <small class="form-text text-muted mt-1">Heat/Cold wave indicator</small>
+                            </div>
+                            <div class="row">
+                                <div class="col">
+                                    <div class="progress" style="height: 20px;" v-if="currentPoint">
+                                        <div class="progress-bar" role="progressbar"
+                                             :class="{
+                                                'bg-danger': currentQuantile && parseFloat(currentTSValue) > parseFloat(currentQuantile.upperq),
+                                                'bg-info': currentQuantile && parseFloat(currentTSValue) < parseFloat(currentQuantile.lowerq),
+                                                'bg-success': currentQuantile && parseFloat(currentTSValue) <= parseFloat(currentQuantile.upperq) && 
+                                                     parseFloat(currentTSValue) >= parseFloat(currentQuantile.lowerq)
+                                            }"
+                                             :style="{width: calculateProgressWidth() + '%'}"
+                                             :aria-valuenow="currentDelta"
+                                             :aria-valuemin="quantileData?.min_delta"
+                                             :aria-valuemax="quantileData?.max_delta">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <!-- Separate text element positioned absolutely -->
+                                <div class="d-flex justify-content-center align-items-center" style="top: 0; left: 0; text-shadow: 0 0 3px rgba(0,0,0,0.5);">
+                                    <span>{{currentDelta.toFixed(2)}}°C</span>
+                                </div>
                             </div>
                         </div>
                     </div>

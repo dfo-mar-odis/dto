@@ -13,7 +13,7 @@ export const MPAControls = {
     },
     watch: {
         mpa: {
-            handler(newMpa) {
+            handler(newMpa, oldMpa) {
                 // Reset depth selection when MPA changes
                 this.state.depth = "";
                 // Fetch new depths for this MPA
@@ -22,24 +22,31 @@ export const MPAControls = {
             },
             deep: true
         },
-        'state.dates.startDate': function (newVal) {
-            // Emit only when we have a complete date value
-            if (newVal && newVal.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        'state.dates.startDate': function (newVal, oldVal) {
+            // Emit only when we have a complete date value and it has changed
+            if (newVal &&
+                newVal.match(/^\d{4}-\d{2}-\d{2}$/) &&
+                newVal !== oldVal) {
                 this.setDateRange();
             }
         },
-        'state.dates.endDate': function (newVal) {
-            if (newVal && newVal.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        'state.dates.endDate': function (newVal, oldVal) {
+            // Emit only when we have a complete date value and it has changed
+            if (newVal &&
+                newVal.match(/^\d{4}-\d{2}-\d{2}$/) &&
+                newVal !== oldVal) {
                 this.setDateRange();
             }
         },
         selectedDate: {
             handler(newVal) {
-                if (newVal && newVal.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                if (newVal &&
+                    newVal.match(/^\d{4}-\d{2}-\d{2}$/) &&
+                    newVal !== this.state.dates.selected) {
                     this.setSelectedDate(newVal);
                 }
             }
-        }
+        },
     },
     data() {
         return {
@@ -120,15 +127,24 @@ export const MPAControls = {
             this.$emit('pan-frame', years);
 
         },
+
         setSelectedDate(date) {
             // If a date is provided, update the selected date
             if (date) {
-                this.state.dates.selected = date instanceof Date
+                const formattedDate = date instanceof Date
                     ? date.toISOString().split('T')[0]
                     : date;
 
-                // Emit an event for the selected date
-                this.$emit('selected-date-changed', this.state.dates.selected);
+                // Validate the date is after 1800-01-01
+                const minDate = new Date('1800-01-01');
+                const selectedDate = new Date(formattedDate);
+
+                if (!isNaN(selectedDate.getTime()) && selectedDate >= minDate) {
+                    this.state.dates.selected = formattedDate;
+
+                    // Emit an event for the selected date
+                    this.$emit('selected-date-changed', this.state.dates.selected);
+                }
             }
         },
 
@@ -141,6 +157,7 @@ export const MPAControls = {
                 });
             }, 1000);
         },
+
         setSelectedDepth() {
             // Fetch data based on selected depth
             this.$emit('depth-selected', this.state.depth);

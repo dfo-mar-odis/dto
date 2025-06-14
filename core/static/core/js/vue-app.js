@@ -266,7 +266,11 @@ const mapApp = createApp({
             state.mpa.url = mpa.url;
             state.mpa.class = mpa.class;
             state.mpa.km2 = mpa.km2;
-            getData();
+
+            // When the new mpa is set, the vue-component-mpa-control.js module will update
+            // its MPA and set new depths for the selected MPA, then it'll emit a depth-changed
+            // signal which will call vue-app's setSelectedDepth function and update the data
+            //getData();
         }
 
         function setSelectedDateRange(dateRange) {
