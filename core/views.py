@@ -27,7 +27,7 @@ from django.contrib.gis.db.models.functions import Transform
 
 from core import models
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('')
 
 colormap = cm.linear.Paired_07.scale(-2, 35)
 
@@ -291,14 +291,21 @@ def get_anomaly(request):
 
 
 def get_quantiles(request):
+    logger.debug(f"GET: {request.GET}")
     timeseries = {'data': []}
     mpa_id, depth, start_date, end_date = parse_request_variables(request)
+    logger.debug(request.GET)
+    logger.debug(f"MPA ID: {mpa_id}")
 
-    q_upper = float(request.GET.get('upper', 0.9))
-    q_lower = float(request.GET.get('lower', 0.1))
+    q_upper = float(request.GET.get('upper_quantile', 0.9))
+    logger.debug(q_upper)
+
+    q_lower = float(request.GET.get('lower_quantile', 0.1))
+    logger.debug(q_lower)
 
     if mpa_id == -1:
         return JsonResponse(timeseries)
+    logger.debug(mpa_id)
 
     if not models.MPAZones.objects.filter(pk=mpa_id).exists():
         return JsonResponse(timeseries)
@@ -314,11 +321,12 @@ def get_quantiles(request):
     upper = df.groupby([df.index.month, df.index.day]).quantile(q=q_upper)
     lower = df.groupby([df.index.month, df.index.day]).quantile(q=q_lower)
 
-    df = df[(df.index >= start_date) & (df.index < end_date)]
+    df = df[(df.index >= '1993-01-01') & (df.index < '2022-12-31')]
     timeseries['data'] = [{"date": f'{date.strftime("%Y-%m-%d")} 00:01',
                            "lowerq": f'{lower["value"][date.month, date.day]}',
                            "upperq": f'{upper["value"][date.month, date.day]}'}
                           for date, mt in df.iterrows()]
+    logger.debug(timeseries)
 
     return JsonResponse(timeseries)
 
