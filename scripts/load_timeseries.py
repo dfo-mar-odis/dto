@@ -17,12 +17,12 @@ def load_series(mpa, timeseries, depth=None, indicator=1, batch_size=1000):
     mpa: MPA object to associate with the time series data
     timeseries: Pandas DataFrame containing time series data
     depth: Depth value (in meters) for the time series, or None for surface data
-    indicator: ID of the indicator type (default: 1 for temperature)
+    Indicators: ID of the indicator type (default: 1 for temperature)
     batch_size: Number of records to insert in each database batch
     """
     try:
         # Get indicator object once outside the loop
-        timeseries_indicator = models.Indicator.objects.get(pk=indicator)
+        timeseries_indicator = models.Indicators.objects.get(pk=indicator)
 
         # Setup tracking variables
         add_time_series = []

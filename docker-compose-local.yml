@@ -10,6 +10,7 @@ services:
       - "8000:8000"
     command: /bin/bash entry-point.sh
     environment:
+      - "ENV_FILE=.env.local"
       - "SECRET_KEY=${SECRET_KEY}"
       - "DJANGO_LOG_FILE=${DJANGO_LOG_FILE}"
       - "DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE}"
@@ -33,7 +34,7 @@ services:
     container_name: dto-postgis
     restart: always
     env_file:
-      - .env
+      - .env.local
     ports:
       - "5432:5432"
     healthcheck:

@@ -12,7 +12,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 import os
 from config.env import BASE_DIR, env
 
-env.read_env(os.path.join(BASE_DIR, '.env'))
+env_file = os.getenv('ENV_FILE', '.env')
+env.read_env(os.path.join(BASE_DIR, env_file))
 
 TEMPLATE_DIR = os.path.join(BASE_DIR, 'templates')
 

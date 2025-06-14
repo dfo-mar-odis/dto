@@ -93,6 +93,12 @@ def load_indicators():
     models.Indicators.objects.get_or_create(name__iexact="temperature")
 
 def load_mpa_classifications(data):
+    try:
+        call_command('loaddata', 'core/fixtures/classification_fixtures.json', verbosity=1)
+        print("Classification fixtures loaded successfully")
+    except Exception as e:
+        print(f"Error loading fixtures: {str(e)}")
+
     if data is None:
         data = gpd.read_file(mpa_shape, encoding='ISO-8859-1')
 
