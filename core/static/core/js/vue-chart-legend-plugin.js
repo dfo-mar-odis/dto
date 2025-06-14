@@ -81,9 +81,9 @@ export const LegendSectionPlugin = (sectionConfig, chartInstanceId) => {
 
                         if (!dataset.fill) {
                             color = dataset.borderColor;
-                        } else if (dataset.fill.above !== 'rgba(0, 0, 0, 0)') {
+                        } else if (dataset.fill.above != null && dataset.fill.above !== 'rgba(0, 0, 0, 0)') {
                             color = dataset.fill.above;
-                        } else if (dataset.fill.below !== 'rgba(0, 0, 0, 0)') {
+                        } else if (dataset.fill.below != null && dataset.fill.below !== 'rgba(0, 0, 0, 0)') {
                             color = dataset.fill.below;
                         } else {
                             // If borderColor is transparent, use backgroundColor or fill color

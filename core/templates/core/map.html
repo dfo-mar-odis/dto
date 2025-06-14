@@ -74,6 +74,9 @@
                 <div class="col">
                     <quantile-chart
                             :mpa="state.mpa"
+                            :depth="state.depth"
+                            :start-date="state.dates.startDate"
+                            :end-date="state.dates.endDate"
                             :selected-date="state.dates.selected"
                             :timeseries-data="state.timeseriesData"
                             data-url="{% url 'core:quantiles' %}"

@@ -291,21 +291,16 @@ def get_anomaly(request):
 
 
 def get_quantiles(request):
-    logger.debug(f"GET: {request.GET}")
+
     timeseries = {'data': []}
+
     mpa_id, depth, start_date, end_date = parse_request_variables(request)
-    logger.debug(request.GET)
-    logger.debug(f"MPA ID: {mpa_id}")
 
     q_upper = float(request.GET.get('upper_quantile', 0.9))
-    logger.debug(q_upper)
-
     q_lower = float(request.GET.get('lower_quantile', 0.1))
-    logger.debug(q_lower)
 
     if mpa_id == -1:
         return JsonResponse(timeseries)
-    logger.debug(mpa_id)
 
     if not models.MPAZones.objects.filter(pk=mpa_id).exists():
         return JsonResponse(timeseries)
@@ -318,15 +313,25 @@ def get_quantiles(request):
     if df is None:
         return None
 
-    upper = df.groupby([df.index.month, df.index.day]).quantile(q=q_upper)
-    lower = df.groupby([df.index.month, df.index.day]).quantile(q=q_lower)
+    # just like with the climatology we'll use 1993-2023 for our 30 year window regardless of what the request is for
+    clim = df[(df.index <= '2022-12-31')]
 
-    df = df[(df.index >= '1993-01-01') & (df.index < '2022-12-31')]
+    upper = clim.groupby([clim.index.month, clim.index.day]).quantile(q=q_upper)
+    lower = clim.groupby([clim.index.month, clim.index.day]).quantile(q=q_lower)
+    climatology = clim.groupby([clim.index.month, clim.index.day]).quantile()
+
+    max_val = df[(df.value == df.max().value)]
+    min_val = df[(df.value == df.min().value)]
+
+    # the min/max delta is used by the progress bar to have an absolute zero and absolute max
+    timeseries['max_delta'] = df.max().value - climatology.loc[(max_val.index.month[0], max_val.index.day[0])].value
+    timeseries['min_delta'] = df.min().value - climatology.loc[(min_val.index.month[0], min_val.index.day[0])].value
+
+    df = df[(df.index >= start_date) & (df.index < end_date)]
     timeseries['data'] = [{"date": f'{date.strftime("%Y-%m-%d")} 00:01',
                            "lowerq": f'{lower["value"][date.month, date.day]}',
                            "upperq": f'{upper["value"][date.month, date.day]}'}
                           for date, mt in df.iterrows()]
-    logger.debug(timeseries)
 
     return JsonResponse(timeseries)
 

@@ -6,6 +6,12 @@ export const QuantileChart = {
     extends: TimeseriesChart,
     props: {
         dataUrl: String,
+        depth: {
+            type: String,
+            default: ''
+        },
+        startDate: null,
+        endDate: null,
     },
 
     data() {
@@ -13,27 +19,83 @@ export const QuantileChart = {
             ...TimeseriesChart.data(),
             upperQuantile: 0.9,
             lowerQuantile: 0.1,
+            lastFetchParams: null,
+            quantileData: null,
+            currentDelta: 0,
+            currentPoint: null,
+            currentQuantile: null,
         };
     },
-    watch: {},
+    watch: {
+        async upperQuantile(newValue) {
+            this.debouncedFetchData()
+        },
 
+        async lowerQuantile(newValue) {
+            this.debouncedFetchData()
+        }
+    },
     methods: {
+        isValidDateString(dateString) {
+            if (!dateString) return false;
+            const date = new Date(dateString);
+            return date.toString() !== 'Invalid Date';
+        },
+
+        setDateIndicator(dateStr) {
+            TimeseriesChart.methods.setDateIndicator.call(this, dateStr);
+            if (!dateStr || !this.quantileData || !this.quantileData.data) return;
+
+            // Find the data point for the selected date
+            const dataPoint = this.timeseriesData.data.find(point => point.date === (dateStr + " 00:01"))
+            if (!dataPoint) return;
+
+            // Calculate anomaly (timeseries value - climatology value)
+            const tsValue = parseFloat(dataPoint.ts_data);
+            const climValue = parseFloat(dataPoint.clim);
+            this.currentDelta = tsValue - climValue;
+            this.currentPoint = dataPoint;
+            this.currentQuantile = this.quantileData.data.find(point => point.date === (dateStr + " 00:01"))
+        },
+
+        calculateProgressWidth() {
+            if (!this.quantileData || !this.quantileData.min_delta || !this.quantileData.max_delta) return 50;
+
+            const totalRange = this.quantileData.max_delta - this.quantileData.min_delta;
+            if (totalRange === 0) return 50;
+
+            // Calculate percentage position of current delta within min/max range
+            const percentage = ((this.currentDelta - this.quantileData.min_delta) / totalRange) * 100;
+
+            // Clamp between 0 and 100
+            return Math.max(0, Math.min(100, percentage));
+        },
+
         async fetchChartData() {
-            this.localLoading = true;
+            if (!this.mpa || !this.mpa.id) return;
+            if (!this.startDate || !this.endDate) return;
+
+            // Create a fetch params signature to prevent duplicate requests
+            const fetchParams = `${this.mpa.id}-${this.depth}-${this.startDate}-${this.endDate}-${this.upperQuantile}-${this.lowerQuantile}`;
+            if (fetchParams === this.lastFetchParams) {
+                console.log("Skipping duplicate request:", fetchParams);
+                return;
+            }
+            this.lastFetchParams = fetchParams;
 
             try {
-                if (!this.mpa || !this.mpa.id) {
-                    console.warn("No MPA selected, cannot fetch data");
-                    return;
-                }
+                this.localLoading = true;
 
                 // Build URL with query parameters
                 const url = new URL(this.dataUrl, window.location.origin);
                 url.searchParams.append('mpa', this.mpa.id);
+                url.searchParams.append('depth', this.depth);
+                url.searchParams.append('start_date', this.startDate);
+                url.searchParams.append('end_date', this.endDate);
                 url.searchParams.append('upper_quantile', this.upperQuantile);
                 url.searchParams.append('lower_quantile', this.lowerQuantile);
 
-                // Fetch data
+                // Try using a Promise-based approach for debugging
                 const response = await fetch(url);
 
                 if (!response.ok) {
@@ -41,12 +103,7 @@ export const QuantileChart = {
                 }
 
                 const data = await response.json();
-                this.chartData = data;
-
-                // Render the chart
-                this.$nextTick(() => {
-                    this.renderChart();
-                });
+                this.quantileData = data;
             } catch (error) {
                 console.error('Error fetching quantile chart data:', error);
             } finally {
@@ -59,6 +116,65 @@ export const QuantileChart = {
             const parentFormatData = TimeseriesChart.methods.formatChartData.bind(this);
             const formattedData = parentFormatData();
 
+            if (!this.quantileData || !this.quantileData.data) {
+                return formattedData;
+            }
+
+            const dates = this.quantileData.data.map(d => new Date(d.date));
+            const upperValues = this.quantileData.data.map(d => parseFloat(d.upperq));
+            const lowerValues = this.quantileData.data.map(d => parseFloat(d.lowerq));
+
+            const upperData = dates.map((date, i) => ({
+                x: date,
+                y: upperValues[i]
+            }));
+
+            const lowerData = dates.map((date, i) => ({
+                x: date,
+                y: lowerValues[i]
+            }));
+
+            formattedData.datasets.push(
+                {
+                    label: `Marine Heat Wave above (${this.upperQuantile})`,
+                    data: upperData,
+                    borderColor: '#CCCCCC',
+                    borderWidth: 1.5,
+                    backgroundColor: 'rgba(0,0,0,0)',
+                    tension: 0.1,
+                    pointRadius: 0.1,
+                    fill: {
+                        target: 0,
+                        below: 'rgba(128, 0, 0, 0.8)',
+                    },
+                },
+                {
+                    label: `Marine Cold Wave below (${this.lowerQuantile})`,
+                    data: lowerData,
+                    borderColor: '#CCCCCC',
+                    borderWidth: 1.5,
+                    backgroundColor: 'rgba(0,0,0,0)',
+                    tension: 0.1,
+                    pointRadius: 0.1,
+                    fill: {
+                        target: 0,
+                        above: 'rgba(0, 0, 128, 0.8)',
+                    },
+                },
+                {
+                    label: `Average Range`,
+                    data: lowerData,
+                    borderColor: '#CCCCCC',
+                    borderWidth: 0,
+                    backgroundColor: 'rgba(0,0,0,0)',
+                    tension: 0.1,
+                    pointRadius: 0.1,
+                    fill: {
+                        target: (formattedData.datasets.length),
+                        below: 'rgba(128, 128, 128, 0.2)',
+                    },
+                }
+            );
             return formattedData;
         },
 
@@ -77,13 +193,6 @@ export const QuantileChart = {
         },
 
     },
-    mounted() {
-        // Ensure data is available before first render completes
-        this.$nextTick(() => {
-            this.fetchChartData();
-        });
-    },
-
     // Override the template to add species selection panel
     template: `
         <div class="row mb-1">
@@ -98,7 +207,7 @@ export const QuantileChart = {
                             id="upperQuantile"
                             v-model.number="upperQuantile"
                             @change="fetchChartData"
-                            min="0.0"
+                            min="0.5"
                             max="1.0"
                             step="0.1"
                             class="form-control">
@@ -111,9 +220,25 @@ export const QuantileChart = {
                             v-model.number="lowerQuantile"
                             @change="fetchChartData"
                             min="0.0"
-                            max="1.0"
+                            max="0.5"
                             step="0.1"
                             class="form-control">
+                        </div>
+                        <small class="form-text text-muted mt-1">Heat/Cold wave indicator</small>
+                        <div class="progress" style="height: 20px;" v-if="currentPoint">
+                            <div class="progress-bar" role="progressbar"
+                                 :class="{
+                                    'bg-danger': currentQuantile && parseFloat(currentPoint.ts_data) > parseFloat(currentQuantile.upperq),
+                                    'bg-info': currentQuantile && parseFloat(currentPoint.ts_data) < parseFloat(currentQuantile.lowerq),
+                                    'bg-success': currentQuantile && parseFloat(currentPoint.ts_data) <= parseFloat(currentQuantile.upperq) && 
+                                         parseFloat(currentPoint.ts_data) >= parseFloat(currentQuantile.lowerq)
+                                }"
+                                 :style="{width: calculateProgressWidth() + '%'}"
+                                 :aria-valuenow="currentDelta"
+                                 :aria-valuemin="quantileData?.min_delta"
+                                 :aria-valuemax="quantileData?.max_delta">
+                                {{currentPoint.ts_data.toFixed(2)}}°C
+                            </div>
                         </div>
                     </div>
                 </div>

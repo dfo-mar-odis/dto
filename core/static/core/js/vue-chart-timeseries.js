@@ -8,7 +8,6 @@ export const TimeseriesChart = {
             type: Object,
             default: () => ({})
         },
-        dataUrl: String, // dataUrl should be passed in for extending classes that will call it in fetchChartData function
         isActive: Boolean,
         isLoading: {
             type: Boolean,
@@ -26,14 +25,12 @@ export const TimeseriesChart = {
         },
         isActive(newData) {
             if (newData && this.mpa.id) {
-                this.fetchChartData();
-                this.updateChart();
+                this.debouncedFetchData();
             }
         },
         timeseriesData(newData) {
             if (newData) {
-                this.fetchChartData();
-                this.updateChart();
+                this.debouncedFetchData();
             }
         },
     },
@@ -42,10 +39,22 @@ export const TimeseriesChart = {
             localLoading: false,
             loading: false,
             chart: null,
+            fetchTimeout: null,
             chartInstanceId: `chart-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` // Generate unique ID
         };
     },
     methods: {
+        debouncedFetchData() {
+            if (this.fetchTimeout) {
+                clearTimeout(this.fetchTimeout);
+            }
+
+            this.fetchTimeout = setTimeout(async () => {
+                await this.fetchChartData();
+                this.updateChart();
+            }, 300);
+        },
+
         // This should be overridden in extending classes for specialized data.
         async fetchChartData() {
 
@@ -93,6 +102,7 @@ export const TimeseriesChart = {
                         label: 'Temperature',
                         data: dataPoints,
                         borderColor: '#FF0000',
+                        borderWidth: 2,
                         backgroundColor: 'rgba(0,0,0,0)',
                         tension: 0.1,
                         pointRadius: 0.1,
@@ -103,6 +113,7 @@ export const TimeseriesChart = {
                         label: 'Climatology',
                         data: climPoints,
                         borderColor: '#000000',
+                        borderWidth: 2,
                         backgroundColor: 'rgba(0,0,0,0)',
                         tension: 0.1,
                         pointRadius: 0.1,
