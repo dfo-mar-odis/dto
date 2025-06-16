@@ -1,20 +1,11 @@
 version: "3.9"
 services:
-  dto-nginx:
-    build: ./nginx
-    ports:
-      - "80:80"
-    volumes:
-      - static_volume:/opt/project/staticfiles
-
   dto-django:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
+    build: .
     restart: always
     ports:
-      - "8000:8000"
-    command: /bin/bash entry-point.sh
+      - "80:80"
+    command: /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
     environment:
       - "SECRET_KEY=${SECRET_KEY}"
       - "DJANGO_LOG_FILE=${DJANGO_LOG_FILE}"
@@ -25,12 +16,3 @@ services:
       - "POSTGRES_DB=${POSTGRES_DB}"
       - "POSTGRES_USER=${POSTGRES_USER}"
       - "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}"
-    volumes:
-      - static_volume:/opt/project/staticfiles
-      - .:/opt/project
-    depends_on:
-      dto-nginx:
-        condition: service_started
-
-volumes:
-  static_volume:

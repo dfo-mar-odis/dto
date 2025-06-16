@@ -225,7 +225,7 @@ const mapApp = createApp({
                 name: mpa.properties.name || 'Unknown MPA',
                 url: mpa.properties.url || '',
                 class: mpa.properties.class || '',
-                km2: mpa.properties.area_km2 || ''
+                km2: mpa.properties.km2 || ''
             });
         }
 

@@ -4,6 +4,10 @@ export const MPAInfo = {
             type: String,
             default: ''
         },
+        iconUrl: {
+            type: String,
+            default: ''
+        },
         mpa: {
             type: Object,
             default: null
@@ -39,6 +43,12 @@ export const MPAInfo = {
             url += `${separator}depth=${this.depth || ''}`;
 
             return url;
+        },
+        computekm2() {
+            if (!this.mpa || !this.mpa.id || !this.mpa.km2) return '';
+
+            return Number(this.mpa.km2).toFixed(2);
+
         }
     },
     template: `
@@ -47,7 +57,7 @@ export const MPAInfo = {
         <div class="card-title">
           <div class="row">
             <div class="col-1">
-              <img class="img-fluid" src="/static/icons/favicon.png">
+              <img class="img-fluid" :src="iconUrl">
             </div>
             <div class="col">
               <h2>MPA Description</h2>
@@ -74,7 +84,7 @@ export const MPAInfo = {
         </div>
         <div class="row">
           <div class="col-2"><b>km^2:</b></div>
-          <div v-if="mpa.km2" class="col">{{ mpa.km2 }}</div>
+          <div v-if="mpa.km2" class="col">{{ computekm2 }}</div>
         </div>
       </div>
     </div>
