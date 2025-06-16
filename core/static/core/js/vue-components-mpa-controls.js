@@ -45,7 +45,8 @@ export const MPAControls = {
                     newVal !== this.state.dates.selected) {
                     this.setSelectedDate(newVal);
                 }
-            }
+            },
+            immediate: true
         },
     },
     data() {
@@ -83,6 +84,7 @@ export const MPAControls = {
                 // Initialize with default zoom range
                 this.$nextTick(() => {
                     this.setDateRange();
+                    this.setSelectedDate(defaultStartDate);
                 });
             })
             .catch(error => {

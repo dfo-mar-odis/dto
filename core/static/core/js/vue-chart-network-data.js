@@ -31,6 +31,13 @@ export const NetworkIndicators = {
     },
 
     watch: {
+        selectedDate: {
+            async handler(newDate) {
+                if (this.polygonsList.length > 0) {
+                    await this.fetchAllPolygonsData();
+                }
+            }
+        },
         selectedPolygon: {
             handler(newPolygon) {
                 if (newPolygon) {
@@ -42,10 +49,10 @@ export const NetworkIndicators = {
     },
 
     methods: {
-        togglePolygon(polygon) {
+        async togglePolygon(polygon) {
             if (!polygon) return;
 
-            if(!this.isCtrlPressed) {
+            if (!this.isCtrlPressed) {
                 this.polygonsList = [];
             }
 
@@ -61,13 +68,66 @@ export const NetworkIndicators = {
                 this.polygonsList.splice(existingIndex, 1);
             } else {
                 // Add if not already selected (toggle on)
+                await this.fetchPolygonData(polygon)
                 this.polygonsList.push(polygon);
             }
 
             // Emit updated list to parent component
             this.$emit('polygon-list-updated', this.polygonsList);
         },
+        async fetchAllPolygonsData() {
+            if (!this.selectedDate || this.polygonsList.length === 0) return;
 
+            try {
+                this.isLoading = true;
+
+                // Build query params with all polygon IDs
+                const idParams = this.polygonsList.map(polygon =>
+                    `id=${polygon.mpa.properties.id}`
+                ).join('&');
+
+                const url = `${this.dataUrl}?${idParams}&date=${this.selectedDate}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                // Update each polygon with its data
+                this.polygonsList.forEach(polygon => {
+                    const id = polygon.mpa.properties.id;
+                    if (data[id]) {
+                        const climate_data = data[id];
+                        polygon.data = climate_data.data;
+                        polygon.quantile = climate_data.quantile;
+                        polygon.min_delta = climate_data.min_delta;
+                        polygon.max_delta = climate_data.max_delta;
+                    }
+                });
+
+                this.isLoading = false;
+            } catch (error) {
+                this.error = "Failed to load data";
+                this.isLoading = false;
+            }
+        },
+        async fetchPolygonData(polygon) {
+            if(!this.selectedDate) return;
+            try {
+                this.isLoading = true;
+                const response = await fetch(`${this.dataUrl}?id=${polygon.mpa.properties.id}&date=${this.selectedDate}`);
+                const data = await response.json();
+
+                const climate_data = data[polygon.mpa.properties.id]
+                // Attach data directly to the polygon object
+                polygon.data = climate_data.data;
+                polygon.quantile = climate_data.quantile;
+                polygon.min_delta = climate_data.min_delta;
+                polygon.max_delta = climate_data.max_delta
+
+                this.isLoading = false;
+            } catch (error) {
+                this.error = "Failed to load data";
+                this.isLoading = false;
+            }
+        },
         getPolygonName(polygon) {
             return polygon.mpa.properties.name;
         }
@@ -93,15 +153,19 @@ export const NetworkIndicators = {
             </div>
 
             <div v-else>
-                <div class="row mb-2">
+                <div class="row">
                     <div v-for="polygon in polygonsList" :key="polygon.mpa.properties.id" class="col-3">
                         <div class="card">
-                            <div class="card-header bg-primary text-white">
-                                {{ getPolygonName(polygon) }}
+                            <div class="card-header bg-primary text-white mb-2" style="min-height: 4rem; display: flex; align-items: center; line-height: 1.2; overflow: hidden;">
+                                {{ getPolygonName(polygon) }} : {{ selectedDate }}
                             </div>
                             <div class="card-body">
-                                <!-- We'll replace this with NetworkIndicator components once we implement data fetching -->
-                                <p>Selected area: {{ getPolygonName(polygon) }}</p>
+                                <network-indicator
+                                    :data-point="polygon.data"
+                                    :quantile="polygon.quantile"
+                                    :min-delta="polygon.min_delta"
+                                    :max-delta="polygon.max_delta">
+                                </network-indicator>
                             </div>
                         </div>
                     </div>

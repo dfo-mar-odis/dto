@@ -26,6 +26,8 @@ from django.views.generic import TemplateView
 from django.contrib.gis.db.models.functions import Transform
 
 from core import models
+from core.api.views import get_timeseries_dataframe
+
 
 logger = logging.getLogger('')
 
@@ -334,25 +336,6 @@ def get_quantiles(request):
                           for date, mt in df.iterrows()]
 
     return JsonResponse(timeseries)
-
-
-def get_timeseries_dataframe(mpa_zone: models.MPAZones, depth=None, start_date=None, end_date=None, indicator=1):
-    mpa_timeseries = mpa_zone.timeseries.filter(depth=depth, indicator=indicator).order_by('date_time')
-
-    if start_date:
-        mpa_timeseries = mpa_timeseries.filter(date_time__gte=start_date)
-
-    if end_date:
-        mpa_timeseries = mpa_timeseries.filter(date_time__lte=end_date)
-
-    if not mpa_timeseries.exists():
-        return None
-
-    df = pd.DataFrame(list(mpa_timeseries.values('date_time', 'value')))
-    df['date_time'] = pd.to_datetime(df['date_time'])
-    df.set_index('date_time', inplace=True)
-
-    return df
 
 
 def get_timeseries_data(mpa_id, depth=None, start_date=None, end_date=None, indicator=1):
