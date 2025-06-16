@@ -4,6 +4,7 @@ import {SpeciesChartContainer} from "./vue-chart-species.js";
 import {MPAInfo} from "./vue-components-mpa-info.js";
 import {MPAControls} from "./vue-components-mpa-controls.js";
 import {NetworkIndicators} from "./vue-chart-network-data.js";
+import {NetworkIndicator} from "./vue-components-network-indicator.js";
 
 const {createApp, ref, reactive, watch, computed, onMounted} = Vue;
 
@@ -34,6 +35,7 @@ const mapApp = createApp({
                 timeseriesUrl: '',
                 legendUrl: '',
                 speciesUrl: '',
+                networkIndicatorUrl: ''
             },
             charts: {
                 standardAnomalies: null,
@@ -82,17 +84,19 @@ const mapApp = createApp({
                     state.urls.timeseriesUrl,
                     state.urls.legendUrl,
                     state.urls.speciesURL,
+                    state.urls.networkIndicatorUrl,
                 );
             }
 
             initCtrlKeyTracking();
         });
 
-        function initialize(mpasUrl, timeseriesUrl, legendUrl, speciesUrl) {
+        function initialize(mpasUrl, timeseriesUrl, legendUrl, speciesUrl, networkIndicatorUrl) {
             state.urls.mpasWithTimeseriesList = mpasUrl;
             state.urls.timeseriesUrl = timeseriesUrl;
             state.urls.legendUrl = legendUrl;
             state.urls.speciesUrl = speciesUrl;
+            state.urls.networkIndicatorUrl = networkIndicatorUrl;
 
             loadMPAPolygons();
             loadSpecies();
@@ -169,6 +173,7 @@ const mapApp = createApp({
                 await Promise.all(pagePromises);
 
                 state.mapLoading = false;
+                fetchNetworkIndicatorData();
                 addLegend();
             } catch (error) {
                 console.error("Error loading MPA polygons:", error);
@@ -200,10 +205,15 @@ const mapApp = createApp({
         function processMPAData(mpas) {
             mpas.forEach(mpa => {
                 if (mpa.geometry) {
-                    L.geoJSON(mpa.geometry, {
+                    L.geoJSON(mpa, {
                         style: mpa.style,
                         onEachFeature: (feature, layer) => {
-                            layer.bindPopup(mpa.properties.name || "Unnamed MPA");
+                            layer.bindTooltip(mpa.properties.name || "Unnamed MPA", {
+                                permanent: false, // Set to true if you want tooltips always visible
+                                direction: 'top', // Position relative to the feature (top, bottom, left, right, center)
+                                className: 'my-tooltip', // Add custom CSS class for styling
+                                opacity: 0.9 // Control tooltip opacity
+                            });
                             layer.on('click', () => {
                                 handlePolygonSelection(layer, mpa);
                             });
@@ -213,11 +223,97 @@ const mapApp = createApp({
             });
         }
 
+        function TS_getStatusClass(netdata) {
+            if (!netdata.quantile) return '';
+
+            const value = parseFloat(netdata.data.ts_data);
+            const upperQ = parseFloat(netdata.quantile.upperq);
+            const lowerQ = parseFloat(netdata.quantile.lowerq);
+
+            if (value > upperQ) return 'bg-danger';  // Heat wave
+            if (value < lowerQ) return 'bg-info';    // Cold wave
+            return 'bg-success';                     // Normal range
+        }
+
+        function TS_calculateProgressWidth(netdata) {
+            if (!netdata.minDelta || !netdata.maxDelta) return 50;
+
+            const totalRange = netdata.maxDelta - netdata.minDelta;
+            if (totalRange === 0) return 50;
+
+            // Calculate percentage position of current delta within min/max range
+            const percentage = (((netdata.data.ts_data-netdata.data.clim) - netdata.minDelta) / totalRange) * 100;
+
+            // Clamp between 0 and 100
+            return Math.max(0, Math.min(100, percentage));
+        }
+
+        function formatNumber(num, places) {
+            return  num.toFixed(places)
+        }
+
+        function getTooltipContent(layer, netdata) {
+            // Basic tooltip content with MPA name
+            let content = `<div>${layer.feature.properties.name || "Unnamed MPA"}</div>`;
+
+            // Add network indicators if a date is selected
+            if (state.dates.selected) {
+                content = `
+                <div class="row">
+                    <div class="col text-center">
+                    Total Average Bottom
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <div class="progress" style="height: 20px;" v-if="dataPoint">
+                            <div class="progress-bar ${TS_getStatusClass(netdata)}" role="progressbar"
+                                 style="width: ${TS_calculateProgressWidth(netdata)}%"
+                                 aria-valuenow="${netdata.data.ts_data-netdata.data.clim}"
+                                 aria-valuemin="${netdata.min_delta}"
+                                 aria-valuemax="${netdata.max_delta}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <small class="form-text text-muted mt-1">${ netdata.name }</small>
+                </div>
+                <div class="row">
+                    <div class="col">
+                    <table class="table table-sm text-center striped-columns">
+                        <thead>
+                            <tr><th>ΔT</th><th>°C</th><th>Avg (°C)</th><th>90%</th><th>10%</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>${formatNumber(netdata.data.ts_data-netdata.data.clim, 3)}</td>
+                                <td>${formatNumber(netdata.data.ts_data, 3)}</td>
+                                <td>${formatNumber(netdata.data.clim, 3)}</td>
+                                <td>${formatNumber(netdata.quantile.upperq, 3)}</td>
+                                <td>${formatNumber(netdata.quantile.lowerq, 3)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>`;
+
+                layer.bindTooltip(content, {
+                    permanent: false, // Set to true if you want tooltips always visible
+                    direction: 'top', // Position relative to the feature (top, bottom, left, right, center)
+                    className: 'my-tooltip', // Add custom CSS class for styling
+                    opacity: 0.9 // Control tooltip opacity
+                });
+            }
+
+            return content;
+        }
+
         function handlePolygonSelection(layer, mpa) {
 
             // Always update the MPA info panel with the most recently selected polygon
             state.selectedPolygon = {layer, mpa}
-            if(state.isCtrlPressed) {
+            if (state.isCtrlPressed) {
                 state.selectedPolygon.layer.setStyle(mpa.style);
             }
             setMPA({
@@ -227,6 +323,39 @@ const mapApp = createApp({
                 class: mpa.properties.class || '',
                 km2: mpa.properties.km2 || ''
             });
+        }
+
+        async function fetchNetworkIndicatorData() {
+            if (!state.dates.selected || !state.urls.networkIndicatorUrl) return;
+
+            try {
+                let polygonlist = [];
+                state.map.eachLayer(layer => {
+                    if (layer.feature && layer.feature.properties && layer.feature.properties.id) {
+                        polygonlist.push(layer.feature.properties.id)
+                    }
+                });
+                if(polygonlist.length <= 0) {
+                    return;
+                }
+
+                const idParams = polygonlist.map(id=>`id=${id}`).join("&");
+
+                const url = `${state.urls.networkIndicatorUrl}?${idParams}&date=${state.dates.selected}`;
+                console.log("Network Indicators: " + url);
+                const response = await fetch(url);
+
+                const data = await response.json();
+                state.map.eachLayer(layer => {
+                    if (layer.feature && layer.feature.properties && layer.feature.properties.id) {
+                        getTooltipContent(layer, data[layer.feature.properties.id])
+                    }
+                });
+                // Process the network data for each MPA
+
+            } catch (error) {
+                console.error("Error fetching network indicator data:", error);
+            }
         }
 
         function setMPA(mpa) {
@@ -342,10 +471,12 @@ const mapApp = createApp({
 
         function setSelectedDate(date) {
             state.dates.selected = date
+            fetchNetworkIndicatorData();
         }
 
         function setSelectedDepth(depth) {
             state.depth = depth;
+            fetchNetworkIndicatorData();
             getData();
         }
 
@@ -398,5 +529,6 @@ mapApp.component('species-chart-container', SpeciesChartContainer);
 mapApp.component('mpa-info', MPAInfo);
 mapApp.component('mpa-controls', MPAControls);
 mapApp.component('network-indicators', NetworkIndicators);
+mapApp.component('network-indicator', NetworkIndicator);
 
 window.mapApp = mapApp;

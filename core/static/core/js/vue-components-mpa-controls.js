@@ -188,9 +188,11 @@ export const MPAControls = {
                         <div class="row mt-2">
                             <div class="col-auto align-content-center mt-4">
                                 <button type="button" class="btn btn-secondary me-1" title="-10 years"
-                                        @click="panFrame(-10)"><<</button>
-                                <button type="button" class="btn btn-secondary" title="-5 years"
-                                        @click="panFrame(-5)"><</button>
+                                        @click="panFrame(-10)"><<<</button>
+                                <button type="button" class="btn btn-secondary me-1" title="-5 years"
+                                        @click="panFrame(-5)"><<</button>
+                                <button type="button" class="btn btn-secondary" title="-1 year"
+                                        @click="panFrame(-1)"><</button>
                             </div>
                             <div class="col">
                                 <label for="date_min" class="form-label">Start Date</label>
@@ -215,8 +217,10 @@ export const MPAControls = {
                                        max="9999-12-31"/>
                             </div>
                             <div class="col-auto align-content-center mt-4">
+                                <button type="button" class="btn btn-secondary me-1" title="+1 year"
+                                        @click="panFrame(1)">></button>
                                 <button type="button" class="btn btn-secondary me-1" title="+5 years"
-                                        @click="panFrame(5)">></button>
+                                        @click="panFrame(5)">>></button>
                                 <button type="button" class="btn btn-secondary" title="+10 years"
                                         @click="panFrame(10)">>></button>
                             </div>

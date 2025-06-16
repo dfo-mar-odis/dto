@@ -75,6 +75,7 @@ export const NetworkIndicators = {
             // Emit updated list to parent component
             this.$emit('polygon-list-updated', this.polygonsList);
         },
+
         async fetchAllPolygonsData() {
             if (!this.selectedDate || this.polygonsList.length === 0) return;
 
