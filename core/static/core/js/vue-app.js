@@ -1,6 +1,6 @@
 import {StandardAnomalyChart} from "./vue-chart-standard-anomaly.js";
 import {QuantileChart} from "./vue-chart-quantile.js";
-import {SpeciesChart} from "./vue-chart-species.js";
+import {SpeciesChart} from "./vue-components-chart-species.js";
 import {MPAInfo} from "./vue-components-mpa-info.js";
 import {MPAControls} from "./vue-components-mpa-controls.js";
 import {NetworkIndicators} from "./vue-chart-network-data.js";

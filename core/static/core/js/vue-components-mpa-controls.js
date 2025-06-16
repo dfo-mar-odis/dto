@@ -68,23 +68,22 @@ export const MPAControls = {
         fetch(this.maxDateUrl)
             .then(response => response.json())
             .then(data => {
-                // Set end date to max date from server
-                const endDate = data.max_date;
-
                 // Calculate start date (5 years before end date)
-                const startDate = new Date(endDate);
+                const startDate = new Date(data.max_date);
                 startDate.setFullYear(startDate.getFullYear() - 5);
-                const defaultStartDate = startDate.toISOString().split('T')[0];
+
+                const defaultEndDate = new Date(data.max_date);
+                defaultEndDate.setDate(defaultEndDate.getDate() -1);
 
                 // Update component state
-                this.state.dates.endDate = endDate;
-                this.state.dates.startDate = defaultStartDate;
-                this.state.dates.selected = endDate;
+                this.state.dates.endDate = defaultEndDate.toISOString().split('T')[0];
+                this.state.dates.startDate = startDate.toISOString().split('T')[0];
+                this.state.dates.selected = this.state.dates.endDate;
 
                 // Initialize with default zoom range
                 this.$nextTick(() => {
                     this.setDateRange();
-                    this.setSelectedDate(defaultStartDate);
+                    this.setSelectedDate(this.state.dates.selected);
                 });
             })
             .catch(error => {

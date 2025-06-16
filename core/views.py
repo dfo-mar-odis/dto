@@ -329,7 +329,7 @@ def get_quantiles(request):
     timeseries['max_delta'] = df.max().value - climatology.loc[(max_val.index.month[0], max_val.index.day[0])].value
     timeseries['min_delta'] = df.min().value - climatology.loc[(min_val.index.month[0], min_val.index.day[0])].value
 
-    df = df[(df.index >= start_date) & (df.index < end_date)]
+    df = df[(df.index >= start_date) & (df.index <= end_date)]
     timeseries['data'] = [{"date": f'{date.strftime("%Y-%m-%d")} 00:01',
                            "lowerq": f'{lower["value"][date.month, date.day]}',
                            "upperq": f'{upper["value"][date.month, date.day]}'}
@@ -363,7 +363,7 @@ def get_timeseries_data(mpa_id, depth=None, start_date=None, end_date=None, indi
 
     timeseries['max_delta'] = df.max().value - clim.loc[(max_val.index.month[0], max_val.index.day[0])].value
     timeseries['min_delta'] = df.min().value - clim.loc[(min_val.index.month[0], min_val.index.day[0])].value
-    df = df[(df.index >= start_date) & (df.index < end_date)]
+    df = df[(df.index >= start_date) & (df.index <= end_date)]
     timeseries['data'] = [{"date": f'{date.strftime("%Y-%m-%d")} 00:01',
                            "ts_data": str(mt['value'].item()),
                            "clim": f'{clim["value"][date.month, date.day]}'} for date, mt in df.iterrows()]
