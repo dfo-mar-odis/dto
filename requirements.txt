@@ -1,5 +1,5 @@
 # server
-gunicorn~=21.2.0
+gunicorn~=23.0.0
 
 # For data loading scripts
 tqdm>=4.60.0,<5.0.0

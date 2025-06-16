@@ -138,7 +138,10 @@ class NetworkIndicatorsViewSet(viewsets.ReadOnlyModelViewSet):
         indicator = request.query_params.get('indicator', 1)
 
         # Convert string IDs to integers
-        mpa_ids = [int(mpa_id) for mpa_id in mpa_ids]
+        if len(mpa_ids) == 1 and ',' in mpa_ids[0]:
+            mpa_ids = [int(mpa_id) for mpa_id in mpa_ids[0].split(',')]
+        else:
+            mpa_ids = [int(mpa_id) for mpa_id in mpa_ids]
 
         # Build response object with data for each MPA
         result = {}

@@ -242,14 +242,14 @@ const mapApp = createApp({
             if (totalRange === 0) return 50;
 
             // Calculate percentage position of current delta within min/max range
-            const percentage = (((netdata.data.ts_data-netdata.data.clim) - netdata.minDelta) / totalRange) * 100;
+            const percentage = (((netdata.data.ts_data - netdata.data.clim) - netdata.minDelta) / totalRange) * 100;
 
             // Clamp between 0 and 100
             return Math.max(0, Math.min(100, percentage));
         }
 
         function formatNumber(num, places) {
-            return  num.toFixed(places)
+            return num.toFixed(places)
         }
 
         function getTooltipContent(layer, netdata) {
@@ -261,15 +261,15 @@ const mapApp = createApp({
                 content = `
                 <div class="row">
                     <div class="col text-center">
-                    Total Average Bottom
+                    Total Average Bottom : ${state.dates.selected}
                     </div>
                 </div>
                 <div class="row">
                     <div class="col">
-                        <div class="progress" style="height: 20px;" v-if="dataPoint">
+                        <div class="progress" style="height: 20px;">
                             <div class="progress-bar ${TS_getStatusClass(netdata)}" role="progressbar"
                                  style="width: ${TS_calculateProgressWidth(netdata)}%"
-                                 aria-valuenow="${netdata.data.ts_data-netdata.data.clim}"
+                                 aria-valuenow="${netdata.data.ts_data - netdata.data.clim}"
                                  aria-valuemin="${netdata.min_delta}"
                                  aria-valuemax="${netdata.max_delta}">
                             </div>
@@ -277,7 +277,7 @@ const mapApp = createApp({
                     </div>
                 </div>
                 <div class="row">
-                    <small class="form-text text-muted mt-1">${ netdata.name }</small>
+                    <small class="form-text text-muted mt-1">${netdata.name}</small>
                 </div>
                 <div class="row">
                     <div class="col">
@@ -287,7 +287,7 @@ const mapApp = createApp({
                         </thead>
                         <tbody>
                             <tr>
-                                <td>${formatNumber(netdata.data.ts_data-netdata.data.clim, 3)}</td>
+                                <td>${formatNumber(netdata.data.ts_data - netdata.data.clim, 3)}</td>
                                 <td>${formatNumber(netdata.data.ts_data, 3)}</td>
                                 <td>${formatNumber(netdata.data.clim, 3)}</td>
                                 <td>${formatNumber(netdata.quantile.upperq, 3)}</td>
@@ -298,12 +298,17 @@ const mapApp = createApp({
                     </div>
                 </div>`;
 
+                const isTooltipOpen = layer.isTooltipOpen();
+
                 layer.bindTooltip(content, {
                     permanent: false, // Set to true if you want tooltips always visible
                     direction: 'top', // Position relative to the feature (top, bottom, left, right, center)
-                    className: 'my-tooltip', // Add custom CSS class for styling
                     opacity: 0.9 // Control tooltip opacity
                 });
+
+                if (isTooltipOpen) {
+                    layer.openTooltip();
+                }
             }
 
             return content;
@@ -329,30 +334,38 @@ const mapApp = createApp({
             if (!state.dates.selected || !state.urls.networkIndicatorUrl) return;
 
             try {
-                let polygonlist = [];
+                // Collect polygon layers and their IDs in a single pass
+                const polygonLayersMap = new Map();
                 state.map.eachLayer(layer => {
-                    if (layer.feature && layer.feature.properties && layer.feature.properties.id) {
-                        polygonlist.push(layer.feature.properties.id)
+                    if (layer.feature?.properties?.id) {
+                        polygonLayersMap.set(layer.feature.properties.id, layer);
                     }
                 });
-                if(polygonlist.length <= 0) {
-                    return;
+
+                if (polygonLayersMap.size === 0) return;
+
+                // Use comma-separated IDs for a more compact URL
+                const polygonIds = Array.from(polygonLayersMap.keys());
+                const url = new URL(state.urls.networkIndicatorUrl, window.location.origin);
+
+                // Add parameters using searchParams API
+                url.searchParams.set('id', polygonIds.join(','));
+                url.searchParams.set('date', state.dates.selected);
+
+                const response = await fetch(url.toString());
+
+                if (!response.ok) {
+                    throw new Error(`Network response error: ${response.status}`);
                 }
 
-                const idParams = polygonlist.map(id=>`id=${id}`).join("&");
-
-                const url = `${state.urls.networkIndicatorUrl}?${idParams}&date=${state.dates.selected}`;
-                console.log("Network Indicators: " + url);
-                const response = await fetch(url);
-
                 const data = await response.json();
-                state.map.eachLayer(layer => {
-                    if (layer.feature && layer.feature.properties && layer.feature.properties.id) {
-                        getTooltipContent(layer, data[layer.feature.properties.id])
+
+                // Update tooltips only for layers with returned data
+                polygonLayersMap.forEach((layer, id) => {
+                    if (data[id]) {
+                        getTooltipContent(layer, data[id]);
                     }
                 });
-                // Process the network data for each MPA
-
             } catch (error) {
                 console.error("Error fetching network indicator data:", error);
             }
