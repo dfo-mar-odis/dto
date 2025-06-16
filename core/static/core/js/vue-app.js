@@ -3,6 +3,7 @@ import {QuantileChart} from "./vue-chart-quantile.js";
 import {SpeciesChart} from "./vue-chart-species.js";
 import {MPAInfo} from "./vue-components-mpa-info.js";
 import {MPAControls} from "./vue-components-mpa-controls.js";
+import {NetworkIndicators} from "./vue-chart-network-data.js";
 
 const {createApp, ref, reactive, watch, computed, onMounted} = Vue;
 
@@ -38,16 +39,25 @@ const mapApp = createApp({
                 standardAnomalies: null,
                 timeseries: null,
             },
-            timeseriesData: null
-        });
-
-        // Populate the tabs data structure
-        const tabs = reactive({
-            standard_anomaly_data: {title: 'Standard Anomalies'},
-            timeseries_data: {title: 'Timeseries'},
-            species_data: {title: 'Species Data'},
-            network_data: {title: 'Network Data'},
-            indicator_data: {title: 'Indicators'}
+            timeseriesData: null,
+            selectedPolygons: [],
+            isCtrlPressed: false,
+            highlightStyles: {
+                primary: {
+                    color: '#5D3FD3',      // Deep purple border
+                    weight: 3,
+                    opacity: 0.9,
+                    fillColor: '#8A2BE2',  // Purple fill
+                    fillOpacity: 0.6
+                },
+                secondary: {
+                    color: '#9370DB',      // Medium purple border
+                    weight: 2,
+                    opacity: 0.8,
+                    fillColor: '#D8BFD8',  // Lavender fill
+                    fillOpacity: 0.5
+                }
+            }
         });
 
         // Initialize everything
@@ -74,6 +84,8 @@ const mapApp = createApp({
                     state.urls.speciesURL,
                 );
             }
+
+            initCtrlKeyTracking();
         });
 
         function initialize(mpasUrl, timeseriesUrl, legendUrl, speciesUrl) {
@@ -86,11 +98,29 @@ const mapApp = createApp({
             loadSpecies();
         }
 
+        // Populate the tabs data structure
+        const tabs = reactive({
+            standard_anomaly_data: {title: 'Standard Anomalies'},
+            timeseries_data: {title: 'Timeseries'},
+            species_data: {title: 'Species Data'},
+            network_data: {title: 'Network Data'},
+        });
+
         // Methods
         function setMapView(lat, lng, zoom) {
             if (state.map) {
                 state.map.setView([lat, lng], zoom);
             }
+        }
+
+        function initCtrlKeyTracking() {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Control') state.isCtrlPressed = true;
+            });
+
+            document.addEventListener('keyup', (e) => {
+                if (e.key === 'Control') state.isCtrlPressed = false;
+            });
         }
 
         async function loadMPAPolygons() {
@@ -166,43 +196,71 @@ const mapApp = createApp({
         }
 
         // Helper function to process MPA data and add to map
+
         function processMPAData(mpas) {
             mpas.forEach(mpa => {
                 if (mpa.geometry) {
                     L.geoJSON(mpa.geometry, {
                         style: mpa.style,
                         onEachFeature: (feature, layer) => {
-                            layer.bindPopup(mpa.properties.name_e || "Unnamed MPA");
+                            layer.bindPopup(mpa.properties.name || "Unnamed MPA");
                             layer.on('click', () => {
-                                // Reset previously selected polygon if exists
-                                if (state.selectedPolygon) {
-                                    state.selectedPolygon.setStyle(state.selectedPolygon.mpa.style);
-                                }
-
-                                // Highlight the selected polygon
-                                layer.setStyle({
-                                    color: '#B8860B',      // Dark green border
-                                    weight: 3,
-                                    opacity: 0.9,
-                                    fillColor: '#FFD700',  // Lime green fill
-                                    fillOpacity: 0.6
-                                });
-
-                                // Store reference to this polygon
-                                state.selectedPolygon = layer;
-                                state.selectedPolygon.mpa = mpa;
-
-                                setMPA({
-                                    id: mpa.properties.id,
-                                    name: mpa.properties.name_e || 'Unknown MPA',
-                                    url: mpa.properties.url_e || '',
-                                    class: mpa.properties.class || '',
-                                    km2: mpa.properties.area_km2 || ''
-                                });
+                                handlePolygonSelection(layer, mpa);
                             });
                         }
                     }).addTo(state.map);
                 }
+            });
+        }
+
+        function handlePolygonSelection(layer, mpa) {
+
+            // Always update the MPA info panel with the most recently selected polygon
+            state.selectedPolygon = {layer, mpa}
+            if(state.isCtrlPressed) {
+                state.selectedPolygon.layer.setStyle(mpa.style);
+            }
+            setMPA({
+                id: mpa.properties.id,
+                name: mpa.properties.name || 'Unknown MPA',
+                url: mpa.properties.url || '',
+                class: mpa.properties.class || '',
+                km2: mpa.properties.area_km2 || ''
+            });
+        }
+
+        function setMPA(mpa) {
+            state.mpa.id = mpa.id
+            state.mpa.name = mpa.name;
+            state.mpa.url = mpa.url;
+            state.mpa.class = mpa.class;
+            state.mpa.km2 = mpa.km2;
+
+            // When the new mpa is set, the vue-component-mpa-control.js module will update
+            // its MPA and set new depths for the selected MPA, then it'll emit a depth-changed
+            // signal which will call vue-app's setSelectedDepth function and update the data
+            //getData();
+        }
+
+        function updateSelectedPolygons(polygonList) {
+            // Ensure polygonList is always an array
+            polygonList = polygonList || [];
+
+            // Create a set of IDs from the new polygon list for quick lookup
+            const newPolygonIds = new Set(polygonList.map(p => p.mpa?.properties?.id));
+
+            // Reset styles for polygons that are being removed from selection
+            state.selectedPolygons.forEach(item => {
+                if (!newPolygonIds.has(item.mpa?.properties?.id)) {
+                    item.layer.setStyle(item.mpa.style);
+                }
+            });
+
+            state.selectedPolygons = polygonList;
+            state.selectedPolygons.forEach((item, index) => {
+                const isLast = item === state.selectedPolygon;
+                const style = isLast ? state.highlightStyles.primary : state.highlightStyles.secondary;
+                item.layer.setStyle(style);
             });
         }
 
@@ -258,19 +316,6 @@ const mapApp = createApp({
                     console.error('Error fetching classifications:', error);
                     document.getElementById('legend-content').innerHTML = 'Error loading legend data';
                 });
-        }
-
-        function setMPA(mpa) {
-            state.mpa.id = mpa.id
-            state.mpa.name = mpa.name;
-            state.mpa.url = mpa.url;
-            state.mpa.class = mpa.class;
-            state.mpa.km2 = mpa.km2;
-
-            // When the new mpa is set, the vue-component-mpa-control.js module will update
-            // its MPA and set new depths for the selected MPA, then it'll emit a depth-changed
-            // signal which will call vue-app's setSelectedDepth function and update the data
-            //getData();
         }
 
         function setSelectedDateRange(dateRange) {
@@ -342,6 +387,7 @@ const mapApp = createApp({
             setSelectedDate,
             setSelectedDepth,
             getData,
+            updateSelectedPolygons,
         };
     },
 });
@@ -351,5 +397,6 @@ mapApp.component('quantile-chart', QuantileChart);
 mapApp.component('species-chart', SpeciesChart);
 mapApp.component('mpa-info', MPAInfo);
 mapApp.component('mpa-controls', MPAControls);
+mapApp.component('network-indicators', NetworkIndicators);
 
 window.mapApp = mapApp;

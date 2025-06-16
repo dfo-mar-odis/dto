@@ -24,8 +24,8 @@ class MPAZonesSerializer(serializers.ModelSerializer):
             },
             "properties": {
                 "id": instance.site_id,
-                "name_e": instance.name_e,
-                "url_e": instance.url_e,
+                "name": instance.name_e,
+                "url": instance.url_e,
                 "class": instance.classification.name_e,
                 "km2": instance.km2
             },

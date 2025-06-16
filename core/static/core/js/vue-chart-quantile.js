@@ -1,5 +1,6 @@
 import {TimeseriesChart} from "./vue-chart-timeseries.js";
 import {LegendSectionPlugin} from './vue-chart-legend-plugin.js';
+import { NetworkIndicator } from './vue-components-network-indicator.js';
 
 export const QuantileChart = {
     // Extend the TimeseriesChart component
@@ -10,7 +11,9 @@ export const QuantileChart = {
         startDate: null,
         endDate: null,
     },
-
+    components: {
+        NetworkIndicator
+    },
     data() {
         return {
             ...TimeseriesChart.data(),
@@ -18,10 +21,8 @@ export const QuantileChart = {
             lowerQuantile: 0.1,
             lastFetchParams: null,
             quantileData: null,
-            currentDelta: 0,
             currentPoint: null,
             currentQuantile: null,
-            currentTSValue: null,
         };
     },
     watch: {
@@ -49,25 +50,8 @@ export const QuantileChart = {
             if (!dataPoint) return;
 
             // Calculate anomaly (timeseries value - climatology value)
-            const tsValue = parseFloat(dataPoint.ts_data);
-            const climValue = parseFloat(dataPoint.clim);
-            this.currentTSValue = tsValue
-            this.currentDelta = tsValue - climValue;
             this.currentPoint = dataPoint;
             this.currentQuantile = this.quantileData.data.find(point => point.date === (dateStr + " 00:01"))
-        },
-
-        calculateProgressWidth() {
-            if (!this.quantileData || !this.quantileData.min_delta || !this.quantileData.max_delta) return 50;
-
-            const totalRange = this.quantileData.max_delta - this.quantileData.min_delta;
-            if (totalRange === 0) return 50;
-
-            // Calculate percentage position of current delta within min/max range
-            const percentage = ((this.currentDelta - this.quantileData.min_delta) / totalRange) * 100;
-
-            // Clamp between 0 and 100
-            return Math.max(0, Math.min(100, percentage));
         },
 
         async fetchChartData() {
@@ -223,35 +207,14 @@ export const QuantileChart = {
                             step="0.1"
                             class="form-control">
                         </div>
-                        <div class="row">
-                            <div class="row">
-                                <small class="form-text text-muted mt-1">Heat/Cold wave indicator</small>
-                            </div>
-                            <div class="row">
-                                <div class="col">
-                                    <div class="progress" style="height: 20px;" v-if="currentPoint">
-                                        <div class="progress-bar" role="progressbar"
-                                             :class="{
-                                                'bg-danger': currentQuantile && parseFloat(currentTSValue) > parseFloat(currentQuantile.upperq),
-                                                'bg-info': currentQuantile && parseFloat(currentTSValue) < parseFloat(currentQuantile.lowerq),
-                                                'bg-success': currentQuantile && parseFloat(currentTSValue) <= parseFloat(currentQuantile.upperq) && 
-                                                     parseFloat(currentTSValue) >= parseFloat(currentQuantile.lowerq)
-                                            }"
-                                             :style="{width: calculateProgressWidth() + '%'}"
-                                             :aria-valuenow="currentDelta"
-                                             :aria-valuemin="quantileData?.min_delta"
-                                             :aria-valuemax="quantileData?.max_delta">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <!-- Separate text element positioned absolutely -->
-                                <div class="d-flex justify-content-center align-items-center" style="top: 0; left: 0; text-shadow: 0 0 3px rgba(0,0,0,0.5);">
-                                    <span>{{currentDelta.toFixed(2)}}°C</span>
-                                </div>
-                            </div>
-                        </div>
+                        <network-indicator
+                            :data-point="currentPoint"
+                            :quantile="currentQuantile"
+                            :min-delta="quantileData?.min_delta"
+                            :max-delta="quantileData?.max_delta"
+                            :upper-quantile-label="upperQuantile"
+                            :lower-quantile-albel="lowerQuantile">
+                        </network-indicator>
                     </div>
                 </div>
             </div>

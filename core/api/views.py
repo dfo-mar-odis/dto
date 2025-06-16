@@ -39,3 +39,9 @@ class SpeciesViewSet(viewsets.ReadOnlyModelViewSet):
             serializer = self.get_serializer(queryset, many=True)
             return Response(serializer.data)
         return super().list(request, *args, **kwargs)
+
+
+class NetworkIndicatorsViewSet(viewsets.ReadOnlyModelViewSet):
+
+    def get_queryset(self):
+        return None
