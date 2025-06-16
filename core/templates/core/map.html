@@ -12,7 +12,12 @@
     <div class="row mt-2">
         <div class="col d-flex flex-wrap">
             <div class="flex-grow-1">
-                <mpa-info :mpa="state.mpa"></mpa-info>
+                <mpa-info
+                        :mpa="state.mpa"
+                        :dates="state.dates"
+                        :depth="state.depth"
+                        generate-pdf-url="{% url 'core:generate_pdf' %}"
+                ></mpa-info>
             </div>
             <div class="flex-grow-1 align-self-end">
                 <mpa-controls
@@ -89,25 +94,15 @@
         </div>
 
         <div class="tab-pane fade" id="species_data">
-            <div class="row mt-1 mb-1">
-                <div class="col">
-                    <button id="btn_id_add_chart" class="btn btn-primary btn-sm"
-                            onclick="add_range_chart('{% url 'core:range_chart' %}')"
-                            title="{% trans "Add Chart" %}">{% trans "Add Chart" %}</button>
-                    <div id="btn_id_add_chart_loading"></div>
-                </div>
-            </div>
-            <div id="div_id_species_charts">
-                <species-chart
-                        :mpa="state.mpa"
-                        :species-list="state.species"
-                        :timeseries-data="state.timeseriesData"
-                        :selected-date="state.dates.selected"
-                        :is-active="state.activeTab === 'species_data'"
-                        :is-loading="state.loading"
-                        @date-selected="setSelectedDate"
-                ></species-chart>
-            </div>
+            <species-chart-container
+                    :mpa="state.mpa"
+                    :species-list="state.species"
+                    :timeseries-data="state.timeseriesData"
+                    :selected-date="state.dates.selected"
+                    :is-active="state.activeTab === 'species_data'"
+                    :is-loading="state.loading"
+                    @date-selected="setSelectedDate"
+            ></species-chart-container>
 
             <div class="card mt-2">
                 <div class="card-header">
@@ -156,14 +151,6 @@
                 "{% url 'api:species-list' %}?all=true",  // used to get the list of species and assciated data
             );
 
-            // Initialize your existing code as well during transition
-            {#window.standard_anomalies_chart = new StandardAnomaliesChart('mpa_ts_stda_chart', "{% url 'core:stda_chart' %}");#}
-            {#MapApp.init(#}
-            {#    "{% url 'api:mpas-with-timeseries-list' %}",#}
-            {#    "{% url 'core:timeseries' %}",#}
-            {#    "{% url 'core:anomaly' %}",#}
-            {#    "{% url 'core:get_depths' %}"#}
-            {#);#}
         });
     </script>
 

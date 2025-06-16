@@ -1,6 +1,6 @@
 import {StandardAnomalyChart} from "./vue-chart-standard-anomaly.js";
 import {QuantileChart} from "./vue-chart-quantile.js";
-import {SpeciesChart} from "./vue-components-chart-species.js";
+import {SpeciesChartContainer} from "./vue-chart-species.js";
 import {MPAInfo} from "./vue-components-mpa-info.js";
 import {MPAControls} from "./vue-components-mpa-controls.js";
 import {NetworkIndicators} from "./vue-chart-network-data.js";
@@ -394,7 +394,7 @@ const mapApp = createApp({
 
 mapApp.component('standard-anomaly-chart', StandardAnomalyChart);
 mapApp.component('quantile-chart', QuantileChart);
-mapApp.component('species-chart', SpeciesChart);
+mapApp.component('species-chart-container', SpeciesChartContainer);
 mapApp.component('mpa-info', MPAInfo);
 mapApp.component('mpa-controls', MPAControls);
 mapApp.component('network-indicators', NetworkIndicators);

@@ -102,8 +102,8 @@ def add_plot(title, mpa_id, depth=None, start_date='2020-01-01', end_date='2023-
     q_upper = 0.9
     q_lower = 0.1
 
-    mpa_zone = models.MPAZones.objects.get(pk=mpa_id)
-    indicator = models.Indicator.objects.get(pk=indicator)
+    mpa_zone = models.MPAZones.objects.get(site_id=mpa_id)
+    indicator = models.Indicators.objects.get(pk=indicator)
     df = get_timeseries_dataframe(mpa_zone, depth, indicator=indicator)
 
     clim = df[(df.index <= '2022-12-31')]
@@ -172,11 +172,12 @@ def add_plot(title, mpa_id, depth=None, start_date='2020-01-01', end_date='2023-
 def generate_pdf(request):
     mpa_id, depth, start_date, end_date = parse_request_variables(request)
 
+    timeseries = models.Timeseries.objects.order_by('date_time')
     if not start_date:
-        start_date = models.Timeseries.objects.order_by('date_time')[0].date_time
+        start_date = timeseries.first().date_time
 
     if not end_date:
-        end_date = models.Timeseries.objects.order_by('date_time')[-1].date_time
+        end_date = timeseries.last().date_time
 
     if not mpa_id:
         return FileResponse()

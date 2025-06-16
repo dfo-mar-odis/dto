@@ -1,6 +1,47 @@
 export const MPAInfo = {
-  props: ['mpa'],
-  template: `
+    props: {
+        generatePdfUrl: {
+            type: String,
+            default: ''
+        },
+        mpa: {
+            type: Object,
+            default: null
+        },
+        dates: {
+            type: Object,
+            default: () => ({})
+        },
+        depth: {
+            type: String,
+            default: ''
+        }
+    },
+    computed: {
+        completePdfUrl() {
+            if (!this.mpa || !this.mpa.id) return this.generatePdfUrl;
+
+            let url = this.generatePdfUrl;
+            let separator = '&';
+            url += `?mpa=${this.mpa.id}`;
+            if (this.dates) {
+                if (this.dates.startDate) {
+                    url += `${separator}start_date=${this.dates.startDate}`;
+                }
+                if (this.dates.endDate) {
+                    url += `${separator}end_date=${this.dates.endDate}`;
+                }
+                if (this.dates.selectedDate) {
+                    url += `${separator}selected_date=${this.dates.selectedDate}`;
+                }
+            }
+
+            url += `${separator}depth=${this.depth || ''}`;
+
+            return url;
+        }
+    },
+    template: `
     <div class="card">
       <div class="card-header">
         <div class="card-title">
@@ -13,7 +54,7 @@ export const MPAInfo = {
             </div>
             <div class="col-auto">
               <a id="btn_id_pdf" class="btn btn-primary" :style="{ display: mpa.name ? 'block' : 'none' }"
-                 href="/core/generate_pdf/">Generate PDF</a>
+                 :href="completePdfUrl">Generate PDF</a>
             </div>
           </div>
         </div>

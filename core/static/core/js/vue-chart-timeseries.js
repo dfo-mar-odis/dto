@@ -14,26 +14,6 @@ export const TimeseriesChart = {
             default: false
         }
     },
-    watch: {
-        selectedDate: {
-            handler(newVal, oldVal) {
-                if (newVal && newVal.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                    this.setDateIndicator(newVal);
-                }
-            },
-            immediate: true // Will run once when the component is created
-        },
-        isActive(newData) {
-            if (newData && this.mpa.id) {
-                this.debouncedFetchData();
-            }
-        },
-        timeseriesData(newData) {
-            if (newData) {
-                this.debouncedFetchData();
-            }
-        },
-    },
     data() {
         return {
             localLoading: false,
@@ -42,6 +22,29 @@ export const TimeseriesChart = {
             fetchTimeout: null,
             chartInstanceId: `chart-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` // Generate unique ID
         };
+    },
+    watch: {
+        selectedDate: {
+            handler(newVal, oldVal) {
+                if (newVal && newVal.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    this.setDateIndicator(newVal);
+                }
+            },
+            immediate: true
+        },
+        isActive(newData) {
+            if (newData && this.mpa.id) {
+                this.debouncedFetchData();
+            }
+        },
+        timeseriesData: {
+            handler(newData) {
+                if (newData) {
+                    this.debouncedFetchData();
+                }
+            },
+            immediate: true
+        },
     },
     methods: {
         debouncedFetchData() {

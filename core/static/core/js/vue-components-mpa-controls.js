@@ -11,6 +11,20 @@ export const MPAControls = {
         },
         selectedDate: String
     },
+    data() {
+        return {
+            state: {
+                depth: "",
+                dates: {
+                    startDate: null,
+                    endDate: null,
+                    selected: null
+                },
+                depths: []
+            },
+            debounceTimer: null
+        };
+    },
     watch: {
         mpa: {
             handler(newMpa, oldMpa) {
@@ -49,20 +63,6 @@ export const MPAControls = {
             immediate: true
         },
     },
-    data() {
-        return {
-            state: {
-                depth: "",
-                dates: {
-                    startDate: null,
-                    endDate: null,
-                    selected: null
-                },
-                depths: []
-            },
-            debounceTimer: null
-        };
-    },
     mounted() {
         // Fetch the max date from the server when component is mounted
         fetch(this.maxDateUrl)
@@ -73,7 +73,7 @@ export const MPAControls = {
                 startDate.setFullYear(startDate.getFullYear() - 5);
 
                 const defaultEndDate = new Date(data.max_date);
-                defaultEndDate.setDate(defaultEndDate.getDate() -1);
+                defaultEndDate.setDate(defaultEndDate.getDate() - 1);
 
                 // Update component state
                 this.state.dates.endDate = defaultEndDate.toISOString().split('T')[0];
