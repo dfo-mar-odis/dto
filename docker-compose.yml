@@ -1,7 +1,8 @@
 version: "3.9"
 services:
   dto-django:
-    image: ghcr.io/dfo-mar-odis/dto:latest
+#    image: ghcr.io/dfo-mar-odis/dto:latest
+    build: .
     restart: always
     ports:
       - "80:80"

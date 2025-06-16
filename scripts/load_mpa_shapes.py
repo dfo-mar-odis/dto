@@ -2,6 +2,7 @@ import geopandas as gpd
 
 from django.contrib.gis.db.models import Union
 from django.contrib.gis.geos import MultiPolygon, GEOSGeometry
+from django.core.management import call_command
 
 from core import models
 
