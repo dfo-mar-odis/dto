@@ -29,7 +29,7 @@ const mapApp = createApp({
             },
             depth: '',
             loading: false,
-            activeTab: 'standard_anomaly_data',
+            activeTab: 'timeseries_data',
             urls: {
                 mpasWithTimeseriesList: '', // Will be populated from template
                 timeseriesUrl: '',
@@ -104,8 +104,8 @@ const mapApp = createApp({
 
         // Populate the tabs data structure
         const tabs = reactive({
-            standard_anomaly_data: {title: 'Standard Anomalies'},
             timeseries_data: {title: 'Timeseries'},
+            standard_anomaly_data: {title: 'Standard Anomalies'},
             species_data: {title: 'Species Data'},
             network_data: {title: 'Network Data'},
         });

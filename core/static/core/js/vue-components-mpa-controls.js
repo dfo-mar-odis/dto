@@ -222,7 +222,7 @@ export const MPAControls = {
                                 <button type="button" class="btn btn-secondary me-1" title="+5 years"
                                         @click="panFrame(5)">>></button>
                                 <button type="button" class="btn btn-secondary" title="+10 years"
-                                        @click="panFrame(10)">>></button>
+                                        @click="panFrame(10)">>>></button>
                             </div>
                         </div>
                     </div>

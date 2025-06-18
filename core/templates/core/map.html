@@ -63,19 +63,7 @@
     </ul>
     <div class="tab-content" id="chart_tabs">
 
-        <div class="tab-pane fade show active" id="standard_anomaly_data">
-            <div class="row">
-                <div class="col">
-                    <standard-anomaly-chart
-                            :mpa="state.mpa"
-                            data-url="{% url 'core:anomaly' %}"
-                            :is-active="state.activeTab === 'standard_anomaly_data'"
-                    ></standard-anomaly-chart>
-                </div>
-            </div>
-        </div>
-
-        <div class="tab-pane fade" id="timeseries_data">
+        <div class="tab-pane fade show active" id="timeseries_data">
             <div class="row">
                 <div class="col">
                     <quantile-chart
@@ -90,6 +78,18 @@
                             :is-loading="state.loading"
                             @date-selected="setSelectedDate"
                     ></quantile-chart>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="standard_anomaly_data">
+            <div class="row">
+                <div class="col">
+                    <standard-anomaly-chart
+                            :mpa="state.mpa"
+                            data-url="{% url 'core:anomaly' %}"
+                            :is-active="state.activeTab === 'standard_anomaly_data'"
+                    ></standard-anomaly-chart>
                 </div>
             </div>
         </div>

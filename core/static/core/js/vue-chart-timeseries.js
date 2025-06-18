@@ -102,7 +102,7 @@ export const TimeseriesChart = {
                 datasets: [
                     // Main temperature line
                     {
-                        label: 'Temperature',
+                        label: 'Bottom Temperature',
                         data: dataPoints,
                         borderColor: '#FF0000',
                         borderWidth: 2,
