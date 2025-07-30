@@ -60,12 +60,12 @@ export const MPAInfo = {
               <img class="img-fluid" :src="iconUrl">
             </div>
             <div class="col">
-              <h2>MPA Description</h2>
+              <h2>Digital Twin of the Ocean for Marine Conservation</h2>
             </div>
-            <div class="col-auto">
-              <a id="btn_id_pdf" class="btn btn-primary" :style="{ display: mpa.name ? 'block' : 'none' }"
-                 :href="completePdfUrl">Generate PDF</a>
-            </div>
+<!--            <div class="col-auto">-->
+<!--              <a id="btn_id_pdf" class="btn btn-primary" :style="{ display: mpa.name ? 'block' : 'none' }"-->
+<!--                 :href="completePdfUrl">Generate PDF</a>-->
+<!--            </div>-->
           </div>
         </div>
       </div>
