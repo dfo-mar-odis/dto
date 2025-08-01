@@ -110,7 +110,8 @@ def load_mpa_classifications(data):
     print("Distinct Classifications (Clssf_E):")
     for _, row in unique_classifications.iterrows():
         print(f"- {row.loc['Clssf_E']} : {row.loc['Clssf_F']}")
-        models.Classifications.objects.get_or_create(name_e=row.loc['Clssf_E'].lower(), name_f=row.loc['Clssf_F'].lower())
+        if not (classification:=models.Classifications.objects.filter(name_e__iexact=row.loc['Clssf_E'], name_f__iexact=row.loc['Clssf_F'])).exists():
+            models.Classifications.objects.create(name_e=row.loc['Clssf_E'], name_f=row.loc['Clssf_F'])
 
     # Print the count of distinct values
     print(f"\nTotal distinct classifications: {len(unique_classifications)}")
@@ -135,14 +136,12 @@ def update_mpas(reload=False):
 
             mpa = models.MPAZones(site_id=shp.OBJECTI)
             new_mpa_list.append(mpa)
+        elif(mpa:=models.MPAZones.objects.filter(site_id=shp.OBJECTI)).exists():
+            mpa = mpa.first()
+            update_mpa_list.append(mpa)
         else:
-            mpa = models.MPAZones.objects.get_or_create(site_id=shp.OBJECTI)
-            if mpa[1]:
-                new_mpa_list.append(mpa[0])
-            else:
-                update_mpa_list.append(mpa[0])
-
-            mpa = mpa[0]
+            mpa = models.MPAZones(site_id=shp.OBJECTI)
+            new_mpa_list.append(mpa)
 
         mpa.name_e=shp.SitNm_E
         mpa.name_f=shp.NmDSt_F

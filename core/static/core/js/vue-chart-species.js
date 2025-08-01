@@ -21,6 +21,11 @@ export const SpeciesChartContainer = {
     components: {
         SpeciesChart
     },
+    computed: {
+        t() {
+            return window.translations || {};
+        },
+    },
     data() {
         return {
             charts: [],
@@ -43,7 +48,7 @@ export const SpeciesChartContainer = {
             <div class="col">
                 <button id="btn_id_add_chart" class="btn btn-primary btn-sm"
                         @click="addChart"
-                        title="Add Chart">Add Chart</button>
+                        title="{{ t.add_chart || 'Add Chart' }}">{{ t.add_chart || 'Add Chart' }}</button>
                 <div id="btn_id_add_chart_loading"></div>
             </div>
         </div>

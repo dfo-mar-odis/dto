@@ -9,6 +9,12 @@ export const StandardAnomalyChart = {
         isActive: Boolean
     },
 
+    computed: {
+        t() {
+            return window.translations || {};
+        },
+    },
+
     data() {
         return {
             loading: false,
@@ -137,7 +143,7 @@ export const StandardAnomalyChart = {
                     plugins: {
                         title: {
                             display: true,
-                            text: `Standard Anomalies - ${this.mpa.name}`
+                            text: (window.translations?.standard_anomalies || 'Standard Anomalies') + ' - ' + (this.mpa.name || '')
                         },
                         tooltip: {
                             mode: 'index',
@@ -149,14 +155,14 @@ export const StandardAnomalyChart = {
                                 usePointStyle: false,
                                 generateLabels: () => [
                                     {
-                                        text: 'Above Normal (σ > 0)',
+                                        text: (window.translations?.above_normal || 'Above Normal') +' (σ > 0)',
                                         fillStyle: 'rgba(234, 67, 53, 0.7)',
                                         strokeStyle: 'rgba(234, 67, 53, 1)',
                                         lineWidth: 1,
                                         hidden: false
                                     },
                                     {
-                                        text: 'Below Normal (σ < 0)',
+                                        text: (window.translations?.below_normal || 'Below Normal') +' (σ < 0)',
                                         fillStyle: 'rgba(66, 133, 244, 0.7)',
                                         strokeStyle: 'rgba(66, 133, 244, 1)',
                                         lineWidth: 1,
@@ -177,13 +183,13 @@ export const StandardAnomalyChart = {
                             },
                             title: {
                                 display: true,
-                                text: 'Year'
+                                text: window.translations?.year || 'Year'
                             }
                         },
                         y: {
                             title: {
                                 display: true,
-                                text: 'Standard Deviation (σ)'
+                                text: (window.translations?.standard_deviation || 'Standard Deviation') + ' (σ)'
                             },
                             suggestedMin: -3,
                             suggestedMax: 3
@@ -210,13 +216,13 @@ export const StandardAnomalyChart = {
         <div class="chart-container position-relative">
           <div v-if="loading" class="chart-loading-overlay">
             <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Loading...</span>
+              <span class="visually-hidden">{{ t.loading || 'Loading...' }}</span>
             </div>
           </div>
           <canvas ref="chartCanvas"></canvas>
           <div v-if="!mpa.name" class="text-center text-muted mt-5 pt-5">
             <i class="bi bi-map"></i>
-            <p>Select an MPA on the map to view standard anomaly data</p>
+            <p>{{ t.select_mpa_on_map_anomaly || 'Select an MPA on the map to view standard anomaly data' }}</p>
           </div>
         </div>
         `,

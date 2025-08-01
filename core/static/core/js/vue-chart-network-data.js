@@ -20,7 +20,11 @@ export const NetworkIndicators = {
         },
         isCtrlPressed: false,
     },
-
+    computed: {
+        t() {
+            return window.translations || {};
+        },
+    },
     data() {
         return {
             polygonsList: [],  // Our internal list of selected polygons
@@ -136,13 +140,13 @@ export const NetworkIndicators = {
 
     template: `
         <div class="network-indicators">
-            <h3 class="mb-3">Marine Heat/Cold Wave Indicators</h3>
+            <h3 class="mb-3">{{ t.heat_cold_indicator || 'Marine Heat/Cold Wave Indicators' }}</h3>
 
             <div v-if="isLoading" class="loading text-center p-3">
                 <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
+                    <span class="visually-hidden">{{ t.loading || 'Loading...' }}</span>
                 </div>
-                <p class="mt-2">Loading data...</p>
+                <p class="mt-2">{{ t.loading || 'Loading...' }}</p>
             </div>
 
             <div v-else-if="error" class="alert alert-danger">
@@ -150,7 +154,7 @@ export const NetworkIndicators = {
             </div>
 
             <div v-else-if="!polygonsList.length" class="alert alert-info">
-                Select one or more areas on the map by holding down the ctrl key to view wave indicators.
+                {{ t.select_areas_on_map || 'Select one or more areas on the map by holding down the ctrl key to view wave indicators.' }}
             </div>
 
             <div v-else>

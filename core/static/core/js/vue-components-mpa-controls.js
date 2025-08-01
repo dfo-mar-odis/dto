@@ -11,6 +11,11 @@ export const MPAControls = {
         },
         selectedDate: String
     },
+    computed: {
+        t() {
+            return window.translations || {};
+        }
+    },
     data() {
         return {
             state: {
@@ -172,30 +177,30 @@ export const MPAControls = {
                     <div class="col">
                         <div class="row">
                             <div class="col align-content-center">
-                                <label for="btm_depth">Bottom Depth</label>
+                                <label for="btm_depth">{{ t.bottom_depth || 'Bottom Depth' }}</label>
                                 <select class="form-select" id="btm_depth"
                                     v-model="state.depth"
                                     @change="setSelectedDepth(state.depth)">
-                                    <option value="">Total Average Bottom Timeseries</option>
                                     <option v-for="depth in state.depths" 
                                             :key="depth[0]" 
                                             :value="depth[0]">
                                         {{ depth[1] }}
                                     </option>
+                                    <option value="">{{ t.total_average_bottom_timeseries || 'Total Average Bottom Timeseries' }}</option>
                                 </select>
                             </div>
                         </div>
                         <div class="row mt-2">
                             <div class="col-auto align-content-center mt-4">
-                                <button type="button" class="btn btn-secondary me-1" title="-10 years"
+                                <button type="button" class="btn btn-secondary me-1" :title="'-10 ' + (t.year_s || 'year(s)')"
                                         @click="panFrame(-10)"><<<</button>
-                                <button type="button" class="btn btn-secondary me-1" title="-5 years"
+                                <button type="button" class="btn btn-secondary me-1" :title="'-5 ' + (t.year_s || 'year(s)')"
                                         @click="panFrame(-5)"><<</button>
-                                <button type="button" class="btn btn-secondary" title="-1 year"
+                                <button type="button" class="btn btn-secondary" :title="'-1 ' + (t.year_s || 'year(s)')"
                                         @click="panFrame(-1)"><</button>
                             </div>
                             <div class="col">
-                                <label for="date_min" class="form-label">Start Date</label>
+                                <label for="date_min" class="form-label">{{ t.start_date || 'Start Date' }}</label>
                                 <input id="date_min" type="date" class="form-control"
                                        v-model="state.dates.startDate"
                                        @change="setDateRange"
@@ -203,25 +208,25 @@ export const MPAControls = {
                             </div>
                             <div class="col">
                                 <label for="selected_date"
-                                       class="form-label">Selected Date</label>
+                                       class="form-label">{{ t.selected_date || 'Selected Date' }}</label>
                                 <input id="selected_date" type="date" class="form-control"
                                        v-model="state.dates.selected"
                                        @change="setSelectedDate(state.dates.selected)"
                                        max="9999-12-31"/>
                             </div>
                             <div class="col">
-                                <label for="date_end" class="form-label">End Date</label>
+                                <label for="date_end" class="form-label">{{ t.end_date || 'End Date' }}</label>
                                 <input id="date_end" type="date" class="form-control"
                                        v-model="state.dates.endDate"
                                        @change="setDateRange"
                                        max="9999-12-31"/>
                             </div>
                             <div class="col-auto align-content-center mt-4">
-                                <button type="button" class="btn btn-secondary me-1" title="+1 year"
+                                <button type="button" class="btn btn-secondary me-1" :title="'+1 ' + (t.year_s || 'year(s)')"
                                         @click="panFrame(1)">></button>
-                                <button type="button" class="btn btn-secondary me-1" title="+5 years"
+                                <button type="button" class="btn btn-secondary me-1" :title="'+5 ' + (t.year_s || 'year(s)')"
                                         @click="panFrame(5)">>></button>
-                                <button type="button" class="btn btn-secondary" title="+10 years"
+                                <button type="button" class="btn btn-secondary" :title="'+10 ' + (t.year_s || 'year(s)')"
                                         @click="panFrame(10)">>>></button>
                             </div>
                         </div>

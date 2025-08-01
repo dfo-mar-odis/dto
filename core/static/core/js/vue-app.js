@@ -104,10 +104,10 @@ const mapApp = createApp({
 
         // Populate the tabs data structure
         const tabs = reactive({
-            timeseries_data: {title: 'Timeseries'},
-            standard_anomaly_data: {title: 'Standard Anomalies'},
-            species_data: {title: 'Species Data'},
-            network_data: {title: 'Network Data'},
+            timeseries_data: {title: window.translations?.timeseries || 'Timeseries'},
+            standard_anomaly_data: {title: window.translations?.standard_anomaly || 'Standard Anomalies'},
+            species_data: {title: window.translations?.species_data || 'Species Data'},
+            network_data: {title: window.translations?.network_data || 'Network Data'},
         });
 
         // Methods
@@ -261,7 +261,7 @@ const mapApp = createApp({
                 content = `
                 <div class="row">
                     <div class="col text-center">
-                    Total Average Bottom : ${state.dates.selected}
+                    ` + (window.translation?.total_average_bottom || 'Total Average Bottom') + ` ${state.dates.selected}
                     </div>
                 </div>
                 <div class="row">
@@ -283,7 +283,7 @@ const mapApp = createApp({
                     <div class="col">
                     <table class="table table-sm text-center striped-columns">
                         <thead>
-                            <tr><th>ΔT</th><th>°C</th><th>Avg (°C)</th><th>90%</th><th>10%</th></tr>
+                            <tr><th>ΔT</th><th>°C</th><th>` + (window.translations?.abbreviated_average || 'Avg') + `(°C)</th><th>90%</th><th>10%</th></tr>
                         </thead>
                         <tbody>
                             <tr>
@@ -432,8 +432,9 @@ const mapApp = createApp({
             const legend = L.control({position: 'bottomright'});
 
             legend.onAdd = function () {
+                console.log("classification: " + window.translations?.mpa_classifications)
                 const div = L.DomUtil.create('div', 'info legend hidden');
-                div.innerHTML += '<h4>MPA Classifications</h4><div id="legend-content">Loading...</div>';
+                div.innerHTML += '<h4>' + (window.translations?.mpa_classifications || 'MPA Classifications') + '</h4><div id="legend-content">' + (window.translations?.loading || 'Loading...') + '</div>';
                 return div;
             };
 
@@ -474,7 +475,6 @@ const mapApp = createApp({
             // Check canvas exists before attempting to draw
             const canvas = document.getElementById('chart-canvas');
             if (!canvas) {
-                console.warn("Canvas element not found, delaying chart update");
                 setTimeout(getData, 200);
                 return;
             }
@@ -498,7 +498,6 @@ const mapApp = createApp({
 
             try {
                 if (!state.mpa.id) {
-                    console.warn("No MPA selected");
                     return;
                 }
 

@@ -137,14 +137,18 @@
 {% endblock %}
 
 {% block scripts %}
-    <!-- Add Vue app script -->
-    <script type="module" src="{% static 'core/js/vue-app.js' %}"></script>
+    {% include 'core/vue-translations.html' %}
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Ensure translations are loaded before initializing Vue
+            if (typeof window.translations === 'undefined') {
+                console.error('Translations not loaded');
+                return;
+            }
+
             // Initialize Vue app
             const app = mapApp.mount('#app');
-
             app.initialize(
                 "{% url 'api:mpas-with-timeseries-list' %}", // used to get the mpa polygons, bot only ones with a timeseries
                 "{% url 'core:timeseries' %}",  // retrieves the timeseries data that's used by multiple objects
@@ -155,5 +159,8 @@
 
         });
     </script>
+
+    <!-- Add Vue app script -->
+    <script type="module" src="{% static 'core/js/vue-app.js' %}"></script>
 
 {% endblock %}

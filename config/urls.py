@@ -29,7 +29,12 @@ from core.api.urls import router
 # {settings.PROXY_URL}
 
 urlpatterns = [
-    path(f'', views.index, name='index'),
-    path(f'', include('core.urls')),
     path('api/v1/', include((router.urls, 'api'), namespace='api')),
+    path(f'language/', views.set_language, name='set_language'),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# Localized URLs (user-facing pages)
+urlpatterns += i18n_patterns(
+    path('', views.index, name='index'),
+    path('', include('core.urls')),
+)

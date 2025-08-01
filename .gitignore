@@ -30,7 +30,7 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Translations
-*.mo
+*.po
 *.pot
 
 # Django stuff:
@@ -88,6 +88,7 @@ pip-selfcheck.json
 *.sqlite3
 /local_css/*
 /staticfiles/*
+node_modules/*
 
 # Don't ignore 'scripts' in the core folder used for importing initial data
 *.mwb.bak

@@ -10,7 +10,11 @@ export const SpeciesChart = {
             default: () => []
         }
     },
-
+    computed: {
+        t() {
+            return window.translations || {};
+        },
+    },
     data() {
         return {
             ...TimeseriesChart.data(),
@@ -116,22 +120,22 @@ export const SpeciesChart = {
         <div class="row mb-1">
             <div class="col-md-3 species-panel">
                 <div class="card">
-                    <div class="card-header">Species Select</div>
+                    <div class="card-header">{{ t.species_select || 'Species Select' }}</div>
                     <div class="card-body">
                         <div v-if="speciesLoading" class="text-center p-3">
                             <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                <span class="visually-hidden">Loading...</span>
+                                <span class="visually-hidden">{{ t.loading || 'Loading...' }}</span>
                             </div>
                         </div>
                         <div v-else-if="speciesList.length === 0" class="text-center text-muted p-3">
                             <i class="bi bi-fish"></i>
-                            <p>No species data available</p>
+                            <p>{{ t.no_data_available || 'No data available'</p>
                         </div>
                         <div v-else class="species-list">
                             <select class="form-select form-select-sm" 
                                     :disabled="speciesLoading"
                                     @change="selectSpeciesById($event.target.value)">
-                                <option value="">Select a Species</option>
+                                <option value="">{{ t.select_species || 'Select a Species' </option>
                                 <option v-for="species in speciesList"
                                         :key="species.id"
                                         :value="species.id"
@@ -145,23 +149,23 @@ export const SpeciesChart = {
                                 
                                 <div class="species-info">
                                     <div v-if="selectedSpecies.grouping" class="mb-2">
-                                        <strong>Group:</strong> {{ selectedSpecies.grouping.display }}
+                                        <strong>{{ t.species_group || 'Group' }} :</strong> {{ selectedSpecies.grouping.display }}
                                     </div>
                                     <div v-if="selectedSpecies.status" class="mb-2">
-                                        <strong>Status:</strong> {{ selectedSpecies.status.display }}
+                                        <strong>{{ t.species_status || 'Status' }} :</strong> {{ selectedSpecies.status.display }}
                                     </div>
                                     <div v-if="selectedSpecies.importance" class="mb-2">
-                                        <strong>Importance:</strong> {{ selectedSpecies.importance.display }}
+                                        <strong>{{ t.species_importance || 'Importance' }} :</strong> {{ selectedSpecies.importance.display }}
                                     </div>
                             
                                     <hr>
                             
                                     <div class="mb-2">
-                                        <strong>Temperature Range:</strong><br>
+                                        <strong>{{ t.temperature_range || 'Temperature Range' }} :</strong><br>
                                         {{ selectedSpecies.lower_temperature }}°C - {{ selectedSpecies.upper_temperature }}°C
                                     </div>
                                     <div class="mb-2">
-                                        <strong>Depth Range:</strong><br>
+                                        <strong>{{ t.depth_range || 'Depth Range' }} :</strong><br>
                                         {{ selectedSpecies.lower_depth }}m - {{ selectedSpecies.upper_depth }}m
                                     </div>
                                 </div>
@@ -174,14 +178,14 @@ export const SpeciesChart = {
                 <div class="chart-container position-relative">
                     <div v-if="isLoading || localLoading" class="chart-loading-overlay">
                         <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
+                            <span class="visually-hidden">{{ t.loading || 'Loading...' }}</span>
                         </div>
                     </div>
                     <div :id="'custom-legend-placeholder-' + chartInstanceId" class="chart-legend-container"></div>
                     <canvas ref="chartCanvas"></canvas>
                     <div v-if="!mpa.name" class="text-center text-muted mt-5 pt-5">
                         <i class="bi bi-map"></i>
-                        <p>Select an MPA on the map to view timeseries data</p>
+                        <p>{{ t.select_mpa_on_map || 'Select an MPA on the map to view timeseries data' }}</p>
                     </div>
                 </div>
             </div>

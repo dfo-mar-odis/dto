@@ -1,0 +1,47 @@
+{
+  "name": "digital_twin_ocean",
+  "version": "1.0.0",
+  "description": "A web application for viewing and analyzing climate data related to Marine Protected Areas (MPAs), enabling scientists to make physical and biological assessments concerning ocean state and marine habitat suitability.",
+  "main": "index.js",
+  "directories": {
+    "doc": "doc"
+  },
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "watch": "webpack --config webpack.config.js --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dfo-mar-odis/dto.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dfo-mar-odis/dto/issues"
+  },
+  "homepage": "https://github.com/dfo-mar-odis/dto#readme",
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^6.2.0",
+    "bootstrap-icons": "^1.5.0",
+    "chart.js": "^4.4.1",
+    "chartjs-adapter-date-fns": "^3.0.0",
+    "chartjs-plugin-annotation": "^3.1.0",
+    "chartjs-plugin-datalabels": "^2.2.0",
+    "chartjs-plugin-zoom": "^2.0.1",
+    "d3": "^3.5.5",
+    "date-fns": "^3.6.0",
+    "hammerjs": "^2.0.8",
+    "htmx.org": "^2.0.0",
+    "jquery": "^3.7.1",
+    "leaflet": "^1.9.3",
+    "vue": "^3.5.18",
+    "webpack": "^5.101.0",
+    "webpack-cli": "^6.0.1"
+  },
+  "devDependencies": {
+    "css-loader": "^7.1.2",
+    "mini-css-extract-plugin": "^2.9.2"
+  }
+}

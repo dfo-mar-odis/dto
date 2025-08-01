@@ -110,7 +110,8 @@ def get_combined_data(mpa_id, selected_date, depth=None, lower_quantile=0.1, upp
         result['data'] = {
             'date': f'{date_str} 00:01',
             'ts_data': float(row['value']),
-            'clim': float(climatology.loc[(selected_date.month, selected_date.day), 'value'])
+            'clim': float(climatology.loc[(selected_date.month, selected_date.day), 'value']),
+            'std_dev': float(climatology.std().iloc[0])
         }
 
         # Get the quantile values

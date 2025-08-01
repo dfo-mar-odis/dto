@@ -14,6 +14,11 @@ export const TimeseriesChart = {
             default: false
         }
     },
+    computed: {
+        t() {
+            return window.translations || {};
+        },
+    },
     data() {
         return {
             localLoading: false,
@@ -102,7 +107,7 @@ export const TimeseriesChart = {
                 datasets: [
                     // Main temperature line
                     {
-                        label: 'Bottom Temperature',
+                        label: window.translations?.bottom_temperature || 'Bottom Temperature',
                         data: dataPoints,
                         borderColor: '#FF0000',
                         borderWidth: 2,
@@ -113,7 +118,7 @@ export const TimeseriesChart = {
                     },
                     // Climatology line
                     {
-                        label: 'Climatology',
+                        label: window.translations?.climatology || 'Climatology',
                         data: climPoints,
                         borderColor: '#000000',
                         borderWidth: 2,
@@ -123,7 +128,7 @@ export const TimeseriesChart = {
                     },
                     // Above average area (red)
                     {
-                        label: 'Above Average (Warmer)',
+                        label: window.translations?.above_average_temp || 'Above Average (Warmer)',
                         data: dataPoints,
                         borderColor: 'rgba(0,0,0,0)',
                         backgroundColor: 'rgba(255, 0, 0, 0.2)',
@@ -139,7 +144,7 @@ export const TimeseriesChart = {
                     },
                     // Below average area (blue)
                     {
-                        label: 'Below Average (Cooler)',
+                        label: window.translations?.below_average_temp || 'Below Average (Cooler)',
                         data: dataPoints,
                         borderColor: 'rgba(0,0,0,0)',
                         backgroundColor: 'rgba(0, 0, 255, 0.2)',
@@ -221,9 +226,9 @@ export const TimeseriesChart = {
             return [{
                 id: 'timeseries',
                 matchFunction: (dataset) => {
-                    return !dataset.label.includes('Max Temp') &&
-                        !dataset.label.includes('Min Temp') &&
-                        !dataset.label.includes('Survivable Range');
+                    return !dataset.label.includes( window.translations?.max_temp || 'Max Temp') &&
+                        !dataset.label.includes(window.translations?.min_temp || 'Min Temp') &&
+                        !dataset.label.includes(window.translations?.survivable_range || 'Survivable Range');
                 }
             }];
         },
@@ -275,7 +280,7 @@ export const TimeseriesChart = {
                         animation: false,
                         onClick: (e, elements, chart) => {
                             // Get the x coordinate of the click position
-                            const canvasPosition = Chart.helpers.getRelativePosition(e, chart);
+                            const canvasPosition = window.getRelativePosition(e.native, chart);
                             const xScale = chart.scales.x;
 
                             // Convert x position to date value
@@ -289,7 +294,7 @@ export const TimeseriesChart = {
                         plugins: {
                             title: {
                                 display: true,
-                                text: `Temperature Timeseries - ${this.mpa.name}`,
+                                text: (window.translations?.temperature_timeseries || 'Temperature Timeseries' ) + ' - ' + this.mpa.name,
                                 padding: {
                                     top: 5,
                                     bottom: 15
@@ -325,17 +330,22 @@ export const TimeseriesChart = {
                             x: {
                                 type: 'time',
                                 time: {
-                                    unit: 'month'
+                                    unit: 'month',
+                                },
+                                adapters: {
+                                    date: {
+                                        locale: window.dateFnsLocales[window.currentLanguage || 'en']
+                                    }
                                 },
                                 title: {
                                     display: true,
-                                    text: 'Date'
+                                    text: window.translations?.date || 'Date'
                                 }
                             },
                             y: {
                                 title: {
                                     display: true,
-                                    text: 'Temperature (°C)'
+                                    text: (window.translations?.temperature || 'Temperature') + ' (°C)'
                                 }
                             }
                         }
@@ -399,14 +409,14 @@ export const TimeseriesChart = {
         <div class="chart-container position-relative">
           <div v-if="isLoading || localLoading" class="chart-loading-overlay">
             <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Loading...</span>
+              <span class="visually-hidden">{{ t.loading || 'Loading...' }}</span>
             </div>
           </div>
           <div :id="'custom-legend-placeholder-' + chartInstanceId" class="chart-legend-container"></div>
           <canvas ref="chartCanvas"></canvas>
           <div v-if="!mpa.name" class="text-center text-muted mt-5 pt-5">
             <i class="bi bi-map"></i>
-            <p>Select an MPA on the map to view timeseries data</p>
+            <p>{{ t.select_mpa_on_map || 'Select an MPA on the map to view timeseries data' }}</p>
           </div>
         </div>
     `,

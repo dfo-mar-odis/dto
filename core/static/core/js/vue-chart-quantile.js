@@ -14,6 +14,11 @@ export const QuantileChart = {
     components: {
         NetworkIndicator
     },
+    computed: {
+        t() {
+            return window.translations || {};
+        },
+    },
     data() {
         return {
             ...TimeseriesChart.data(),
@@ -119,7 +124,7 @@ export const QuantileChart = {
 
             formattedData.datasets.push(
                 {
-                    label: `Marine Heat Wave above (${this.upperQuantile})`,
+                    label: (window.translations?.marine_heat_wave || `Marine Heat Wave above` ) + ` (${this.upperQuantile})`,
                     data: upperData,
                     borderColor: '#CCCCCC',
                     borderWidth: 1.5,
@@ -132,7 +137,7 @@ export const QuantileChart = {
                     },
                 },
                 {
-                    label: `Marine Cold Wave below (${this.lowerQuantile})`,
+                    label: (window.translations?.marine_cold_wave || `Marine Cold Wave below` ) + ` ${this.lowerQuantile})`,
                     data: lowerData,
                     borderColor: '#CCCCCC',
                     borderWidth: 1.5,
@@ -145,7 +150,7 @@ export const QuantileChart = {
                     },
                 },
                 {
-                    label: `Average Range`,
+                    label: window.translations?.average_range || `Average Range`,
                     data: lowerData,
                     borderColor: '#CCCCCC',
                     borderWidth: 0,
@@ -181,10 +186,10 @@ export const QuantileChart = {
         <div class="row mb-1 mt-1">
             <div class="col-md-3 species-panel">
                 <div class="card">
-                    <div class="card-header">Quantile Settings</div>
+                    <div class="card-header">{{ t.quantile_settings || 'Quantile Settings' }}</div>
                     <div class="card-body">
                         <div class="form-group mb-3">
-                            <label for="upperQuantile">Upper Quantile</label>
+                            <label for="upperQuantile">{{ t.upper_quantile || 'Upper Quantile' }}</label>
                             <input
                             type="number"
                             id="upperQuantile"
@@ -196,7 +201,7 @@ export const QuantileChart = {
                             class="form-control">
                         </div>
                         <div class="form-group mb-3">
-                            <label for="lowerQuantile">Lower Quantile</label>
+                            <label for="lowerQuantile">{{ t.lower_quantile || 'Lower Quantile' }}</label>
                             <input
                             type="number"
                             id="lowerQuantile"
@@ -222,14 +227,14 @@ export const QuantileChart = {
                 <div class="chart-container position-relative">
                     <div v-if="isLoading || localLoading" class="chart-loading-overlay">
                         <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
+                            <span class="visually-hidden">{{ t.loading || 'Loading...' }}</span>
                         </div>
                     </div>
                     <div :id="'custom-legend-placeholder-' + chartInstanceId" class="chart-legend-container"></div>
                     <canvas ref="chartCanvas"></canvas>
                     <div v-if="!mpa.name" class="text-center text-muted mt-5 pt-5">
                         <i class="bi bi-map"></i>
-                        <p>Select an MPA on the map to view timeseries data</p>
+                        <p>{{ t.select_mpa_on_map || 'Select an MPA on the map to view timeseries data' }}</p>
                     </div>
                 </div>
             </div>

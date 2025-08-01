@@ -1,0 +1,94 @@
+{% load i18n %}
+<script>
+window.currentLanguage = '{{ LANGUAGE_CODE }}'
+window.translations = {
+    // MPA Info component
+    'mpa_description': "{% trans 'MPA Description' %}",
+    'name': "{% trans 'Name' %}",
+    'classification': "{% trans 'Classification' %}",
+    'url': "{% trans 'URL' %}",
+    'area': "{% trans 'Area (km²)' %}",
+    'additional_information': "{% trans 'Additional Information' %}",
+    'select_mpa': "{% trans 'Please select an MPA' %}",
+    'generate_report': "{% trans 'Generate Report' %}",
+
+    // MPA Controls
+    'depth': "{% trans 'Depth' %}",
+    'bottom_depth': "{% trans 'Bottom Depth' %}",
+    'total_average_bottom_timeseries': "{% trans 'Total Average Bottom Timeseries' %}",
+    'date_range': "{% trans 'Date Range' %}",
+    'start_date': "{% trans 'Start Date' %}",
+    'selected_date': "{% trans 'Selected Date' %}",
+    'end_date': "{% trans 'End Date' %}",
+    'year_s': "{% trans 'Year(s)' %}",
+
+    // Chart components
+    'quantile_chart': "{% trans 'Quantile Chart' %}",
+    'standard_anomaly': "{% trans 'Standard Anomaly' %}",
+    'species_data': "{% trans 'Species Data' %}",
+    'network_data': "{% trans 'Network Indicators' %}",
+    'loading': "{% trans 'Loading...' %}",
+
+    // main app
+    'timeseries': "{% trans 'Timeseries' %}",
+    'standard_anomaly': "{% trans 'Standard Anomalies' %}",
+    'species_data': "{% trans 'Species Data' %}",
+    'network_data': "{% trans 'Network Data' %}",
+    'total_average_bottom': "{% trans 'Total Average Bottom' %}",
+    'abbreviated_average': "{% trans 'Avg' %}",
+    'mpa_classifications': "{% trans 'MPA Classifications' %}",
+
+    // Other common terms
+    'citations': "{% trans 'Citations' %}",
+    'temperature': "{% trans 'Temperature' %}",
+    'date': "{% trans 'Date' %}",
+    'year': "{% trans 'Year' %}",
+    'no_data_available': "{% trans 'No data available' %}",
+
+    //network indicators
+    'anomaly': "{% trans 'Standard Anomaly' %}",
+    'current_value': "{% trans 'Current Value' %}",
+    'climatology': "{% trans 'Climatology' %}",
+    'upper_quantile': "{% trans 'Upper Quantile' %}",
+    'lower_quantile': "{% trans 'Lower Quantile' %}",
+
+    //chart species
+    'species_select': "{% trans 'Species Select' %}",
+    'select_species': "{% trans 'Select a Species' %}",
+    'species_group': "{% trans 'Group' %}",
+    'species_status': "{% trans 'Status' %}",
+    'species_importance': "{% trans 'Importance' %}",
+    'temperature_range': "{% trans 'Temperature Range' %}",
+    'depth_range': "{% trans 'Depth Range' %}",
+    'select_mpa_on_map': "{% trans 'Select an MPA on the map to view timeseries data' %}",
+    'add_chart': "{% trans 'Add Chart' %}",
+
+    //network data
+    'heat_cold_indicator': "{% trans 'Marine Heat/Cold Wave Indicators' %}",
+    'select_areas_on_map': "{% trans 'Select one or more areas on the map by holding down the ctrl key to view wave indicators.' %}",
+
+    //chart quantile
+    'quantile_settings': "{% trans 'Quantile Settings' %}",
+    'marine_heat_wave': "{% trans 'Marine Heat Wave above' %}",
+    'marine_cold_wave': "{% trans 'Marine Cold Wave below' %}",
+    'average_range': "{% trans 'Average Range' %}",
+
+    //chart standard anomaly
+    'standard_anomalies': "{% trans 'Standard Anomalies' %}",
+    'above_normal': "{% trans 'Above Normal' %}",
+    'below_normal': "{% trans 'Below Normal' %}",
+    'standard_deviation': "{% trans 'Standard Deviation (σ)' %}",
+    'select_mpa_on_map_anomaly': "{% trans 'Select an MPA on the map to view standard anomaly data' %}",
+
+    //chart timeseries
+    'bottom_temperature': "{% trans 'Bottom Temperature' %}",
+    'above_average_temp': "{% trans 'Above Average (Warmer)' %}",
+    'below_average_temp': "{% trans 'Below Average (Cooler)' %}",
+    'max_temp': "{% trans 'Max Temp' %}",
+    'min_temp': "{% trans 'Min Temp' %}",
+    'survivable_range': "{% trans 'Survivable Range' %}",
+    'temperature_timeseries': "{% trans 'Temperature Timeseries' %}"
+    {#'': "{% trans '' %}",#}
+
+}
+</script>

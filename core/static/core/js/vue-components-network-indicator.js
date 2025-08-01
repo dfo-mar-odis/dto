@@ -18,7 +18,7 @@ export const NetworkIndicator = {
         },
         title: {
             type: String,
-            default: "Heat/Cold wave indicator"
+            default: window.translations?.heat_cold_indicator || "Heat/Cold wave indicator"
         },
         upperQuantileLabel: {
             type: Number,
@@ -29,7 +29,11 @@ export const NetworkIndicator = {
             default: 0.1
         }
     },
-
+    computed: {
+        t() {
+            return window.translations || {};
+        },
+    },
     data() {
         return {
             currentDelta: 0,
@@ -40,7 +44,7 @@ export const NetworkIndicator = {
         dataPoint: {
             handler(newPoint) {
                 if (newPoint && newPoint.ts_data !== undefined && newPoint.clim !== undefined) {
-                    this.currentDelta = Number(newPoint.ts_data) - Number(newPoint.clim);
+                    this.currentDelta = (Number(newPoint.ts_data) - Number(newPoint.clim)) / Number(newPoint.std_dev);
                 }
             },
             immediate: true
@@ -51,11 +55,13 @@ export const NetworkIndicator = {
         calculateProgressWidth() {
             if (!this.minDelta || !this.maxDelta) return 50;
 
-            const totalRange = this.maxDelta - this.minDelta;
+            const minStdAnom = (this.minDelta/Number(this.dataPoint.std_dev));
+            const maxStdAnom = (this.maxDelta/Number(this.dataPoint.std_dev));
+            const totalRange = maxStdAnom - minStdAnom;
             if (totalRange === 0) return 50;
 
             // Calculate percentage position of current delta within min/max range
-            const percentage = ((this.currentDelta - this.minDelta) / totalRange) * 100;
+            const percentage = ((this.currentDelta - minStdAnom) / totalRange) * 100;
 
             // Clamp between 0 and 100
             return Math.max(0, Math.min(100, percentage));
@@ -108,23 +114,27 @@ export const NetworkIndicator = {
                     <table class="table table-sm table-bordered" v-if="dataPoint">
                         <tbody>
                             <tr>
-                                <th scope="row">Anomaly (ΔT)</th>
-                                <td>{{ formatValue(currentDelta) }}°C</td>
+                                <th scope="row">{{ t.anomaly || 'Standard Anomaly' }}</th>
+                                <td>{{ formatValue(currentDelta) }}</td>
                             </tr>
                             <tr>
-                                <th scope="row">Current Value</th>
+                                <th scope="row">{{ t.current_value || 'Current Value' }}</th>
                                 <td>{{ formatValue(dataPoint.ts_data) }}°C</td>
                             </tr>
                             <tr>
-                                <th scope="row">Climatology</th>
+                                <th scope="row">{{ t.climatology || 'Climatology' }}</th>
                                 <td>{{ formatValue(dataPoint.clim) }}°C</td>
                             </tr>
+                            <tr>
+                                <th scope="row">{{ t.standard_deviation || 'Standard Deviation (σ)' }}</th>
+                                <td>{{ formatValue(dataPoint.std_dev) }}°C</td>
+                            </tr>
                             <tr v-if="quantile">
-                                <th scope="row">Upper Quantile ({{ formatQuantileLabel(upperQuantileLabel) }})</th>
+                                <th scope="row">{{ t.upper_quantile || 'Upper Quantile' }} ({{ formatQuantileLabel(upperQuantileLabel) }})</th>
                                 <td>{{ formatValue(quantile.upperq) }}°C</td>
                             </tr>
                             <tr v-if="quantile">
-                                <th scope="row">Lower Quantile ({{ formatQuantileLabel(lowerQuantileLabel) }})</th>
+                                <th scope="row">{{ t.lower_quantile || 'Lower Quantile' }} ({{ formatQuantileLabel(lowerQuantileLabel) }})</th>
                                 <td>{{ formatValue(quantile.lowerq) }}°C</td>
                             </tr>
                         </tbody>

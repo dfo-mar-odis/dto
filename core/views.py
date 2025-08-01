@@ -18,8 +18,11 @@ from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 
 from django.conf import settings
-from django.http import JsonResponse, HttpResponse, FileResponse
+from django.http import JsonResponse, HttpResponse, HttpResponseRedirect, FileResponse
+from django.urls import translate_url
 from django.shortcuts import render
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.translation import activate
 from django.utils.translation import gettext as _
 
 from django.views.generic import TemplateView
@@ -32,6 +35,59 @@ from core.api.views import get_timeseries_dataframe
 logger = logging.getLogger('')
 
 colormap = cm.linear.Paired_07.scale(-2, 35)
+
+
+def index(request):
+    # ids = models.Timeseries.objects.values_list('mpa', flat=True).distinct()
+    # mpas = [json.dumps(add_attributes(mpa)) for mpa in
+    #         models.MPAZone.objects.filter(name__in=ids)]
+    context = {
+        # 'mpas': mpas,
+        # 'proxy_url': settings.PROXY_URL,
+    }
+
+    return render(request, 'core/map.html', context)
+
+
+def set_language(request):
+    """
+    Redirect to a given URL while setting the chosen language in the session
+    or cookie. The URL and the language code need to be specified in the
+    request parameters.
+    """
+    next_url = request.POST.get('next', request.GET.get('next'))
+    if not next_url or not url_has_allowed_host_and_scheme(
+            url=next_url,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+    ):
+        next_url = request.META.get('HTTP_REFERER')
+        if not next_url or not url_has_allowed_host_and_scheme(
+                url=next_url,
+                allowed_hosts={request.get_host()},
+                require_https=request.is_secure(),
+        ):
+            next_url = '/'
+
+    language = request.POST.get('language', request.GET.get('language'))
+    if language and language in dict(settings.LANGUAGES):
+        activate(language)
+        next_url = translate_url(next_url, language)
+
+        response = HttpResponseRedirect(next_url)
+        response.set_cookie(
+            settings.LANGUAGE_COOKIE_NAME,
+            language,
+            max_age=settings.LANGUAGE_COOKIE_AGE,
+            path=settings.LANGUAGE_COOKIE_PATH,
+            domain=settings.LANGUAGE_COOKIE_DOMAIN,
+            secure=settings.LANGUAGE_COOKIE_SECURE,
+            httponly=settings.LANGUAGE_COOKIE_HTTPONLY,
+            samesite=settings.LANGUAGE_COOKIE_SAMESITE,
+        )
+        return response
+
+    return HttpResponseRedirect(next_url)
 
 
 def add_attributes(mpa):
@@ -59,18 +115,6 @@ def add_attributes(mpa):
     }
 
     return geo_json
-
-
-def index(request):
-    # ids = models.Timeseries.objects.values_list('mpa', flat=True).distinct()
-    # mpas = [json.dumps(add_attributes(mpa)) for mpa in
-    #         models.MPAZone.objects.filter(name__in=ids)]
-    context = {
-        # 'mpas': mpas,
-        # 'proxy_url': settings.PROXY_URL,
-    }
-
-    return render(request, 'core/map.html', context)
 
 
 def get_mpa_zone_info(mpa_id):
@@ -365,9 +409,12 @@ def get_timeseries_data(mpa_id, depth=None, start_date=None, end_date=None, indi
     timeseries['max_delta'] = df.max().value - clim.loc[(max_val.index.month[0], max_val.index.day[0])].value
     timeseries['min_delta'] = df.min().value - clim.loc[(min_val.index.month[0], min_val.index.day[0])].value
     df = df[(df.index >= start_date) & (df.index <= end_date)]
-    timeseries['data'] = [{"date": f'{date.strftime("%Y-%m-%d")} 00:01',
-                           "ts_data": str(mt['value'].item()),
-                           "clim": f'{clim["value"][date.month, date.day]}'} for date, mt in df.iterrows()]
+    timeseries['data'] = [{
+        "date": f'{date.strftime("%Y-%m-%d")} 00:01',
+        "ts_data": str(mt['value'].item()),
+        "clim": f'{clim["value"][date.month, date.day]}',
+        "std_dev": f'{clim["value"].std()}'
+    } for date, mt in df.iterrows()]
 
     return timeseries
 
