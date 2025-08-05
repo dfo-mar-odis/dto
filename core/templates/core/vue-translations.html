@@ -1,9 +1,12 @@
 {% load i18n %}
+
+{% get_current_language as LANGUAGE_CODE %}
 <script>
 window.currentLanguage = '{{ LANGUAGE_CODE }}'
+console.log('Current Lang: ' + window.currentLanguage);
 window.translations = {
     // MPA Info component
-    'mpa_description': "{% trans 'MPA Description' %}",
+    'mpa_description': "{% trans 'Site Description' %}",
     'name': "{% trans 'Name' %}",
     'classification': "{% trans 'Classification' %}",
     'url': "{% trans 'URL' %}",
@@ -24,14 +27,14 @@ window.translations = {
 
     // Chart components
     'quantile_chart': "{% trans 'Quantile Chart' %}",
-    'standard_anomaly': "{% trans 'Standard Anomaly' %}",
+    'standard_anomaly': "{% trans 'Standardized Anomaly' %}",
     'species_data': "{% trans 'Species Data' %}",
     'network_data': "{% trans 'Network Indicators' %}",
     'loading': "{% trans 'Loading...' %}",
 
     // main app
     'timeseries': "{% trans 'Timeseries' %}",
-    'standard_anomaly': "{% trans 'Standard Anomalies' %}",
+    'standard_anomalies': "{% trans 'Standardized Anomalies' %}",
     'species_data': "{% trans 'Species Data' %}",
     'network_data': "{% trans 'Network Data' %}",
     'total_average_bottom': "{% trans 'Total Average Bottom' %}",
@@ -47,7 +50,6 @@ window.translations = {
     'no_data_available': "{% trans 'No data available' %}",
 
     //network indicators
-    'anomaly': "{% trans 'Standard Anomaly' %}",
     'current_value': "{% trans 'Current Value' %}",
     'climatology': "{% trans 'Climatology' %}",
     'upper_quantile': "{% trans 'Upper Quantile' %}",
@@ -78,7 +80,6 @@ window.translations = {
     'standard_anomalies': "{% trans 'Standard Anomalies' %}",
     'above_normal': "{% trans 'Above Normal' %}",
     'below_normal': "{% trans 'Below Normal' %}",
-    'standard_deviation': "{% trans 'Standard Deviation (σ)' %}",
     'select_mpa_on_map_anomaly': "{% trans 'Select an MPA on the map to view standard anomaly data' %}",
 
     //chart timeseries

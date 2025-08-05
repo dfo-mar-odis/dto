@@ -3,8 +3,8 @@
     "model": "core.classifications",
     "pk": 1,
     "fields": {
-        "name_e": "tier 1 conservation site",
-        "name_f": "le site de conservation de niveau 1",
+        "name_e": "Tier 1 conservation site",
+        "name_f": "Le site de conservation de niveau 1",
         "colour": "#4285F4"
     }
 },
@@ -12,8 +12,8 @@
     "model": "core.classifications",
     "pk": 2,
     "fields": {
-        "name_e": "areas of interest (aoi)",
-        "name_f": "le site d?intérêt (si)",
+        "name_e": "Areas of Interest (AOI)",
+        "name_f": "Le site d?intérêt (SI)",
         "colour": "#EA4335"
     }
 },
@@ -21,8 +21,8 @@
     "model": "core.classifications",
     "pk": 3,
     "fields": {
-        "name_e": "existing site",
-        "name_f": "le site existant",
+        "name_e": "Existing site",
+        "name_f": "Le site existant",
         "colour": "#FBBC05"
     }
 },
@@ -30,8 +30,8 @@
     "model": "core.classifications",
     "pk": 4,
     "fields": {
-        "name_e": "tier 1 conservation site - to be evaluated by uinr",
-        "name_f": "le site de conservation de niveau 1",
+        "name_e": "Tier 1 conservation site - to be evaluated by UINR",
+        "name_f": "Le site de conservation de niveau 1",
         "colour": "#34A853"
     }
 },
@@ -39,8 +39,8 @@
     "model": "core.classifications",
     "pk": 5,
     "fields": {
-        "name_e": "tier 2 conservation site",
-        "name_f": "le site de conservation de niveau 2",
+        "name_e": "Tier 2 conservation site",
+        "name_f": "Le site de conservation de niveau 2",
         "colour": "#87CEFA"
     }
 }

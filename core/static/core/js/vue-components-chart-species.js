@@ -129,13 +129,13 @@ export const SpeciesChart = {
                         </div>
                         <div v-else-if="speciesList.length === 0" class="text-center text-muted p-3">
                             <i class="bi bi-fish"></i>
-                            <p>{{ t.no_data_available || 'No data available'</p>
+                            <p>{{ t.no_data_available || 'No data available' }}</p>
                         </div>
                         <div v-else class="species-list">
                             <select class="form-select form-select-sm" 
                                     :disabled="speciesLoading"
                                     @change="selectSpeciesById($event.target.value)">
-                                <option value="">{{ t.select_species || 'Select a Species' </option>
+                                <option value="">{{ t.select_species || 'Select a Species' }}</option>
                                 <option v-for="species in speciesList"
                                         :key="species.id"
                                         :value="species.id"

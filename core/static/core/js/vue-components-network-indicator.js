@@ -52,22 +52,17 @@ export const NetworkIndicator = {
     },
 
     methods: {
-        calculateMinAnom() {
-            return (this.minDelta/Number(this.dataPoint.std_dev));
-        },
         calculateMaxAnom() {
+            if(this.currentDelta < this.dataPoint.clim)
+                return Math.abs(this.minDelta/Number(this.dataPoint.std_dev))
+
             return (this.maxDelta/Number(this.dataPoint.std_dev));
         },
         calculateProgressWidth() {
             if (!this.minDelta || !this.maxDelta) return 50;
 
-            const minStdAnom = this.calculateMinAnom();
-            const maxStdAnom = this.calculateMaxAnom();
-            const totalRange = maxStdAnom - minStdAnom;
-            if (totalRange === 0) return 50;
-
             // Calculate percentage position of current delta within min/max range
-            const percentage = ((this.currentDelta - minStdAnom) / totalRange) * 100;
+            const percentage = (Math.abs(this.currentDelta) / this.calculateMaxAnom()) * 100;
 
             // Clamp between 0 and 100
             return Math.max(0, Math.min(100, percentage));
@@ -77,11 +72,14 @@ export const NetworkIndicator = {
             if (!this.quantile) return '';
 
             const value = parseFloat(this.dataPoint.ts_data);
+            const clim = parseFloat(this.dataPoint.clim)
             const upperQ = parseFloat(this.quantile.upperq);
             const lowerQ = parseFloat(this.quantile.lowerq);
 
             if (value > upperQ) return 'bg-danger';  // Heat wave
-            if (value < lowerQ) return 'bg-info';    // Cold wave
+            else if (value > clim) return 'bg-danger-subtle';
+            else if (value < lowerQ) return 'bg-primary';    // Cold wave
+            else if (value < clim) return 'bg-primary-subtle';
             return 'bg-success';                     // Normal range
         },
 
@@ -109,7 +107,7 @@ export const NetworkIndicator = {
                              :class="getStatusClass()"
                              :style="{width: calculateProgressWidth() + '%'}"
                              :aria-valuenow="calculateProgressWidth()"
-                             :aria-valuemin="calculateMinAnom()"
+                             :aria-valuemin="0"
                              :aria-valuemax="calculateMaxAnom()">
                         </div>
                     </div>

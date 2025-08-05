@@ -63,7 +63,7 @@ export const MPAInfo = {
               <img class="img-fluid" :src="iconUrl">
             </div>
             <div class="col">
-              <h2>{{ t.mpa_description || 'MPA Description' }}</h2>
+              <h2>{{ t.mpa_description || 'Site Description' }}</h2>
             </div>
 <!--            <div class="col-auto">-->
 <!--              <a id="btn_id_pdf" class="btn btn-primary" :style="{ display: mpa.name ? 'block' : 'none' }"-->

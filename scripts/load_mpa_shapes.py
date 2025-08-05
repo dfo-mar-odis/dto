@@ -111,7 +111,7 @@ def load_mpa_classifications(data):
     for _, row in unique_classifications.iterrows():
         print(f"- {row.loc['Clssf_E']} : {row.loc['Clssf_F']}")
         if not (classification:=models.Classifications.objects.filter(name_e__iexact=row.loc['Clssf_E'], name_f__iexact=row.loc['Clssf_F'])).exists():
-            models.Classifications.objects.create(name_e=row.loc['Clssf_E'], name_f=row.loc['Clssf_F'])
+            models.Classifications.objects.create(name_e=row.loc['Clssf_E'].title(), name_f=row.loc['Clssf_F'].title())
 
     # Print the count of distinct values
     print(f"\nTotal distinct classifications: {len(unique_classifications)}")

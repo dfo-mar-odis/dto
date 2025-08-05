@@ -105,7 +105,7 @@ const mapApp = createApp({
         // Populate the tabs data structure
         const tabs = reactive({
             timeseries_data: {title: window.translations?.timeseries || 'Timeseries'},
-            standard_anomaly_data: {title: window.translations?.standard_anomaly || 'Standard Anomalies'},
+            standard_anomaly_data: {title: window.translations?.standard_anomalies || 'Standard Anomalies'},
             species_data: {title: window.translations?.species_data || 'Species Data'},
             network_data: {title: window.translations?.network_data || 'Network Data'},
         });
@@ -227,11 +227,14 @@ const mapApp = createApp({
             if (!netdata.quantile) return '';
 
             const value = parseFloat(netdata.data.ts_data);
+            const clim = parseFloat(netdata.data.clim);
             const upperQ = parseFloat(netdata.quantile.upperq);
             const lowerQ = parseFloat(netdata.quantile.lowerq);
 
             if (value > upperQ) return 'bg-danger';  // Heat wave
-            if (value < lowerQ) return 'bg-info';    // Cold wave
+            else if (value > clim) return 'bg-danger-subtle';
+            else if (value < lowerQ) return 'bg-primary'; // Cold wave
+            else if (value < clim) return 'bg-primary-subtle';
             return 'bg-success';                     // Normal range
         }
 
@@ -245,10 +248,13 @@ const mapApp = createApp({
 
             // Add network indicators if a date is selected
             if (state.dates.selected) {
-                const minAnom = netdata.min_delta/netdata.data.std_dev
-                const maxAnom = netdata.max_delta/netdata.data.std_dev
-                const curAnom = (netdata.data.ts_data - netdata.data.clim)/netdata.data.std_dev
-                const percentage = ((curAnom - minAnom) / (maxAnom - minAnom))
+                const curValue = (netdata.data.ts_data - netdata.data.clim)
+                const curAnom = curValue/netdata.data.std_dev
+                let maxAnom = netdata.max_delta/netdata.data.std_dev
+                if(curValue < netdata.data.clim)
+                    maxAnom = Math.abs(netdata.max_delta/netdata.data.std_dev)
+
+                const percentage = Math.abs(curAnom) / maxAnom
 
                 content = `
                 <div class="row">
@@ -262,7 +268,7 @@ const mapApp = createApp({
                             <div class="progress-bar ${TS_getStatusClass(netdata)}" role="progressbar"
                                  style="width: ${percentage * 100}%"
                                  aria-valuenow="${percentage}"
-                                 aria-valuemin="${minAnom}"
+                                 aria-valuemin="0"
                                  aria-valuemax="${maxAnom}">
                             </div>
                         </div>

@@ -155,14 +155,14 @@ export const StandardAnomalyChart = {
                                 usePointStyle: false,
                                 generateLabels: () => [
                                     {
-                                        text: (window.translations?.above_normal || 'Above Normal') +' (σ > 0)',
+                                        text: (window.translations?.above_normal || 'Above Normal') +' ( > 0)',
                                         fillStyle: 'rgba(234, 67, 53, 0.7)',
                                         strokeStyle: 'rgba(234, 67, 53, 1)',
                                         lineWidth: 1,
                                         hidden: false
                                     },
                                     {
-                                        text: (window.translations?.below_normal || 'Below Normal') +' (σ < 0)',
+                                        text: (window.translations?.below_normal || 'Below Normal') +' ( < 0)',
                                         fillStyle: 'rgba(66, 133, 244, 0.7)',
                                         strokeStyle: 'rgba(66, 133, 244, 1)',
                                         lineWidth: 1,
@@ -189,7 +189,7 @@ export const StandardAnomalyChart = {
                         y: {
                             title: {
                                 display: true,
-                                text: (window.translations?.standard_deviation || 'Standard Deviation') + ' (σ)'
+                                text: (window.translations?.standard_anomaly || 'Standardized Anomaly')
                             },
                             suggestedMin: -3,
                             suggestedMax: 3

@@ -13,7 +13,6 @@ reportlab
 django>=4.2,<5.0
 
 # web page formattting css
-django-bootstrap-v5==1.0.11
 django-environ==0.11.2
 
 # whitenoise is used in serving resouces on the proudction server

@@ -1,5 +1,8 @@
 // Import libraries
 import 'htmx.org';
+import * as bootstrap from 'bootstrap';
+import 'bootstrap/dist/js/bootstrap.min.js';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import * as L from 'leaflet';
 import jQuery from 'jquery';
 import Chart from 'chart.js/auto';
@@ -20,6 +23,7 @@ window.Hammer = Hammer;
 window.Chart = Chart;
 window.getRelativePosition = getRelativePosition;
 window.d3 = d3;
+window.bootstrap = bootstrap;
 
 // Make Vue and its APIs available globally
 window.Vue = Vue;
