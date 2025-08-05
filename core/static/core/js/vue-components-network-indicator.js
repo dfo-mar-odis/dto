@@ -52,11 +52,17 @@ export const NetworkIndicator = {
     },
 
     methods: {
+        calculateMinAnom() {
+            return (this.minDelta/Number(this.dataPoint.std_dev));
+        },
+        calculateMaxAnom() {
+            return (this.maxDelta/Number(this.dataPoint.std_dev));
+        },
         calculateProgressWidth() {
             if (!this.minDelta || !this.maxDelta) return 50;
 
-            const minStdAnom = (this.minDelta/Number(this.dataPoint.std_dev));
-            const maxStdAnom = (this.maxDelta/Number(this.dataPoint.std_dev));
+            const minStdAnom = this.calculateMinAnom();
+            const maxStdAnom = this.calculateMaxAnom();
             const totalRange = maxStdAnom - minStdAnom;
             if (totalRange === 0) return 50;
 
@@ -102,9 +108,9 @@ export const NetworkIndicator = {
                         <div class="progress-bar" role="progressbar"
                              :class="getStatusClass()"
                              :style="{width: calculateProgressWidth() + '%'}"
-                             :aria-valuenow="currentDelta"
-                             :aria-valuemin="minDelta"
-                             :aria-valuemax="maxDelta">
+                             :aria-valuenow="calculateProgressWidth()"
+                             :aria-valuemin="calculateMinAnom()"
+                             :aria-valuemax="calculateMaxAnom()">
                         </div>
                     </div>
                 </div>

@@ -235,19 +235,6 @@ const mapApp = createApp({
             return 'bg-success';                     // Normal range
         }
 
-        function TS_calculateProgressWidth(netdata) {
-            if (!netdata.minDelta || !netdata.maxDelta) return 50;
-
-            const totalRange = netdata.maxDelta - netdata.minDelta;
-            if (totalRange === 0) return 50;
-
-            // Calculate percentage position of current delta within min/max range
-            const percentage = (((netdata.data.ts_data - netdata.data.clim) - netdata.minDelta) / totalRange) * 100;
-
-            // Clamp between 0 and 100
-            return Math.max(0, Math.min(100, percentage));
-        }
-
         function formatNumber(num, places) {
             return num.toFixed(places)
         }
@@ -258,20 +245,25 @@ const mapApp = createApp({
 
             // Add network indicators if a date is selected
             if (state.dates.selected) {
+                const minAnom = netdata.min_delta/netdata.data.std_dev
+                const maxAnom = netdata.max_delta/netdata.data.std_dev
+                const curAnom = (netdata.data.ts_data - netdata.data.clim)/netdata.data.std_dev
+                const percentage = ((curAnom - minAnom) / (maxAnom - minAnom))
+
                 content = `
                 <div class="row">
-                    <div class="col text-center">
-                    ` + (window.translation?.total_average_bottom || 'Total Average Bottom') + ` ${state.dates.selected}
-                    </div>
+                    <div class="col text-center">` +
+                     (window.translations?.total_average_bottom || 'Total Average Bottom') +
+                    ` ${state.dates.selected}</div>
                 </div>
                 <div class="row">
                     <div class="col">
                         <div class="progress" style="height: 20px;">
                             <div class="progress-bar ${TS_getStatusClass(netdata)}" role="progressbar"
-                                 style="width: ${TS_calculateProgressWidth(netdata)}%"
-                                 aria-valuenow="${netdata.data.ts_data - netdata.data.clim}"
-                                 aria-valuemin="${netdata.min_delta}"
-                                 aria-valuemax="${netdata.max_delta}">
+                                 style="width: ${percentage * 100}%"
+                                 aria-valuenow="${percentage}"
+                                 aria-valuemin="${minAnom}"
+                                 aria-valuemax="${maxAnom}">
                             </div>
                         </div>
                     </div>
@@ -283,13 +275,21 @@ const mapApp = createApp({
                     <div class="col">
                     <table class="table table-sm text-center striped-columns">
                         <thead>
-                            <tr><th>ΔT</th><th>°C</th><th>` + (window.translations?.abbreviated_average || 'Avg') + `(°C)</th><th>90%</th><th>10%</th></tr>
+                            <tr>
+                                <th>` + (window.translations?.abbreviated_std_anomaly || 'Std. Anom') + `</th>
+                                <th>°C</th>
+                                <th>` + (window.translations?.abbreviated_average || 'Avg') + `(°C)</th>
+                                <th>σ</th>
+                                <th>90%</th>
+                                <th>10%</th>
+                            </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td>${formatNumber(netdata.data.ts_data - netdata.data.clim, 3)}</td>
+                                <td>${formatNumber(curAnom, 3)}</td>
                                 <td>${formatNumber(netdata.data.ts_data, 3)}</td>
                                 <td>${formatNumber(netdata.data.clim, 3)}</td>
+                                <td>${formatNumber(netdata.data.std_dev, 3)}</td>
                                 <td>${formatNumber(netdata.quantile.upperq, 3)}</td>
                                 <td>${formatNumber(netdata.quantile.lowerq, 3)}</td>
                             </tr>
