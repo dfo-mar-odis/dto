@@ -57,6 +57,10 @@ def set_language(request):
     """
     next_url = request.POST.get('next', request.GET.get('next'))
 
+    # Remove FORCE_SCRIPT_NAME if set
+    if settings.FORCE_SCRIPT_NAME:
+        next_url = next_url.replace(settings.FORCE_SCRIPT_NAME, '')
+
     if not next_url or not url_has_allowed_host_and_scheme(
             url=next_url,
             allowed_hosts={request.get_host()},
@@ -74,6 +78,10 @@ def set_language(request):
     if language and language in dict(settings.LANGUAGES):
         activate(language)
         next_url = translate_url(next_url, ('fr' if language == 'en' else 'en'))
+
+        # add FORCE_SCRIPT_NAME if set
+        if settings.FORCE_SCRIPT_NAME:
+            next_url = settings.FORCE_SCRIPT_NAME + next_url
 
         response = HttpResponseRedirect(next_url)
         response.set_cookie(
