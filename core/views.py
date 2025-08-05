@@ -80,8 +80,8 @@ def set_language(request):
         next_url = translate_url(next_url, ('fr' if language == 'en' else 'en'))
 
         # add FORCE_SCRIPT_NAME if set
-        if settings.FORCE_SCRIPT_NAME:
-            next_url = settings.FORCE_SCRIPT_NAME + next_url
+        # if settings.FORCE_SCRIPT_NAME:
+        #     next_url = settings.FORCE_SCRIPT_NAME + next_url
 
         response = HttpResponseRedirect(next_url)
         response.set_cookie(
