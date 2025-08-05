@@ -55,7 +55,7 @@ def set_language(request):
     request parameters.
     """
     next_url = request.POST.get('next', request.GET.get('next'))
-    console.log("Next URL: " + next_url)
+    logger.log("Next URL: " + next_url)
     if not next_url or not url_has_allowed_host_and_scheme(
             url=next_url,
             allowed_hosts={request.get_host()},
@@ -73,7 +73,7 @@ def set_language(request):
     if language and language in dict(settings.LANGUAGES):
         activate(language)
         next_url = translate_url(next_url, language)
-        console.log("New Next URL: " + next_url)
+        logger.log("New Next URL: " + next_url)
 
         response = HttpResponseRedirect(next_url)
         response.set_cookie(
