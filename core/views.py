@@ -56,12 +56,6 @@ def set_language(request):
     request parameters.
     """
     next_url = request.POST.get('next', request.GET.get('next'))
-    # Remove language code (e.g., 'fr/' or 'en/') and FORCE_SCRIPT_NAME
-    if next_url:
-        if settings.FORCE_SCRIPT_NAME:
-            next_url = next_url.replace(settings.FORCE_SCRIPT_NAME, '')
-
-        next_url = re.sub(r'.*?(fr/|en/)', '', next_url)
 
     if not next_url or not url_has_allowed_host_and_scheme(
             url=next_url,
@@ -79,7 +73,7 @@ def set_language(request):
     language = request.POST.get('language', request.GET.get('language'))
     if language and language in dict(settings.LANGUAGES):
         activate(language)
-        next_url = translate_url(next_url, language)
+        next_url = translate_url(next_url, ('fr' if language == 'en' else 'en'))
 
         response = HttpResponseRedirect(next_url)
         response.set_cookie(
