@@ -81,3 +81,12 @@
 .legend-toggle a:hover {
   background-color: #f4f4f4;
 }
+
+/* Override Bootstrap subtle background colors */
+.bg-primary-subtle {
+  background-color: #6ea8fe !important; /* This is equivalent to Bootstrap's $blue-300 */
+}
+
+.bg-danger-subtle {
+  background-color: #ea868f !important; /* Bootstrap's $red-400 equivalent */
+}
