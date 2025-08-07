@@ -11,5 +11,6 @@ urlpatterns = [
     path('classifications/', views.get_classification_colours, name='get_classification_colours'),
     path('max_date/', views.get_max_date, name='get_max_date'),
     path('get_depths/', views.get_depths, name='get_depths'),
+    path('get_climate_models/', views.get_climate_models, name='get_climate_models'),
     path('generate_pdf/', views.generate_pdf, name='generate_pdf'),
 ]

@@ -16,7 +16,7 @@ class MPAZonesWithTimeseriesViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = MPAZonesSerializer
 
     def get_queryset(self):
-        mpa_ids = models.Timeseries.objects.values_list('mpa__pk', flat=True).distinct()
+        mpa_ids = models.Timeseries.objects.values_list('zone__pk', flat=True).distinct()
         # Filter MPAZones that have at least one related Timeseries entry
         return models.MPAZones.objects.filter(
             pk__in=mpa_ids
@@ -42,8 +42,12 @@ class SpeciesViewSet(viewsets.ReadOnlyModelViewSet):
         return super().list(request, *args, **kwargs)
 
 
-def get_timeseries_dataframe(mpa_zone: models.MPAZones, depth=None, start_date=None, end_date=None, indicator=1):
-    mpa_timeseries = mpa_zone.timeseries.filter(depth=depth, indicator=indicator).order_by('date_time')
+def get_timeseries_dataframe(mpa_zone: models.MPAZones, climate_model=1, depth=None, start_date=None, end_date=None, indicator=1):
+    mpa_timeseries = mpa_zone.timeseries.filter(
+        model__pk=climate_model,
+        depth=depth,
+        indicator=indicator
+    ).order_by('date_time')
 
     if start_date:
         mpa_timeseries = mpa_timeseries.filter(date_time__gte=start_date)
@@ -61,7 +65,7 @@ def get_timeseries_dataframe(mpa_zone: models.MPAZones, depth=None, start_date=N
     return df
 
 
-def get_combined_data(mpa_id, selected_date, depth=None, lower_quantile=0.1, upper_quantile=0.9, indicator=1):
+def get_combined_data(mpa_id, selected_date, climate_model=1, depth=None, lower_quantile=0.1, upper_quantile=0.9, indicator=1):
 
     if mpa_id == -1 or not models.MPAZones.objects.filter(pk=mpa_id).exists():
         return {}
@@ -69,7 +73,7 @@ def get_combined_data(mpa_id, selected_date, depth=None, lower_quantile=0.1, upp
     mpa_zone = models.MPAZones.objects.get(pk=mpa_id)
 
     # Get dataframe for processing
-    df = get_timeseries_dataframe(mpa_zone, depth, indicator=indicator)
+    df = get_timeseries_dataframe(mpa_zone, climate_model, depth, indicator=indicator)
     if df is None:
         {}
 

@@ -9,7 +9,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 
-def load_series(mpa, timeseries, depth=None, indicator=1, batch_size=1000):
+def load_series(mpa, timeseries, climate_model_id=1, depth=None, indicator=1, batch_size=1000):
     """
     Load time series data into the database with batched bulk inserts.
 
@@ -23,6 +23,7 @@ def load_series(mpa, timeseries, depth=None, indicator=1, batch_size=1000):
     try:
         # Get indicator object once outside the loop
         timeseries_indicator = models.Indicators.objects.get(pk=indicator)
+        timeseries_model = models.ClimateModels.objects.get(pk=climate_model_id)
 
         # Setup tracking variables
         add_time_series = []
@@ -44,6 +45,7 @@ def load_series(mpa, timeseries, depth=None, indicator=1, batch_size=1000):
                 add_time_series.append(
                     models.Timeseries(
                         mpa=mpa,
+                        model=timeseries_model,
                         date_time=row[0],
                         value=value,
                         depth=depth,
@@ -75,7 +77,7 @@ def load_series(mpa, timeseries, depth=None, indicator=1, batch_size=1000):
         raise
 
 
-def read_timeseries(mpa, filename, date_col='Date', chunksize=100000):
+def read_timeseries(mpa, filename, climate_model_id=1, date_col='Date', chunksize=100000):
     """
     Read and load time series data from a CSV file with chunking for large files.
 
@@ -103,21 +105,21 @@ def read_timeseries(mpa, filename, date_col='Date', chunksize=100000):
             # Process each chunk
             for i, chunk in enumerate(tqdm(reader, desc="Processing chunks")):
                 chunk = chunk.set_index(date_col)
-                load_series(mpa, chunk)
+                load_series(mpa, chunk, climate_model_id)
 
         else:
             # For smaller files, read all at once
             timeseries = pd.read_csv(filename)
             timeseries = timeseries.set_index(date_col)
             print(f"Read {len(timeseries)} time series records")
-            load_series(mpa, timeseries)
+            load_series(mpa, timeseries, climate_model_id)
 
     except Exception as e:
         print(f"Error reading time series file {filename}: {str(e)}")
         raise
 
 
-def read_depth_timeseries(mpa_name, filename, date_col='Date'):
+def read_depth_timeseries(mpa_name, filename, climate_model_id=1, date_col='Date'):
     """
     Read time series data from a CSV file with multiple columns representing different depths.
 
@@ -146,7 +148,7 @@ def read_depth_timeseries(mpa_name, filename, date_col='Date'):
                 depth_timeseries = timeseries[[col]]
 
                 # Load the data for this depth
-                load_series(mpa_name, depth_timeseries, depth)
+                load_series(mpa_name, depth_timeseries, climate_model_id, depth)
 
             except (ValueError, IndexError) as e:
                 print(f"Error processing column '{col}': {str(e)}")
@@ -157,7 +159,7 @@ def read_depth_timeseries(mpa_name, filename, date_col='Date'):
         raise
 
 
-def load_mpas_from_dict(data: dict):
+def load_mpas_from_dict(data: dict, climate_model_id=1):
     """
     Load time series data for multiple MPAs from dictionary containing file paths.
 
@@ -187,7 +189,7 @@ def load_mpas_from_dict(data: dict):
                 mpa_pbar.set_postfix(file="Depth temperature")
                 depth_ts = mpa_dict.get('DEPTH_TS')
                 if depth_ts:
-                    read_depth_timeseries(mpa, depth_ts)
+                    read_depth_timeseries(mpa, depth_ts, climate_model_id)
 
                 mpa_pbar.update(1)
 
@@ -199,13 +201,12 @@ def load_mpas_from_dict(data: dict):
     print("Data loading complete!")
 
 
-def build_mpa_dictionary() -> dict:
+def build_mpa_dictionary(data_directory) -> dict:
     """
     Build a dictionary mapping MPA IDs to their associated temperature time series files.
     Returns a dictionary where keys are MPA IDs and values contain paths to depth and bottom temperature files.
     """
     data = {}
-    data_directory = Path('./scripts/data/GLORYS/')
     id_regex = re.compile(r'.*?_(\d*)_.*?\.csv')
 
     # Stage 1: Scan directory for files
@@ -244,7 +245,7 @@ def build_mpa_dictionary() -> dict:
     return data
 
 def load_mpas():
-    # this is how we'll actually load data when we have real data to load
-    # for now, every MPA is getting loaded with the St. Anne's bank data
-    data = build_mpa_dictionary()
-    load_mpas_from_dict(data)
+
+    data_directory = Path('./scripts/data/GLORYS/')
+    glorys_data = build_mpa_dictionary(data_directory)
+    load_mpas_from_dict(glorys_data, climate_model_id=1)

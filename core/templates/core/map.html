@@ -22,16 +22,18 @@
             </div>
             <div class="flex-grow-1 align-self-end">
                 <mpa-controls
-                        :mpa="state.mpa"
                         max-date-url="{% url 'core:get_max_date' %}"
                         mpa-depths-url="{% url 'core:get_depths' %}"
+                        mpa-climate-models-url="{% url 'core:get_climate_models' %}"
+                        :mpa="state.mpa"
                         :initial-start-date="state.dates.startDate"
                         :initial-end-date="state.dates.endDate"
                         :selected-date="state.dates.selected"
                         @get-data="getData"
                         @date-range-change="setSelectedDateRange"
                         @selected-date-changed="setSelectedDate"
-                        @depth-selected="setSelectedDepth">
+                        @depth-selected="setSelectedDepth"
+                        @climate-model-selected="setSelectedClimateModel">
                 </mpa-controls>
             </div>
         </div>
@@ -69,6 +71,7 @@
                     <quantile-chart
                             :mpa="state.mpa"
                             :depth="state.depth"
+                            :climate-model="state.climateModel"
                             :start-date="state.dates.startDate"
                             :end-date="state.dates.endDate"
                             :selected-date="state.dates.selected"

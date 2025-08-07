@@ -28,8 +28,14 @@ class Indicators(models.Model):
     name = models.CharField(max_length=50, verbose_name=_('Indicator Name'))
 
 
+class ClimateModels(models.Model):
+    name = models.CharField(max_length=50, verbose_name=_('Climate Name'))
+    priority = models.IntegerField(default=0)
+
+
 class Timeseries(models.Model):
-    mpa = models.ForeignKey(MPAZones, on_delete=models.CASCADE, related_name='timeseries')
+    zone = models.ForeignKey(MPAZones, on_delete=models.CASCADE, related_name='timeseries')
+    model = models.ForeignKey(ClimateModels, on_delete=models.CASCADE, related_name='timeseries')
     date_time = models.DateField(verbose_name="Date")
     value = models.FloatField(verbose_name="Value")
     depth = models.IntegerField(verbose_name="Depth", null=True)

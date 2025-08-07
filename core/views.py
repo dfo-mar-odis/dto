@@ -1,6 +1,5 @@
 import io
 import os
-import re
 from datetime import datetime
 
 import pandas as pd
@@ -223,7 +222,7 @@ def add_plot(title, mpa_id, depth=None, start_date='2020-01-01', end_date='2023-
 
 
 def generate_pdf(request):
-    mpa_id, depth, start_date, end_date = parse_request_variables(request)
+    mpa_id, climate_model, depth, start_date, end_date = parse_request_variables(request)
 
     timeseries = models.Timeseries.objects.order_by('date_time')
     if not start_date:
@@ -315,7 +314,7 @@ def generate_pdf(request):
 
 
 def get_anomaly(request):
-    mpa_id, depth, start_date, end_date = parse_request_variables(request)
+    mpa_id, climate_model, depth, start_date, end_date = parse_request_variables(request)
     mpa_zone = models.MPAZones.objects.get(pk=mpa_id)
 
     mpa_timeseries = mpa_zone.timeseries.filter(indicator=1, depth=None).order_by('date_time')
@@ -350,7 +349,7 @@ def get_quantiles(request):
 
     timeseries = {'data': []}
 
-    mpa_id, depth, start_date, end_date = parse_request_variables(request)
+    mpa_id, climate_model, depth, start_date, end_date = parse_request_variables(request)
 
     q_upper = float(request.GET.get('upper_quantile', 0.9))
     q_lower = float(request.GET.get('lower_quantile', 0.1))
@@ -364,7 +363,7 @@ def get_quantiles(request):
     mpa_zone = models.MPAZones.objects.get(pk=mpa_id)
     timeseries['name'] = mpa_zone.name_e
 
-    df = get_timeseries_dataframe(mpa_zone, depth)
+    df = get_timeseries_dataframe(mpa_zone, climate_model, depth)
 
     if df is None:
         return None
@@ -392,7 +391,7 @@ def get_quantiles(request):
     return JsonResponse(timeseries)
 
 
-def get_timeseries_data(mpa_id, depth=None, start_date=None, end_date=None, indicator=1):
+def get_timeseries_data(mpa_id, climate_model=1, depth=None, start_date=None, end_date=None, indicator=1):
     timeseries = {'data': []}
 
     if mpa_id == -1:
@@ -405,7 +404,7 @@ def get_timeseries_data(mpa_id, depth=None, start_date=None, end_date=None, indi
 
     timeseries['name'] = mpa_zone.name_e
 
-    df = get_timeseries_dataframe(mpa_zone, depth, indicator=indicator)
+    df = get_timeseries_dataframe(mpa_zone, climate_model, depth, indicator=indicator)
     if df is None:
         return None
 
@@ -429,12 +428,13 @@ def get_timeseries_data(mpa_id, depth=None, start_date=None, end_date=None, indi
 
 
 def get_timeseries(request):
-    mpa_id, depth, start_date, end_date = parse_request_variables(request)
-    return JsonResponse(get_timeseries_data(mpa_id, depth, start_date, end_date), safe=False)
+    mpa_id, climate_model, depth, start_date, end_date = parse_request_variables(request)
+    return JsonResponse(get_timeseries_data(mpa_id, climate_model, depth, start_date, end_date), safe=False)
 
 
 def parse_request_variables(request):
     mpa_id = int(request.GET.get('mpa', -1))
+    climate_model = int(request.GET.get('climate_model', 1))
     depth = request.GET.get('depth', None)
     depth = None if depth == '' or depth is None else int(depth)
 
@@ -444,7 +444,7 @@ def parse_request_variables(request):
     end_date = request.GET.get('end_date', None)
     end_date = None if end_date == '' or end_date is None else end_date
 
-    return mpa_id, depth, start_date, end_date
+    return mpa_id, climate_model, depth, start_date, end_date
 
 
 def get_standard_anomalies_chart(request):
@@ -523,11 +523,14 @@ def indicators(request):
 
     date = datetime.strptime(date_string, '%Y-%m-%d')
 
+    climate_model = request.GET.get('climate_model', None)
+    climate_model = int(climate_model) if climate_model else None
+
     depth = request.GET.get('depth', None)
     depth = int(depth) if depth else None
 
     mpa_zone = models.MPAZones.objects.get(pk=mpa)
-    df = get_timeseries_dataframe(mpa_zone, depth)
+    df = get_timeseries_dataframe(mpa_zone, climate_model, depth)
 
     if df is None:
         return None
@@ -580,6 +583,14 @@ def get_max_date(request):
 def get_depths(request):
     mpa_id = int(request.GET.get('mpa_id', -1))
     mpa = models.MPAZones.objects.get(site_id=mpa_id)
-    depths = models.Timeseries.objects.filter(mpa=mpa).order_by('depth').values_list('depth', flat=True).distinct()
+    depths = models.Timeseries.objects.filter(zone=mpa).order_by('depth').values_list('depth', flat=True).distinct()
     depth_array = [(d, f'{d} m') for d in depths if d is not None]
     return JsonResponse({'depths': depth_array})
+
+
+def get_climate_models(request):
+    mpa_id = int(request.GET.get('mpa_id', -1))
+    mpa = models.MPAZones.objects.get(site_id=mpa_id)
+    climate_models = models.Timeseries.objects.filter(zone=mpa).values_list('model', flat=True).distinct()
+    models_array = [(m.pk, f'{m.name}') for m in models.ClimateModels.objects.filter(pk__in=climate_models)]
+    return JsonResponse({'climate_models': models_array})

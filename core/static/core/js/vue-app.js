@@ -28,6 +28,7 @@ const mapApp = createApp({
                 endDate: ''
             },
             depth: '',
+            climateModel: 1, // by default 1 is the GLORYS Climate model
             loading: false,
             activeTab: 'timeseries_data',
             urls: {
@@ -92,6 +93,7 @@ const mapApp = createApp({
         });
 
         function initialize(mpasUrl, timeseriesUrl, legendUrl, speciesUrl, networkIndicatorUrl) {
+            state.climateModel = 1;
             state.urls.mpasWithTimeseriesList = mpasUrl;
             state.urls.timeseriesUrl = timeseriesUrl;
             state.urls.legendUrl = legendUrl;
@@ -336,6 +338,8 @@ const mapApp = createApp({
             });
         }
 
+        // This forces the refresh of the network indicator data that's used in popups when hovering
+        // over an area on the map
         async function fetchNetworkIndicatorData() {
             if (!state.dates.selected || !state.urls.networkIndicatorUrl) return;
 
@@ -438,7 +442,6 @@ const mapApp = createApp({
             const legend = L.control({position: 'bottomright'});
 
             legend.onAdd = function () {
-                console.log("classification: " + window.translations?.mpa_classifications)
                 const div = L.DomUtil.create('div', 'info legend hidden');
                 div.innerHTML += '<h4>' + (window.translations?.mpa_classifications || 'MPA Classifications') + '</h4><div id="legend-content">' + (window.translations?.loading || 'Loading...') + '</div>';
                 return div;
@@ -499,6 +502,12 @@ const mapApp = createApp({
             getData();
         }
 
+        function setSelectedClimateModel(climate_model) {
+            state.climateModel = climate_model;
+            fetchNetworkIndicatorData();
+            getData();
+        }
+
         async function getData() {
             state.loading = true;
 
@@ -516,6 +525,8 @@ const mapApp = createApp({
                 // if depth isn't specified then it'll be None and will return the
                 // Total Average Bottom Timeseries
                 tsUrl.searchParams.set('depth', state.depth);
+
+                tsUrl.searchParams.set('climate_model', state.climateModel);
 
                 const response = await fetch(tsUrl.toString());
                 state.timeseriesData = await response.json();
@@ -535,6 +546,7 @@ const mapApp = createApp({
             setSelectedDateRange,
             setSelectedDate,
             setSelectedDepth,
+            setSelectedClimateModel,
             getData,
             updateSelectedPolygons,
         };
