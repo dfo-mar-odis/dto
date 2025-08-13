@@ -16,12 +16,13 @@ export const LegendSectionPlugin = (sectionConfig, chartInstanceId) => {
         afterRender(chart) {
             const placeholderId = `custom-legend-placeholder-${chartInstanceId}`;
             const placeholder = document.getElementById(placeholderId);
-            const chartContainer = placeholder.closest('.chart-container');
 
             if (!placeholder) {
                 console.warn(`Legend placeholder not found: ${placeholderId}`);
                 return;
             }
+
+            const chartContainer = placeholder.closest('.chart-container');
 
             // Clear the placeholder content
             placeholder.innerHTML = '';
@@ -56,9 +57,9 @@ export const LegendSectionPlugin = (sectionConfig, chartInstanceId) => {
             chart.data.datasets.forEach((dataset, idx) => {
                 for (const section of sectionConfig) {
                     if (section.matchFunction(dataset)) {
-                        if (!sectioned[section.id]) sectioned[section.id] = [];
+                        if (!sectioned[section.id])
+                            sectioned[section.id] = [];
                         sectioned[section.id].push({dataset, index: idx});
-                        break;
                     }
                 }
             });
@@ -68,6 +69,7 @@ export const LegendSectionPlugin = (sectionConfig, chartInstanceId) => {
                 if (sectioned[section.id]?.length) {
                     const sectionDiv = document.createElement('div');
                     sectionDiv.className = 'legend-section';
+                    sectionDiv.id = section.id;
 
                     sectioned[section.id].forEach(({dataset, index}) => {
                         const item = document.createElement('div');

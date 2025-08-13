@@ -1,4 +1,5 @@
-import {LegendSectionPlugin} from './vue-chart-legend-plugin.js';
+import {LegendSectionPlugin} from './vue-chart-plugin-legend.js';
+import {ToggleObservationsPlugin} from './vue-chart-plugin-toggle-observations.js';
 
 export const TimeseriesChart = {
     props: {
@@ -82,13 +83,28 @@ export const TimeseriesChart = {
 
             const dataPoints = [];
             const climPoints = [];
-
+            const obsPoints = [];
+            let obsCount = 0;
             this.timeseriesData.data.forEach(point => {
                 if (!point.date || !point.ts_data) return;
 
                 const date = new Date(point.date);
                 const tsValue = parseFloat(point.ts_data);
                 const climValue = parseFloat(point.clim);
+                if(point.observation) {
+                    const obsValue = parseFloat(point.observation.value);
+                    obsPoints.push({
+                        x: date,
+                        y: obsValue,
+                        label: "n=" + String(point.observation.count) + ", σ=" + String(point.observation.std_dev)
+                    });
+                    obsCount += 1;
+                } else {
+                    obsPoints.push({
+                        x: date,
+                        y: NaN,
+                    });
+                }
 
                 // Add timeseries data point
                 dataPoints.push({
@@ -103,6 +119,26 @@ export const TimeseriesChart = {
                 });
             });
 
+            let observation_dataset = {
+                type: 'scatter',
+                label: window.translations?.observations || 'Observations',
+                data: obsPoints,
+                borderColor: '#0074D9',
+                pointRadius: 1,
+                pointBorderWidth: 1,
+                showLine: false, // Ensures it's treated as points only
+                fill: false,
+                meta: {
+                    legendId: "timeseries_5",
+                    showToolTip: true
+                }
+            }
+            if (obsCount < 100) {
+                observation_dataset.pointRadius = 10
+                observation_dataset.pointBorderWidth = 3
+                observation_dataset.pointStyle = 'cross'
+            }
+
             return {
                 datasets: [
                     // Main temperature line
@@ -114,7 +150,11 @@ export const TimeseriesChart = {
                         backgroundColor: 'rgba(0,0,0,0)',
                         tension: 0.1,
                         pointRadius: 0.1,
-                        fill: false
+                        fill: false,
+                        meta: {
+                            legendId: "timeseries_1",
+                            showToolTip: true
+                        }
                     },
                     // Climatology line
                     {
@@ -125,6 +165,10 @@ export const TimeseriesChart = {
                         backgroundColor: 'rgba(0,0,0,0)',
                         tension: 0.1,
                         pointRadius: 0.1,
+                        meta: {
+                            legendId: "timeseries_2",
+                            showToolTip: true
+                        }
                     },
                     // Above average area (red)
                     {
@@ -138,8 +182,8 @@ export const TimeseriesChart = {
                             below: 'rgba(0, 0, 0, 0)'
                         },
                         pointRadius: 0,
-                        tooltip: {
-                            display: false
+                        meta: {
+                            legendId: "timeseries_3"
                         }
                     },
                     // Below average area (blue)
@@ -154,12 +198,27 @@ export const TimeseriesChart = {
                             below: 'rgba(0, 0, 255, 0.2)'
                         },
                         pointRadius: 0,
-                        tooltip: {
-                            display: false
+                        meta: {
+                            legendId: "timeseries_4"
                         }
                     },
+                    // Observation points
+                    observation_dataset,
                 ]
             };
+        },
+
+        match_timeseries_legend_function(dataset) {
+            return dataset.meta.legendId !== 'timeseries_5';
+        },
+
+        get_legend() {
+            const legendConfig = [];
+            legendConfig.push({
+                id: 'timeseries',
+                matchFunction: (dataset) => this.match_timeseries_legend_function(dataset)
+            });
+            return legendConfig;
         },
 
         renderChart() {
@@ -222,21 +281,12 @@ export const TimeseriesChart = {
             }
         },
 
-        get_legend() {
-            return [{
-                id: 'timeseries',
-                matchFunction: (dataset) => {
-                    return !dataset.label.includes( window.translations?.max_temp || 'Max Temp') &&
-                        !dataset.label.includes(window.translations?.min_temp || 'Min Temp') &&
-                        !dataset.label.includes(window.translations?.survivable_range || 'Survivable Range');
-                }
-            }];
-        },
-
         createNewChart(ctx, formattedData) {
             try {
                 const component = this;
-                const legend = this.get_legend();
+                const legendConfig = this.get_legend();
+
+                const observation_dataset = formattedData.datasets.findIndex(dataset => dataset.meta?.legendId==='timeseries_5')
 
                 // Custom date indicator plugin that doesn't rely on the annotation plugin
                 const dateIndicatorPlugin = {
@@ -266,7 +316,7 @@ export const TimeseriesChart = {
                         // Draw label
                         ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
                         ctx.textAlign = 'center';
-                        ctx.fillText(dateStr.split('T')[0], xPos, yAxis.top - 5);
+                        ctx.fillText(dateStr.split('T')[0], xPos, yAxis.bottom + 10);
                         ctx.restore();
                     }
                 };
@@ -305,26 +355,19 @@ export const TimeseriesChart = {
                                 intersect: false,
                                 filter: function (tooltipItem) {
                                     // Only show tooltips for datasets 0 and 1 (Temperature and Climatology)
-                                    return tooltipItem.datasetIndex < 2;
-                                }
-                            },
-                            legend: {
-                                position: 'top',
-                                onClick: function (e, legendItem, legend) {
-                                    // Prevent clicks on the divider/header
-                                    if (legendItem.isHeader) return;
-
-                                    const index = legendItem.datasetIndex;
-                                    const ci = legend.chart;
-
-                                    if (ci.isDatasetVisible(index)) {
-                                        ci.hide(index);
-                                    } else {
-                                        ci.show(index);
+                                    return tooltipItem.dataset.meta?.showToolTip;
+                                },
+                                callbacks: {
+                                    label: function (context) {
+                                        if (context.dataset.meta?.legendId === "timeseries_5") {
+                                            // Format tooltip for the "Observations" dataset
+                                            return `${context.dataset.label}: ${context.raw.y} (${context.raw.label})`;
+                                        }
+                                        // Default tooltip formatting for other datasets
+                                        return `${context.dataset.label}: ${context.raw.y}`;
                                     }
-                                    ci.update();
-                                }
-                            }
+                                },
+                            },
                         },
                         scales: {
                             x: {
@@ -351,8 +394,9 @@ export const TimeseriesChart = {
                         }
                     },
                     plugins: [
-                        LegendSectionPlugin(legend, this.chartInstanceId),
-                        dateIndicatorPlugin
+                        LegendSectionPlugin(legendConfig, this.chartInstanceId),
+                        dateIndicatorPlugin,
+                        ToggleObservationsPlugin(observation_dataset, this.chartInstanceId)
                     ]
                 });
 
@@ -412,6 +456,7 @@ export const TimeseriesChart = {
               <span class="visually-hidden">{{ t.loading || 'Loading...' }}</span>
             </div>
           </div>
+          <div :id="'custom-observation-placeholder-' + chartInstanceId"></div>
           <div :id="'custom-legend-placeholder-' + chartInstanceId" class="chart-legend-container"></div>
           <canvas ref="chartCanvas"></canvas>
           <div v-if="!mpa.name" class="text-center text-muted mt-5 pt-5">

@@ -1,5 +1,5 @@
 import {TimeseriesChart} from "./vue-chart-timeseries.js";
-import {LegendSectionPlugin} from './vue-chart-legend-plugin.js';
+import {LegendSectionPlugin} from './vue-chart-plugin-legend.js';
 import { NetworkIndicator } from './vue-components-network-indicator.js';
 
 export const QuantileChart = {
@@ -137,6 +137,9 @@ export const QuantileChart = {
                         target: 0,
                         below: 'rgba(128, 0, 0, 0.8)',
                     },
+                    meta: {
+                        legendId: "quantile_1"
+                    }
                 },
                 {
                     label: (window.translations?.marine_cold_wave || `Marine Cold Wave below` ) + ` ${this.lowerQuantile})`,
@@ -150,6 +153,9 @@ export const QuantileChart = {
                         target: 0,
                         above: 'rgba(0, 0, 128, 0.8)',
                     },
+                    meta: {
+                        legendId: "quantile_2"
+                    }
                 },
                 {
                     label: window.translations?.average_range || `Average Range`,
@@ -163,23 +169,35 @@ export const QuantileChart = {
                         target: (formattedData.datasets.length),
                         below: 'rgba(128, 128, 128, 0.2)',
                     },
+                    meta: {
+                        legendId: "quantile_3"
+                    }
                 }
             );
             return formattedData;
         },
 
+        match_timeseries_legend_function(dataset) {
+            let match = TimeseriesChart.methods.match_timeseries_legend_function.call(this, dataset);
+            match = match && !(this.match_quantile_legend_function(dataset))
+            return match;
+        },
+
+        match_quantile_legend_function(dataset) {
+            return dataset.meta.legendId.includes('quantile');
+        },
+
         get_legend() {
-            const legend = TimeseriesChart.methods.get_legend.call(this);
-            legend.push(
+            const legendConfig = TimeseriesChart.methods.get_legend.call(this);
+            // This is where you can filter layers out of the custom legend if you want them to be
+            // drawn on the chart, but not visible in the legend
+            legendConfig.push(
                 {
                     id: 'quantile',
-                    matchFunction: (dataset) => {
-                        return dataset.label.includes('Upper Quantile') ||
-                            dataset.label.includes('Lower Quantile');
-                    }
+                    matchFunction: (dataset) => this.match_quantile_legend_function(dataset)
                 }
             );
-            return legend
+            return legendConfig
         },
 
     },
@@ -232,6 +250,7 @@ export const QuantileChart = {
                             <span class="visually-hidden">{{ t.loading || 'Loading...' }}</span>
                         </div>
                     </div>
+                    <div :id="'custom-observation-placeholder-' + chartInstanceId"></div>
                     <div :id="'custom-legend-placeholder-' + chartInstanceId" class="chart-legend-container"></div>
                     <canvas ref="chartCanvas"></canvas>
                     <div v-if="!mpa.name" class="text-center text-muted mt-5 pt-5">

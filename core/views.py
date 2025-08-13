@@ -417,11 +417,16 @@ def get_timeseries_data(mpa_id, climate_model=1, depth=None, start_date=None, en
     timeseries['max_delta'] = df.max().value - clim.loc[(max_val.index.month[0], max_val.index.day[0])].value
     timeseries['min_delta'] = df.min().value - clim.loc[(min_val.index.month[0], min_val.index.day[0])].value
     df = df[(df.index >= start_date) & (df.index <= end_date)]
+
     timeseries['data'] = [{
         "date": f'{date.strftime("%Y-%m-%d")} 00:01',
         "ts_data": str(mt['value'].item()),
         "clim": f'{clim["value"][date.month, date.day]}',
-        "std_dev": f'{clim["value"].std()}'
+        "std_dev": f'{clim["value"].std()}',
+        "observation": ({
+            'value': mt['observation'],
+            'count': mt['count'],
+            'std_dev': mt['std'] } if 'observation' in mt and pd.notnull(mt['observation']) else None)
     } for date, mt in df.iterrows()]
 
     return timeseries

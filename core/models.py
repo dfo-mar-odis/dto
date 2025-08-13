@@ -29,17 +29,27 @@ class Indicators(models.Model):
 
 
 class ClimateModels(models.Model):
-    name = models.CharField(max_length=50, verbose_name=_('Climate Name'))
+    name = models.CharField(max_length=50, verbose_name=_('Model Name'))
     priority = models.IntegerField(default=0)
 
 
 class Timeseries(models.Model):
-    zone = models.ForeignKey(MPAZones, on_delete=models.CASCADE, related_name='timeseries')
     model = models.ForeignKey(ClimateModels, on_delete=models.CASCADE, related_name='timeseries')
-    date_time = models.DateField(verbose_name="Date")
-    value = models.FloatField(verbose_name="Value")
-    depth = models.IntegerField(verbose_name="Depth", null=True)
+    zone = models.ForeignKey(MPAZones, on_delete=models.CASCADE, related_name='timeseries')
     indicator = models.ForeignKey(Indicators, on_delete=models.CASCADE, related_name='timeseries')
+    date_time = models.DateField(verbose_name="Date")
+    depth = models.IntegerField(verbose_name="Depth", null=True)  # if null this is a total average bottom timeseries
+    value = models.FloatField(verbose_name="Value")
+
+
+class Observations(models.Model):
+    zone = models.ForeignKey(MPAZones, on_delete=models.CASCADE, related_name='observations')
+    indicator = models.ForeignKey(Indicators, on_delete=models.CASCADE, related_name='observations')
+    date_time = models.DateField(verbose_name="Date")
+    depth = models.IntegerField(verbose_name="Depth")
+    value = models.FloatField(verbose_name="Value")
+    count = models.IntegerField(verbose_name="Count", help_text=_('Number of observations recorded at a depth for a specific date and location'))
+    std = models.FloatField(verbose_name="Standard Deviation")
 
 
 class SpeciesGrouping(models.IntegerChoices):

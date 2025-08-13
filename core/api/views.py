@@ -49,11 +49,18 @@ def get_timeseries_dataframe(mpa_zone: models.MPAZones, climate_model=1, depth=N
         indicator=indicator
     ).order_by('date_time')
 
+    observations = mpa_zone.observations.filter(
+        depth=depth,
+        indicator=indicator
+    ).order_by('date_time')
+
     if start_date:
         mpa_timeseries = mpa_timeseries.filter(date_time__gte=start_date)
+        observations = observations.filter(date_time__gte=start_date)
 
     if end_date:
         mpa_timeseries = mpa_timeseries.filter(date_time__lte=end_date)
+        observations = observations.filter(date_time__lte=end_date)
 
     if not mpa_timeseries.exists():
         return None
@@ -61,6 +68,16 @@ def get_timeseries_dataframe(mpa_zone: models.MPAZones, climate_model=1, depth=N
     df = pd.DataFrame(list(mpa_timeseries.values('date_time', 'value')))
     df['date_time'] = pd.to_datetime(df['date_time'])
     df.set_index('date_time', inplace=True)
+
+    if observations.exists():
+        # Create observations dataframe with additional fields
+        obs_df = pd.DataFrame(list(observations.values('date_time', 'value', 'count', 'std')))
+        obs_df['date_time'] = pd.to_datetime(obs_df['date_time'])
+        obs_df = obs_df.rename(columns={'value': 'observation'})
+        obs_df.set_index('date_time', inplace=True)
+
+        # Merge dataframes
+        df = df.join(obs_df, how='left')
 
     return df
 
@@ -117,6 +134,12 @@ def get_combined_data(mpa_id, selected_date, climate_model=1, depth=None, lower_
             'ts_data': float(row['value']),
             'clim': float(climatology.loc[(selected_date.month, selected_date.day), 'value']),
             'std_dev': float(climatology.std().iloc[0])
+        }
+
+        result['data']['observations'] = {
+            'value': 2.5,
+            'std_dev': 0.1,
+            'count': 2
         }
 
         # Get the quantile values

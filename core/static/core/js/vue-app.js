@@ -1,6 +1,6 @@
 import {StandardAnomalyChart} from "./vue-chart-standard-anomaly.js";
 import {QuantileChart} from "./vue-chart-quantile.js";
-import {SpeciesChartContainer} from "./vue-chart-species.js";
+import {SpeciesChartContainer} from "./vue-components-species.js";
 import {MPAInfo} from "./vue-components-mpa-info.js";
 import {MPAControls} from "./vue-components-mpa-controls.js";
 import {NetworkIndicators} from "./vue-chart-network-data.js";
@@ -497,7 +497,7 @@ const mapApp = createApp({
         }
 
         function setSelectedDepth(depth) {
-            state.depth = depth;
+            state.depth = String(depth);
             fetchNetworkIndicatorData();
             getData();
         }
