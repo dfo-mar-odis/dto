@@ -60,6 +60,14 @@ const mapApp = createApp({
                     fillColor: '#D8BFD8',  // Lavender fill
                     fillOpacity: 0.5
                 }
+            },
+            networkIndicatorData: {
+                currentPoint: null,
+                currentQuantile: null,
+                quantileData: {
+                    minDelta: null,
+                    maxDelta: null
+                }
             }
         });
 
@@ -538,6 +546,11 @@ const mapApp = createApp({
             }
         }
 
+        function updateNetworkIndicator(data) {
+            state.networkIndicatorData = data;
+        }
+
+
         return {
             state,
             tabs,
@@ -549,6 +562,7 @@ const mapApp = createApp({
             setSelectedClimateModel,
             getData,
             updateSelectedPolygons,
+            updateNetworkIndicator,
         };
     },
 });

@@ -10,34 +10,25 @@
 {% block content %}
     <div id="app">
     <div class="row mt-2">
-        <div class="col d-flex flex-wrap">
-            <div class="flex-grow-1">
-                <mpa-info
-                        :mpa="state.mpa"
-                        :dates="state.dates"
-                        :depth="state.depth"
-                        generate-pdf-url="{% url 'core:generate_pdf' %}"
-                        icon-url="{% static 'icons/favicon.png' %}"
-                ></mpa-info>
-            </div>
-            <div class="flex-grow-1 align-self-end">
-                <mpa-controls
-                        max-date-url="{% url 'core:get_max_date' %}"
-                        mpa-depths-url="{% url 'core:get_depths' %}"
-                        mpa-climate-models-url="{% url 'core:get_climate_models' %}"
-                        :mpa="state.mpa"
-                        :initial-start-date="state.dates.startDate"
-                        :initial-end-date="state.dates.endDate"
-                        :selected-date="state.dates.selected"
-                        @get-data="getData"
-                        @date-range-change="setSelectedDateRange"
-                        @selected-date-changed="setSelectedDate"
-                        @depth-selected="setSelectedDepth"
-                        @climate-model-selected="setSelectedClimateModel">
-                </mpa-controls>
-            </div>
+        <div class="col-5">
+            <mpa-info
+                    :mpa="state.mpa"
+                    :dates="state.dates"
+                    :depth="state.depth"
+                    generate-pdf-url="{% url 'core:generate_pdf' %}"
+                    icon-url="{% static 'icons/favicon.png' %}"
+            ></mpa-info>
+            <network-indicator class="card"
+                :data-point="state.networkIndicatorData.currentPoint"
+                :quantile="state.networkIndicatorData.currentQuantile"
+                :min-delta="state.networkIndicatorData.quantileData?.min_delta"
+                :max-delta="state.networkIndicatorData.quantileData?.max_delta"
+                :upper-quantile-label="state.networkIndicatorData.label?.upper"
+                :lower-quantile-label="state.networkIndicatorData.label?.lower"
+            >
+            </network-indicator>
         </div>
-        <div class="col-auto">
+        <div class="col">
             <div id="map" class="map-container">
                 <div class="map-loading-overlay" v-if="state.mapLoading">
                     <div class="spinner-border text-primary" role="status">
@@ -45,6 +36,24 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+    <div class="row mt-2">
+        <div class="col">
+            <mpa-controls
+                    max-date-url="{% url 'core:get_max_date' %}"
+                    mpa-depths-url="{% url 'core:get_depths' %}"
+                    mpa-climate-models-url="{% url 'core:get_climate_models' %}"
+                    :mpa="state.mpa"
+                    :initial-start-date="state.dates.startDate"
+                    :initial-end-date="state.dates.endDate"
+                    :selected-date="state.dates.selected"
+                    @get-data="getData"
+                    @date-range-change="setSelectedDateRange"
+                    @selected-date-changed="setSelectedDate"
+                    @depth-selected="setSelectedDepth"
+                    @climate-model-selected="setSelectedClimateModel">
+            </mpa-controls>
         </div>
     </div>
 
@@ -80,6 +89,7 @@
                             :is-active="state.activeTab === 'timeseries_data'"
                             :is-loading="state.loading"
                             @date-selected="setSelectedDate"
+                            @quantile-data-updated="updateNetworkIndicator"
                     ></quantile-chart>
                 </div>
             </div>

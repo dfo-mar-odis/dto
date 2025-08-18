@@ -36,6 +36,14 @@ export const NetworkIndicator = {
     },
     data() {
         return {
+            networkIndicatorData: {
+                currentPoint: null,
+                currentQuantile: null,
+                quantileData: {
+                    minDelta: null,
+                    maxDelta: null
+                }
+            },
             currentDelta: 0,
         };
     },
@@ -96,7 +104,7 @@ export const NetworkIndicator = {
     },
 
     template: `
-        <div class="wave-indicator">
+        <div class="wave-indicator card-body">
             <div class="row">
                 <small class="form-text text-muted mt-1">{{ title }}</small>
             </div>

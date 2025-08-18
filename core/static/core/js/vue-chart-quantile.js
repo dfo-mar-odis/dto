@@ -34,13 +34,29 @@ export const QuantileChart = {
     watch: {
         async upperQuantile(newValue) {
             this.debouncedFetchData()
+            this.fireUpdate();
         },
 
         async lowerQuantile(newValue) {
             this.debouncedFetchData()
+            this.fireUpdate();
+        },
+        currentQuantile(newValue) {
+            this.fireUpdate();
         }
     },
     methods: {
+        fireUpdate() {
+            this.$emit('quantile-data-updated', {
+                currentPoint: this.currentPoint,
+                currentQuantile: this.currentQuantile,
+                quantileData: this.quantileData,
+                label: {
+                    upper: this.upperQuantile,
+                    lower: this.lowerQuantile,
+                }
+            });
+        },
         isValidDateString(dateString) {
             if (!dateString) return false;
             const date = new Date(dateString);
@@ -232,14 +248,14 @@ export const QuantileChart = {
                             step="0.1"
                             class="form-control">
                         </div>
-                        <network-indicator
-                            :data-point="currentPoint"
-                            :quantile="currentQuantile"
-                            :min-delta="quantileData?.min_delta"
-                            :max-delta="quantileData?.max_delta"
-                            :upper-quantile-label="upperQuantile"
-                            :lower-quantile-albel="lowerQuantile">
-                        </network-indicator>
+<!--                        <network-indicator-->
+<!--                            :data-point="currentPoint"-->
+<!--                            :quantile="currentQuantile"-->
+<!--                            :min-delta="quantileData?.min_delta"-->
+<!--                            :max-delta="quantileData?.max_delta"-->
+<!--                            :upper-quantile-label="upperQuantile"-->
+<!--                            :lower-quantile-label="lowerQuantile">-->
+<!--                        </network-indicator>-->
                     </div>
                 </div>
             </div>

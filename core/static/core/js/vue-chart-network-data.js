@@ -32,6 +32,7 @@ export const NetworkIndicators = {
             error: null,
             chart: null,
             polygonsData: {},   // Will store data for each polygon when fetched
+            requestQueue: [], //queue for pending polygon requests
             catagories: {
                 heatwave: ['rgb(220, 53, 69)', 'rgb(176, 42, 55)', (window.translations?.heat_wave || "Heat Wave")],
                 abovenormal: ['rgba(220, 53, 69, 0.25)', 'rgba(176, 42, 55, 0.25)', (window.translations?.above_normal || "Above Normal")],
@@ -46,7 +47,13 @@ export const NetworkIndicators = {
         selectedDate: {
             async handler(newDate) {
                 if (this.polygonsList.length > 0) {
-                    await this.fetchAllPolygonsData();
+                    this.polygonsList.forEach(poly => {
+                        this.requestQueue.push(poly);
+                    });
+                    this.polygonsList = [];
+                    if( !this.isLoading ) {
+                        await this.processRequestQueue();
+                    }
                 }
             }
         },
@@ -67,6 +74,7 @@ export const NetworkIndicators = {
 
             if (!this.isCtrlPressed) {
                 this.polygonsList = [];
+                this.requestQueue = [];
             }
 
             const polygonId = polygon.mpa.properties?.id || polygon.mpa.id;
@@ -79,29 +87,38 @@ export const NetworkIndicators = {
             if (existingIndex >= 0) {
                 // Remove if already selected (toggle off)
                 this.polygonsList.splice(existingIndex, 1);
-            } else {
-                // Add if not already selected (toggle on)
-                await this.fetchPolygonData(polygon)
-                this.polygonsList.push(polygon);
+                this.renderChart();
+                return;
             }
 
-            // Emit updated list to parent component
-            this.$emit('polygon-list-updated', this.polygonsList);
+            // or if it's already in the fetch queue remove it from the fetch queue
+            const fetchQueueIndex = this.requestQueue.findIndex(p =>
+                p.mpa.properties?.id === polygonId
+            );
 
-            // we have to wait a tick before rendering the chart to make sure the canvas,
-            // laid out in the template section, was added to the DOM before drawing the
-            // chart on screen.
-            await this.$nextTick();
-            this.renderChart();
+            if (fetchQueueIndex >= 0) {
+                this.requestQueue.splice(fetchQueueIndex, 1);
+            } else {
+                // Add if not already selected (toggle on)
+                // await this.fetchPolygonData(polygon)
+                this.requestQueue.push(polygon);
+                if(!this.isLoading) {
+                    this.processRequestQueue();
+                }
+            }
+
         },
-        async fetchAllPolygonsData() {
-            if (!this.selectedDate || this.polygonsList.length === 0) return;
+        async processRequestQueue() {
+            if (this.requestQueue.length === 0) return;
+
+            this.isLoading = true;
+            // copy all the requested polygons to the processing queue then clear the request queue
+            const polygonsToFetch = [...this.requestQueue];
+            this.requestQueue = [] ;
 
             try {
-                this.isLoading = true;
-
                 // Build query params with all polygon IDs
-                const idParams = this.polygonsList.map(polygon =>
+                const idParams = polygonsToFetch.map(polygon =>
                     `id=${polygon.mpa.properties.id}`
                 ).join('&');
 
@@ -109,42 +126,29 @@ export const NetworkIndicators = {
                 const response = await fetch(url);
                 const data = await response.json();
 
-                // Update each polygon with its data
-                this.polygonsList.forEach(polygon => {
+                // Update polygons with fetched data
+                polygonsToFetch.forEach(polygon => {
                     const id = polygon.mpa.properties.id;
                     if (data[id]) {
                         const climate_data = data[id];
-                        this.setPolygonData(polygon, climate_data)
+                        this.setPolygonData(polygon, climate_data);
+                        this.polygonsList.push(polygon);
                     }
                 });
 
                 this.isLoading = false;
 
-                // we have to wait a tick before rendering the chart to make sure the canvas,
-                // laid out in the template section, was added to the DOM before drawing the
-                // chart on screen.
-                await this.$nextTick();
-                this.renderChart();
+                if (this.requestQueue.length > 0) {
+                    await this.processRequestQueue();
+                } else {
+                    // Emit updated list to parent component
+                    this.$emit('polygon-list-updated', this.polygonsList);
+
+                    await this.$nextTick();
+                    this.renderChart();
+                }
             } catch (error) {
                 this.error = "Failed to load data: " + error;
-                this.isLoading = false;
-            }
-        },
-        async fetchPolygonData(polygon) {
-            if(!this.selectedDate) return;
-            try {
-                this.isLoading = true;
-                const response = await fetch(`${this.dataUrl}?id=${polygon.mpa.properties.id}&date=${this.selectedDate}`);
-                const data = await response.json();
-
-                const climate_data = data[polygon.mpa.properties.id]
-                // Attach data directly to the polygon object
-                this.setPolygonData(polygon, climate_data);
-
-                this.isLoading = false;
-
-            } catch (error) {
-                this.error = "Failed to load data";
                 this.isLoading = false;
             }
         },
@@ -300,14 +304,12 @@ export const NetworkIndicators = {
                             <div class="card-header bg-primary text-white mb-2" style="min-height: 4rem; display: flex; align-items: center; line-height: 1.2; overflow: hidden;">
                                 {{ getPolygonName(polygon) }} : {{ selectedDate }}
                             </div>
-                            <div class="card-body">
-                                <network-indicator
-                                    :data-point="polygon.data"
-                                    :quantile="polygon.quantile"
-                                    :min-delta="polygon.min_delta"
-                                    :max-delta="polygon.max_delta">
-                                </network-indicator>
-                            </div>
+                            <network-indicator
+                                :data-point="polygon.data"
+                                :quantile="polygon.quantile"
+                                :min-delta="polygon.min_delta"
+                                :max-delta="polygon.max_delta">
+                            </network-indicator>
                         </div>
                     </div>
                 </div>

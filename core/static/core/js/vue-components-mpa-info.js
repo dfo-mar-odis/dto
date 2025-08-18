@@ -58,36 +58,21 @@ export const MPAInfo = {
     <div class="card">
       <div class="card-header">
         <div class="card-title">
-          <div class="row">
-            <div class="col-1">
-              <img class="img-fluid" :src="iconUrl">
-            </div>
-            <div class="col">
-              <h2>{{ t.mpa_description || 'Site Description' }}</h2>
-            </div>
-<!--            <div class="col-auto">-->
-<!--              <a id="btn_id_pdf" class="btn btn-primary" :style="{ display: mpa.name ? 'block' : 'none' }"-->
-<!--                 :href="completePdfUrl">{{ t.generate_report || 'Generate PDF' }}</a>-->
-<!--            </div>-->
-          </div>
+          <h4>{{ t.mpa_description || 'Site Description' }}</h4>
         </div>
       </div>
       <div class="card-body" v-if="mpa.name">
         <div class="row">
-          <div class="col-2"><b>{{ t.name || 'Name' }} :</b></div>
-          <div class="col">{{ mpa.name }}</div>
+          <div class="col"><b>{{ t.name || 'Name' }} :</b> {{ mpa.name }}</div>
         </div>
         <div class="row">
-          <div class="col-2"><b>{{ t.classification || 'Classification' }} :</b></div>
-          <div class="col"><a :href="mpa.classification">{{ mpa.class }}</a></div>
+          <div class="col"><b>{{ t.classification || 'Classification' }} :</b> <a :href="mpa.classification">{{ mpa.class }}</a></div>
         </div>
         <div class="row">
-          <div class="col-2"><b>{{ t.url || 'URL' }} :</b></div>
-          <div class="col"><a v-if="mpa.url" :href="mpa.url">{{ t.additional_information || 'Additional Information' }}</a></div>
+          <div class="col"><b>{{ t.url || 'URL' }} :</b> <a v-if="mpa.url" :href="mpa.url">{{ t.additional_information || 'Additional Information' }}</a></div>
         </div>
         <div class="row">
-          <div class="col-2"><b>{{ t.area || 'Area (km^2)' }} :</b></div>
-          <div v-if="mpa.km2" class="col">{{ computekm2 }}</div>
+          <div class="col"><b>{{ t.area || 'Area (km^2)' }} :</b> <span v-if="mpa.km2" class="col">{{ computekm2 }}</span></div>
         </div>
       </div>
       <div class="card-body alert-info" v-else>
