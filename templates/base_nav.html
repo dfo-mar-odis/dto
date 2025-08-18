@@ -34,6 +34,16 @@
 
             <ul class="navbar-nav">
                 <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="climateModelDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        {% trans "Climate Model" %}
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="climateModelDropdown">
+                        <li><a class="dropdown-item" href="#" data-climate-model="model1">{% trans "Model 1" %}</a></li>
+                        <li><a class="dropdown-item" href="#" data-climate-model="model2">{% trans "Model 2" %}</a></li>
+                        <li><a class="dropdown-item" href="#" data-climate-model="model3">{% trans "Model 3" %}</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item dropdown">
                     {% get_current_language as LANGUAGE_CODE %}
                     {% if LANGUAGE_CODE == 'en' %}
                         <a class="nav-link" href="{% url 'set_language' %}?language=en&next={{ request.get_full_path }}">

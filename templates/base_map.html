@@ -14,11 +14,6 @@
         L_DISABLE_3D = false;
     </script>
 
-{#    <script src="https://cdnjs.cloudflare.com/ajax/libs/jQuery-Knob/1.2.13/jquery.knob.min.js"#}
-{#            integrity="sha512-NhRZzPdzMOMf005Xmd4JonwPftz4Pe99mRVcFeRDcdCtfjv46zPIi/7ZKScbpHD/V0HB1Eb+ZWigMqw94VUVaw=="#}
-{#            crossorigin="anonymous" referrerpolicy="no-referrer"></script>#}
-
-
     {# provides French locale translations for chartJS #}
     <script src="{% static 'core/js/bundle.js' %}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
@@ -103,6 +98,7 @@
         }
     </style>
 
+
 </head>
 <body>
 
@@ -118,10 +114,24 @@
 {% endblock %}
 
 <script>
-    // Initialize Bootstrap tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
+    document.addEventListener('DOMContentLoaded', function() {
+        // Make sure bootstrap is available globally
+        if (typeof bootstrap !== 'undefined') {
+            // Initialize tooltips
+            var tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            // Initialize dropdowns
+            var dropdownTriggerList = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+            dropdownTriggerList.forEach(function(dropdownTriggerEl) {
+                new bootstrap.Dropdown(dropdownTriggerEl);
+            });
+        } else {
+            console.error('Bootstrap is not available globally');
+        }
     });
 </script>
+
 </html>

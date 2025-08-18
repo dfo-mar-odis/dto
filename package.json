@@ -24,6 +24,7 @@
   "homepage": "https://github.com/dfo-mar-odis/dto#readme",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.2.0",
+    "@popperjs/core": "^2.11.8",
     "bootstrap": "^5.3.7",
     "bootstrap-icons": "^1.5.0",
     "chart.js": "^4.4.1",
