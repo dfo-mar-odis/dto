@@ -13,7 +13,6 @@ export const MPAControls = {
             type: String,
             required: true
         },
-        selectedDate: String
     },
     computed: {
         t() {
@@ -26,9 +25,9 @@ export const MPAControls = {
                 depth: "",
                 climate_model: "",
                 dates: {
-                    startDate: null,
-                    endDate: null,
-                    selected: null
+                    start_date: null,
+                    end_date: null,
+                    selected_date: null
                 },
                 depths: [],
                 climate_models: [],
@@ -44,12 +43,11 @@ export const MPAControls = {
                 // Fetch new depths for this MPA
                 this.fetchDepths();
                 this.fetchClimateModels();
-
                 this.setSelectedDepth();
             },
             deep: true
         },
-        'state.dates.startDate': function (newVal, oldVal) {
+        'state.dates.start_date': function (newVal, oldVal) {
             // Emit only when we have a complete date value and it has changed
             if (newVal &&
                 newVal.match(/^\d{4}-\d{2}-\d{2}$/) &&
@@ -57,7 +55,7 @@ export const MPAControls = {
                 this.setDateRange();
             }
         },
-        'state.dates.endDate': function (newVal, oldVal) {
+        'state.dates.end_date': function (newVal, oldVal) {
             // Emit only when we have a complete date value and it has changed
             if (newVal &&
                 newVal.match(/^\d{4}-\d{2}-\d{2}$/) &&
@@ -65,15 +63,13 @@ export const MPAControls = {
                 this.setDateRange();
             }
         },
-        selectedDate: {
-            handler(newVal) {
-                if (newVal &&
-                    newVal.match(/^\d{4}-\d{2}-\d{2}$/) &&
-                    newVal !== this.state.dates.selected) {
-                    this.setSelectedDate(newVal);
-                }
-            },
-            immediate: true
+        'state.dates.selected_date': function (newVal, oldVal) {
+            // Emit only when we have a complete date value and it has changed
+            if (newVal &&
+                newVal.match(/^\d{4}-\d{2}-\d{2}$/) &&
+                newVal !== oldVal) {
+                this.setSelectedDate(newVal);
+            }
         },
 
     },
@@ -90,14 +86,13 @@ export const MPAControls = {
                 defaultEndDate.setDate(defaultEndDate.getDate() - 1);
 
                 // Update component state
-                this.state.dates.endDate = defaultEndDate.toISOString().split('T')[0];
-                this.state.dates.startDate = startDate.toISOString().split('T')[0];
-                this.state.dates.selected = this.state.dates.endDate;
+                this.state.dates.end_date = defaultEndDate.toISOString().split('T')[0];
+                this.state.dates.start_date = startDate.toISOString().split('T')[0];
+                this.state.dates.selected_date = this.state.dates.end_date;
 
                 // Initialize with default zoom range
                 this.$nextTick(() => {
                     this.setDateRange();
-                    this.setSelectedDate(this.state.dates.selected);
                 });
             })
             .catch(error => {
@@ -149,16 +144,16 @@ export const MPAControls = {
         },
         panFrame(years) {
             // Create new Date objects from current values
-            const startDate = new Date(this.state.dates.startDate);
-            const endDate = new Date(this.state.dates.endDate);
+            const startDate = new Date(this.state.dates.start_date);
+            const endDate = new Date(this.state.dates.end_date);
 
             // Add years to both dates
             startDate.setFullYear(startDate.getFullYear() + years);
             endDate.setFullYear(endDate.getFullYear() + years);
 
             // Convert back to YYYY-MM-DD format
-            this.state.dates.startDate = startDate.toISOString().split('T')[0];
-            this.state.dates.endDate = endDate.toISOString().split('T')[0];
+            this.state.dates.start_date = startDate.toISOString().split('T')[0];
+            this.state.dates.end_date = endDate.toISOString().split('T')[0];
 
             // Emit the pan-frame event with the years value
             this.$emit('pan-frame', years);
@@ -177,12 +172,12 @@ export const MPAControls = {
                 const selectedDate = new Date(formattedDate);
 
                 if (!isNaN(selectedDate.getTime()) && selectedDate >= minDate) {
-                    this.state.dates.selected = formattedDate;
+                    this.state.dates.selected_date = formattedDate;
 
                     // Emit an event for the selected date
                     clearTimeout(this.debounceTimer);
                     this.debounceTimer = setTimeout(() => {
-                        this.$emit('selected-date-changed', this.state.dates.selected);
+                        this.$emit('selected-date-changed', this.state.dates.selected_date);
                     }, 1000);
                 }
             }
@@ -192,8 +187,7 @@ export const MPAControls = {
             clearTimeout(this.debounceTimer);
             this.debounceTimer = setTimeout(() => {
                 this.$emit('date-range-change', {
-                    min: this.state.dates.startDate,
-                    max: this.state.dates.endDate
+                    date: this.state.dates
                 });
             }, 1000);
         },
@@ -253,7 +247,7 @@ export const MPAControls = {
                             <div class="col">
                                 <label for="date_min" class="form-label">{{ t.start_date || 'Start Date' }}</label>
                                 <input id="date_min" type="date" class="form-control"
-                                       v-model="state.dates.startDate"
+                                       v-model="state.dates.start_date"
                                        @change="setDateRange"
                                        max="9999-12-31"/>
                             </div>
@@ -261,14 +255,14 @@ export const MPAControls = {
                                 <label for="selected_date"
                                        class="form-label">{{ t.selected_date || 'Selected Date' }}</label>
                                 <input id="selected_date" type="date" class="form-control"
-                                       v-model="state.dates.selected"
-                                       @change="setSelectedDate(state.dates.selected)"
+                                       v-model="state.dates.selected_date"
+                                       @change="setSelectedDate(state.dates.selected_date)"
                                        max="9999-12-31"/>
                             </div>
                             <div class="col">
                                 <label for="date_end" class="form-label">{{ t.end_date || 'End Date' }}</label>
                                 <input id="date_end" type="date" class="form-control"
-                                       v-model="state.dates.endDate"
+                                       v-model="state.dates.end_date"
                                        @change="setDateRange"
                                        max="9999-12-31"/>
                             </div>

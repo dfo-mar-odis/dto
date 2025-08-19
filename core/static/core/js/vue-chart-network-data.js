@@ -46,15 +46,29 @@ export const NetworkIndicators = {
     watch: {
         selectedDate: {
             async handler(newDate) {
-                if (this.polygonsList.length > 0) {
-                    this.polygonsList.forEach(poly => {
-                        this.requestQueue.push(poly);
-                    });
-                    this.polygonsList = [];
-                    if( !this.isLoading ) {
-                        await this.processRequestQueue();
-                    }
+                // Don't process unless we have a complete valid date
+                if (!newDate || !newDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    return;
                 }
+
+                // Clear any existing debounce timer
+                if (this.dateUpdateTimer) {
+                    clearTimeout(this.dateUpdateTimer);
+                }
+
+                // Set a new debounce timer
+                this.dateUpdateTimer = setTimeout(async () => {
+
+                    if (this.polygonsList.length > 0) {
+                        this.polygonsList.forEach(poly => {
+                            this.requestQueue.push(poly);
+                        });
+                        this.polygonsList = [];
+                        if (!this.isLoading) {
+                            await this.processRequestQueue();
+                        }
+                    }
+                }, 1000);
             }
         },
         selectedPolygon: {

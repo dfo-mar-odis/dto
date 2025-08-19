@@ -23,9 +23,9 @@ const mapApp = createApp({
                 km2: 0
             },
             dates: {
-                selected: null,
-                startDate: '',
-                endDate: ''
+                selected_date: null,
+                start_date: '',
+                end_date: ''
             },
             depth: '',
             climateModel: 1, // by default 1 is the GLORYS Climate model
@@ -257,7 +257,7 @@ const mapApp = createApp({
             let content = `<div>${layer.feature.properties.name || "Unnamed MPA"}</div>`;
 
             // Add network indicators if a date is selected
-            if (state.dates.selected) {
+            if (state.dates.selected_date) {
                 const curValue = (netdata.data.ts_data - netdata.data.clim)
                 const curAnom = curValue/netdata.data.std_dev
                 let maxAnom = netdata.max_delta/netdata.data.std_dev
@@ -270,7 +270,7 @@ const mapApp = createApp({
                 <div class="row">
                     <div class="col text-center">` +
                      (window.translations?.total_average_bottom || 'Total Average Bottom') +
-                    ` ${state.dates.selected}</div>
+                    ` ${state.dates.selected_date}</div>
                 </div>
                 <div class="row">
                     <div class="col">
@@ -349,7 +349,7 @@ const mapApp = createApp({
         // This forces the refresh of the network indicator data that's used in popups when hovering
         // over an area on the map
         async function fetchNetworkIndicatorData() {
-            if (!state.dates.selected || !state.urls.networkIndicatorUrl) return;
+            if (!state.dates.selected_date || !state.urls.networkIndicatorUrl) return;
 
             try {
                 // Collect polygon layers and their IDs in a single pass
@@ -368,7 +368,7 @@ const mapApp = createApp({
 
                 // Add parameters using searchParams API
                 url.searchParams.set('id', polygonIds.join(','));
-                url.searchParams.set('date', state.dates.selected);
+                url.searchParams.set('date', state.dates.selected_date);
 
                 const response = await fetch(url.toString());
 
@@ -478,15 +478,15 @@ const mapApp = createApp({
                 });
         }
 
+        function setSelectedDate(date) {
+            state.dates.selected_date = date;
+            fetchNetworkIndicatorData();
+        }
+
         function setSelectedDateRange(dateRange) {
             if (typeof dateRange === 'object' && dateRange !== null) {
                 // Handle dateRange object from MPAControls
-                state.dates.startDate = dateRange.min;
-                state.dates.endDate = dateRange.max;
-            } else {
-                // Handle direct min/max arguments
-                state.dates.startDate = arguments[0] || state.dates.startDate;
-                state.dates.endDate = arguments[1] || state.dates.endDate;
+                state.dates = dateRange.date
             }
 
             // Check canvas exists before attempting to draw
@@ -497,10 +497,6 @@ const mapApp = createApp({
             }
 
             getData();
-        }
-
-        function setSelectedDate(date) {
-            state.dates.selected = date
             fetchNetworkIndicatorData();
         }
 
@@ -527,8 +523,8 @@ const mapApp = createApp({
                 // This endpoint will return a timeseries and climatology that can be used in multiple charts
                 const tsUrl = new URL(state.urls.timeseriesUrl, window.location.origin);
                 tsUrl.searchParams.set('mpa', state.mpa.id);
-                tsUrl.searchParams.set('start_date', state.dates.startDate);
-                tsUrl.searchParams.set('end_date', state.dates.endDate);
+                tsUrl.searchParams.set('start_date', state.dates.start_date);
+                tsUrl.searchParams.set('end_date', state.dates.end_date);
 
                 // if depth isn't specified then it'll be None and will return the
                 // Total Average Bottom Timeseries
@@ -556,8 +552,8 @@ const mapApp = createApp({
             tabs,
             initialize,
             setMPA,
-            setSelectedDateRange,
             setSelectedDate,
+            setSelectedDateRange,
             setSelectedDepth,
             setSelectedClimateModel,
             getData,
