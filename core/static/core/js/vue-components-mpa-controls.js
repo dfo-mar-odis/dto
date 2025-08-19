@@ -180,7 +180,10 @@ export const MPAControls = {
                     this.state.dates.selected = formattedDate;
 
                     // Emit an event for the selected date
-                    this.$emit('selected-date-changed', this.state.dates.selected);
+                    clearTimeout(this.debounceTimer);
+                    this.debounceTimer = setTimeout(() => {
+                        this.$emit('selected-date-changed', this.state.dates.selected);
+                    }, 1000);
                 }
             }
         },
