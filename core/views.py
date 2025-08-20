@@ -20,7 +20,7 @@ from reportlab.lib.pagesizes import letter
 from django.conf import settings
 from django.http import JsonResponse, HttpResponse, HttpResponseRedirect, FileResponse
 from django.urls import translate_url
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import activate
 
@@ -28,15 +28,15 @@ from django.views.generic import TemplateView
 from django.contrib.gis.db.models.functions import Transform
 
 from core import models
-from core.api.views import get_timeseries_dataframe
-
+from core.api.views import get_timeseries_dataframe, get_timeseries_data
 
 logger = logging.getLogger('')
 
 colormap = cm.linear.Paired_07.scale(-2, 35)
 
 
-def index(request):
+def bottom(request, **kwargs):
+
     # ids = models.Timeseries.objects.values_list('mpa', flat=True).distinct()
     # mpas = [json.dumps(add_attributes(mpa)) for mpa in
     #         models.MPAZone.objects.filter(name__in=ids)]
@@ -45,7 +45,25 @@ def index(request):
         # 'proxy_url': settings.PROXY_URL,
     }
 
-    return render(request, 'core/map.html', context)
+    models_array = [(m.pk, f'{m.name}') for m in models.ClimateModels.objects.all()]
+    context['models'] = models_array
+
+    mpa_ids = []
+    get_mpa_ids = request.GET.getlist('mpa_id')
+    if get_mpa_ids:
+        for mpa in get_mpa_ids:
+            mpa_ids += mpa.split(',') if ',' in mpa else [mpa]
+
+    if mpa_ids:
+        context['mpa_ids'] = mpa_ids
+
+    return render(request, 'core/bottom_map.html', context)
+
+
+def set_model(request):
+    model_id = request.POST.get('model_id')
+    request.session['selected_model'] = model_id
+    return redirect(request.META.get('HTTP_REFERER', request.POST.get('next_page')))
 
 
 def set_language(request):
@@ -391,47 +409,6 @@ def get_quantiles(request):
     return JsonResponse(timeseries)
 
 
-def get_timeseries_data(mpa_id, climate_model=1, depth=None, start_date=None, end_date=None, indicator=1):
-    timeseries = {'data': []}
-
-    if mpa_id == -1:
-        return timeseries
-
-    if not models.MPAZones.objects.filter(pk=mpa_id).exists():
-        return timeseries
-
-    mpa_zone = models.MPAZones.objects.get(pk=mpa_id)
-
-    timeseries['name'] = mpa_zone.name_e
-
-    df = get_timeseries_dataframe(mpa_zone, climate_model, depth, indicator=indicator)
-    if df is None:
-        return None
-
-    clim = df[(df.index <= '2022-12-31')]
-    clim = clim.groupby([clim.index.month, clim.index.day]).quantile()
-
-    max_val = df[(df.value == df.max().value)]
-    min_val = df[(df.value == df.min().value)]
-
-    timeseries['max_delta'] = df.max().value - clim.loc[(max_val.index.month[0], max_val.index.day[0])].value
-    timeseries['min_delta'] = df.min().value - clim.loc[(min_val.index.month[0], min_val.index.day[0])].value
-    df = df[(df.index >= start_date) & (df.index <= end_date)]
-
-    timeseries['data'] = [{
-        "date": f'{date.strftime("%Y-%m-%d")} 00:01',
-        "ts_data": str(mt['value'].item()),
-        "clim": f'{clim["value"][date.month, date.day]}',
-        "std_dev": f'{clim["value"].std()}',
-        "observation": ({
-            'value': mt['observation'],
-            'count': mt['count'],
-            'std_dev': mt['std'] } if 'observation' in mt and pd.notnull(mt['observation']) else None)
-    } for date, mt in df.iterrows()]
-
-    return timeseries
-
-
 def get_timeseries(request):
     mpa_id, climate_model, depth, start_date, end_date = parse_request_variables(request)
     return JsonResponse(get_timeseries_data(mpa_id, climate_model, depth, start_date, end_date), safe=False)
@@ -498,28 +475,6 @@ def get_species_range(request, species_id=None):
     return JsonResponse({'upper': upper, 'lower': lower})
 
 
-# Create your views here.
-class MapView(TemplateView):
-    template_name = 'core/map.html'
-
-    def get_context_data(self, **kwargs):
-        logger.debug("Initializing View")
-        figure = folium.Figure()
-
-        map = folium.Map(location=[44.666830, -63.631500], zoom_start=6)
-        map.add_to(figure)
-
-        for mpa in models.MPAZones.objects.annotate(trans=Transform('geom', srid=4326)):
-            geo_j = folium.GeoJson(data=mpa.trans.geojson)
-            folium.Popup(mpa.name_e).add_to(geo_j)
-            geo_j.add_to(map)
-
-        # Render and send to template
-        figure.render()
-        map.save(r'scripts/data/sample.html')
-        return {"map": figure}
-
-
 def indicators(request):
     mpa = int(request.GET.get('mpa', 0))
     date_string = request.GET.get('date', None)
@@ -583,15 +538,6 @@ def get_classification_colours(request):
 
 def get_max_date(request):
     return JsonResponse({'max_date': models.Timeseries.objects.aggregate(Max('date_time'))["date_time__max"]})
-
-
-def get_depths(request):
-    mpa_id = int(request.GET.get('mpa_id', -1))
-    mpa = models.MPAZones.objects.get(site_id=mpa_id)
-    depths = models.Timeseries.objects.filter(zone=mpa).order_by('depth').values_list('depth', flat=True).distinct()
-    depth_array = [(d, f'{d} m') for d in depths if d is not None]
-    return JsonResponse({'depths': depth_array})
-
 
 def get_climate_models(request):
     mpa_id = int(request.GET.get('mpa_id', -1))

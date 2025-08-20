@@ -219,7 +219,7 @@ export const QuantileChart = {
     },
     // Override the template to add species selection panel
     template: `
-        <div class="row mb-1 mt-1">
+        <div class="row mb-1">
             <div class="col-md-3 species-panel">
                 <div class="card">
                     <div class="card-header">{{ t.quantile_settings || 'Quantile Settings' }}</div>

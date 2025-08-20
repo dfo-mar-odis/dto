@@ -53,6 +53,8 @@ export const TimeseriesChart = {
         },
     },
     methods: {
+        // When the timeseries data in the main app changes, we'll give extending classes an opportunity to
+        // refetch any additional data they require.
         debouncedFetchData() {
             if (this.fetchTimeout) {
                 clearTimeout(this.fetchTimeout);
@@ -90,7 +92,7 @@ export const TimeseriesChart = {
 
                 const date = new Date(point.date);
                 const tsValue = parseFloat(point.ts_data);
-                const climValue = parseFloat(point.clim);
+                const climValue = parseFloat(point.climatology);
                 if(point.observation) {
                     const obsValue = parseFloat(point.observation.value);
                     obsPoints.push({
@@ -285,7 +287,20 @@ export const TimeseriesChart = {
             try {
                 const component = this;
                 const legendConfig = this.get_legend();
+                const rmseAnnotationPlugin = {
+                    id: 'rmseAnnotationPlugin',
+                    afterDraw: function (chart) {
+                        if (!component.timeseriesData?.rmse) return;
 
+                        const ctx = chart.ctx;
+                        ctx.save();
+                        ctx.font = '14px Arial';
+                        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                        ctx.textAlign = 'left';
+                        ctx.fillText(`RMSE: ${component.timeseriesData.rmse.toFixed(2)}`, 10, 20);
+                        ctx.restore();
+                    }
+                };
                 const observation_dataset = formattedData.datasets.findIndex(dataset => dataset.meta?.legendId==='timeseries_5')
 
                 // Custom date indicator plugin that doesn't rely on the annotation plugin
@@ -396,6 +411,7 @@ export const TimeseriesChart = {
                     plugins: [
                         LegendSectionPlugin(legendConfig, this.chartInstanceId),
                         dateIndicatorPlugin,
+                        rmseAnnotationPlugin,
                         ToggleObservationsPlugin(observation_dataset, this.chartInstanceId)
                     ]
                 });

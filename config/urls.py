@@ -23,18 +23,24 @@ from django.conf import settings
 from django.urls import path, include
 
 from core import views
-from core.api.urls import router
+from core.api import urls as api_urls
 
 
 # {settings.PROXY_URL}
 
 urlpatterns = [
-    path('api/v1/', include((router.urls, 'api'), namespace='api')),
+    # path('api/v1/', include((router.urls, 'api'), namespace='api')),
     path(f'language/', views.set_language, name='set_language'),
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    path(f'model/', views.set_model, name='set_model'),
+]
+
+urlpatterns += api_urls.urlpatterns
 
 # Localized URLs (user-facing pages)
 urlpatterns += i18n_patterns(
-    path('', views.index, name='index'),
+    path('', views.bottom, name='index'),
     path('', include('core.urls')),
 )
+
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+

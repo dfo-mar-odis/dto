@@ -42,7 +42,6 @@
         <div class="col">
             <mpa-controls
                     max-date-url="{% url 'core:get_max_date' %}"
-                    mpa-depths-url="{% url 'core:get_depths' %}"
                     mpa-climate-models-url="{% url 'core:get_climate_models' %}"
                     :mpa="state.mpa"
                     :initial-start-date="state.dates.start_date"
@@ -135,6 +134,7 @@
         <div class="tab-pane fade" id="network_data">
             <div class="mt-2" id="div_id_network_card">
                 <network-indicators
+                        :selected-depth="state.depth"
                         :selected-polygon="state.selectedPolygon"
                         :selected-date="state.dates.selected_date"
                         :is-ctrl-pressed="state.isCtrlPressed"
@@ -161,8 +161,12 @@
 
             // Initialize Vue app
             const app = mapApp.mount('#app');
+            {% if mpa_ids %}{% for mpa in mpa_ids %}
+                app.addFilterMPA({{ mpa }});
+            {% endfor %}
+            {% endif %}
             app.initialize(
-                "{% url 'api:mpas-with-timeseries-list' %}", // used to get the mpa polygons, bot only ones with a timeseries
+                "{% url 'api:mpas-with-timeseries-list' %}", // used to get the mpa polygons, but only ones with a timeseries
                 "{% url 'core:timeseries' %}",  // retrieves the timeseries data that's used by multiple objects
                 "{% url 'core:get_classification_colours' %}", // adds the legend to the map
                 "{% url 'api:species-list' %}?all=true",  // used to get the list of species and assciated data

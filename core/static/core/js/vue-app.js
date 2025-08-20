@@ -68,7 +68,8 @@ const mapApp = createApp({
                     minDelta: null,
                     maxDelta: null
                 }
-            }
+            },
+            filterMPAs: []
         });
 
         // Initialize everything
@@ -99,6 +100,10 @@ const mapApp = createApp({
 
             initCtrlKeyTracking();
         });
+
+        function addFilterMPA(mpa_id) {
+            state.filterMPAs.push(mpa_id)
+        }
 
         function initialize(mpasUrl, timeseriesUrl, legendUrl, speciesUrl, networkIndicatorUrl) {
             state.climateModel = 1;
@@ -137,38 +142,65 @@ const mapApp = createApp({
             });
         }
 
+        // Helper function to process MPA data and add to map
+
+        function processMPAData(mpas) {
+            mpas.forEach(mpa => {
+                if (mpa.geometry) {
+                    L.geoJSON(mpa, {
+                        style: mpa.style,
+                        onEachFeature: (feature, layer) => {
+                            layer.bindTooltip(mpa.properties.name || "Unnamed MPA", {
+                                permanent: false, // Set to true if you want tooltips always visible
+                                direction: 'top', // Position relative to the feature (top, bottom, left, right, center)
+                                className: 'my-tooltip', // Add custom CSS class for styling
+                                opacity: 0.9 // Control tooltip opacity
+                            });
+                            layer.on('click', () => {
+                                handlePolygonSelection(layer, mpa);
+                            });
+                        }
+                    }).addTo(state.map);
+                }
+            });
+        }
+
         async function loadMPAPolygons() {
             if (!state.map || !state.urls.mpasWithTimeseriesList) return;
 
             state.mapLoading = true;
             try {
-                // First fetch to get metadata and process first page
-                const initialResponse = await fetch(state.urls.mpasWithTimeseriesList);
-                const initialData = await initialResponse.json();
-
-                if (!initialData.results || !Array.isArray(initialData.results)) {
-                    console.error("Unexpected data format:", initialData);
-                    return;
+                // if you query the api with geometry=false you get the mpa metadata without the geometry
+                // this loads much faster to help us determine how many polygons there'll be and how many
+                // calls we'll have to make to load them all.
+                const url = new URL(state.urls.mpasWithTimeseriesList, window.location.origin);
+                url.searchParams.set('geometry', 'false'); // Add geometry=false to the query parameters
+                if (state.filterMPAs) {
+                    state.filterMPAs.forEach(mpa => {
+                        url.searchParams.append('mpa_id', mpa);
+                    });
                 }
 
-                // Process first page results
-                processMPAData(initialData.results);
+                const initialResponse = await fetch(url.toString());
+                const initialData = await initialResponse.json();
 
-                // Check if there are more pages to load
-                if (!initialData.count || initialData.count <= initialData.results.length) {
+                if (!initialData.count) {
+                    console.error("Unable to determine total count from headers.");
                     return;
                 }
 
                 // Calculate total pages based on count and results per page
-                const pageSize = initialData.results.length;
-                const totalPages = Math.ceil(initialData.count / pageSize);
+                const totalPages = Math.ceil(initialData.count / initialData.page_size);
 
-                // Create URLs for all pages (starting from page 2)
-                const baseUrl = new URL(state.urls.mpasWithTimeseriesList, window.location.origin);
+                // Fetch and process all pages
                 const pagePromises = [];
-
-                for (let page = 2; page <= totalPages; page++) {
-                    const pageUrl = new URL(baseUrl);
+                for (let page = 1; page <= totalPages; page++) {
+                    const pageUrl = new URL(state.urls.mpasWithTimeseriesList, window.location.origin);
+                    if (state.filterMPAs) {
+                        state.filterMPAs.forEach(mpa => {
+                            pageUrl.searchParams.append('mpa_id', mpa);
+                        });
+                    }
                     pageUrl.searchParams.set('page', page.toString());
 
                     pagePromises.push(
@@ -178,7 +210,6 @@ const mapApp = createApp({
                             .catch(err => console.error(`Error loading page ${page}:`, err))
                     );
                 }
-
                 // Load all remaining pages in parallel
                 await Promise.all(pagePromises);
 
@@ -210,29 +241,6 @@ const mapApp = createApp({
             }
         }
 
-        // Helper function to process MPA data and add to map
-
-        function processMPAData(mpas) {
-            mpas.forEach(mpa => {
-                if (mpa.geometry) {
-                    L.geoJSON(mpa, {
-                        style: mpa.style,
-                        onEachFeature: (feature, layer) => {
-                            layer.bindTooltip(mpa.properties.name || "Unnamed MPA", {
-                                permanent: false, // Set to true if you want tooltips always visible
-                                direction: 'top', // Position relative to the feature (top, bottom, left, right, center)
-                                className: 'my-tooltip', // Add custom CSS class for styling
-                                opacity: 0.9 // Control tooltip opacity
-                            });
-                            layer.on('click', () => {
-                                handlePolygonSelection(layer, mpa);
-                            });
-                        }
-                    }).addTo(state.map);
-                }
-            });
-        }
-
         function TS_getStatusClass(netdata) {
             if (!netdata.quantile) return '';
 
@@ -259,17 +267,17 @@ const mapApp = createApp({
             // Add network indicators if a date is selected
             if (state.dates.selected_date) {
                 const curValue = (netdata.data.ts_data - netdata.data.clim)
-                const curAnom = curValue/netdata.data.std_dev
-                let maxAnom = netdata.max_delta/netdata.data.std_dev
-                if(curValue < netdata.data.clim)
-                    maxAnom = Math.abs(netdata.max_delta/netdata.data.std_dev)
+                const curAnom = curValue / netdata.data.std_dev
+                let maxAnom = netdata.max_delta / netdata.data.std_dev
+                if (curValue < netdata.data.clim)
+                    maxAnom = Math.abs(netdata.max_delta / netdata.data.std_dev)
 
                 const percentage = Math.abs(curAnom) / maxAnom
 
                 content = `
                 <div class="row">
                     <div class="col text-center">` +
-                     (window.translations?.total_average_bottom || 'Total Average Bottom') +
+                    (window.translations?.total_average_bottom || 'Total Average Bottom') +
                     ` ${state.dates.selected_date}</div>
                 </div>
                 <div class="row">
@@ -304,7 +312,7 @@ const mapApp = createApp({
                             <tr>
                                 <td>${formatNumber(curAnom, 3)}</td>
                                 <td>${formatNumber(netdata.data.ts_data, 3)}</td>
-                                <td>${formatNumber(netdata.data.clim, 3)}</td>
+                                <td>${formatNumber(netdata.data.climatology, 3)}</td>
                                 <td>${formatNumber(netdata.data.std_dev, 3)}</td>
                                 <td>${formatNumber(netdata.quantile.upperq, 3)}</td>
                                 <td>${formatNumber(netdata.quantile.lowerq, 3)}</td>
@@ -330,6 +338,16 @@ const mapApp = createApp({
             return content;
         }
 
+        function setMPA(mpa) {
+            state.mpa.id = mpa.id
+            state.mpa.name = mpa.name;
+            state.mpa.url = mpa.url;
+            state.mpa.class = mpa.class;
+            state.mpa.km2 = mpa.km2;
+            state.mpa.depths = mpa.depths;
+
+        }
+
         function handlePolygonSelection(layer, mpa) {
 
             // Always update the MPA info panel with the most recently selected polygon
@@ -342,7 +360,8 @@ const mapApp = createApp({
                 name: mpa.properties.name || 'Unknown MPA',
                 url: mpa.properties.url || '',
                 class: mpa.properties.class || '',
-                km2: mpa.properties.km2 || ''
+                km2: mpa.properties.km2 || '',
+                depths: mpa.properties.depths || []
             });
         }
 
@@ -387,19 +406,6 @@ const mapApp = createApp({
             } catch (error) {
                 console.error("Error fetching network indicator data:", error);
             }
-        }
-
-        function setMPA(mpa) {
-            state.mpa.id = mpa.id
-            state.mpa.name = mpa.name;
-            state.mpa.url = mpa.url;
-            state.mpa.class = mpa.class;
-            state.mpa.km2 = mpa.km2;
-
-            // When the new mpa is set, the vue-component-mpa-control.js module will update
-            // its MPA and set new depths for the selected MPA, then it'll emit a depth-changed
-            // signal which will call vue-app's setSelectedDepth function and update the data
-            //getData();
         }
 
         function updateSelectedPolygons(polygonList) {
@@ -529,7 +535,7 @@ const mapApp = createApp({
                 // if depth isn't specified then it'll be None and will return the
                 // Total Average Bottom Timeseries
                 tsUrl.searchParams.set('depth', state.depth);
-
+-
                 tsUrl.searchParams.set('climate_model', state.climateModel);
 
                 const response = await fetch(tsUrl.toString());
@@ -551,6 +557,7 @@ const mapApp = createApp({
             state,
             tabs,
             initialize,
+            addFilterMPA,
             setMPA,
             setSelectedDate,
             setSelectedDateRange,

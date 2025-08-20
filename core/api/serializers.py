@@ -4,11 +4,10 @@ import json
 from rest_framework import serializers
 from core import models
 
-class MPAZonesSerializer(serializers.ModelSerializer):
+class MPAZonesWithoutGeometrySerializer(serializers.ModelSerializer):
     class Meta:
         model = models.MPAZones
-        fields = ['id', 'name_e', 'url_e', 'km2', 'classification', 'geometry']
-        # Or specify fields: fields = ['id', 'name', 'km2', 'geom']
+        fields = ['id', 'name_e', 'url_e', 'km2', 'classification']
 
     def to_representation(self, instance):
         # Create a proper GeoJSON Feature object
@@ -27,10 +26,22 @@ class MPAZonesSerializer(serializers.ModelSerializer):
                 "name": instance.name_e,
                 "url": instance.url_e,
                 "class": instance.classification.name_e,
-                "km2": instance.km2
-            },
-            "geometry": json.loads(instance.geom.geojson) if instance.geom else None
+                "km2": instance.km2,
+                "depths": instance.timeseries.order_by('depth').values_list('depth', flat=True).distinct()
+            }
         }
+        return representation
+
+
+class MPAZonesSerializer(MPAZonesWithoutGeometrySerializer):
+    class Meta:
+        model = models.MPAZones
+        fields = ['id', 'name_e', 'url_e', 'km2', 'classification', 'geometry']
+
+    def to_representation(self, instance):
+        # Create a proper GeoJSON Feature object
+        representation = super().to_representation(instance)
+        representation['geometry'] = json.loads(instance.geom.geojson) if instance.geom else None
         return representation
 
 

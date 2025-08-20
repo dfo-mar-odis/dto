@@ -51,8 +51,8 @@ export const NetworkIndicator = {
     watch: {
         dataPoint: {
             handler(newPoint) {
-                if (newPoint && newPoint.ts_data !== undefined && newPoint.clim !== undefined) {
-                    this.currentDelta = (Number(newPoint.ts_data) - Number(newPoint.clim)) / Number(newPoint.std_dev);
+                if (newPoint && newPoint.ts_data !== undefined && newPoint.climatology !== undefined) {
+                    this.currentDelta = (Number(newPoint.ts_data) - Number(newPoint.climatology)) / Number(newPoint.std_dev);
                 }
             },
             immediate: true
@@ -61,7 +61,7 @@ export const NetworkIndicator = {
 
     methods: {
         calculateMaxAnom() {
-            if(this.currentDelta < this.dataPoint.clim)
+            if(this.currentDelta < this.dataPoint.climatology)
                 return Math.abs(this.minDelta/Number(this.dataPoint.std_dev))
 
             return (this.maxDelta/Number(this.dataPoint.std_dev));
@@ -80,7 +80,7 @@ export const NetworkIndicator = {
             if (!this.quantile) return '';
 
             const value = parseFloat(this.dataPoint.ts_data);
-            const clim = parseFloat(this.dataPoint.clim)
+            const clim = parseFloat(this.dataPoint.climatology)
             const upperQ = parseFloat(this.quantile.upperq);
             const lowerQ = parseFloat(this.quantile.lowerq);
 
@@ -135,7 +135,7 @@ export const NetworkIndicator = {
                             </tr>
                             <tr>
                                 <th scope="row">{{ t.climatology || 'Climatology' }}</th>
-                                <td>{{ formatValue(dataPoint.clim) }}°C</td>
+                                <td>{{ formatValue(dataPoint.climatology) }}°C</td>
                             </tr>
                             <tr>
                                 <th scope="row">{{ t.standard_deviation || 'Standard Deviation (σ)' }}</th>

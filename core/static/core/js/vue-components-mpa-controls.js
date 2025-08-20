@@ -5,10 +5,6 @@ export const MPAControls = {
             type: String,
             required: true
         },
-        mpaDepthsUrl: {
-            type: String,
-            required: true
-        },
         mpaClimateModelsUrl: {
             type: String,
             required: true
@@ -41,8 +37,9 @@ export const MPAControls = {
                 // Reset depth selection when MPA changes
                 this.state.depth = "";
                 // Fetch new depths for this MPA
-                this.fetchDepths();
-                this.fetchClimateModels();
+                this.state.depths = newMpa.depths
+                    .filter(depth => depth !== null)
+                    .map(depth => [depth, `${depth} m`]);
                 this.setSelectedDepth();
             },
             deep: true
@@ -101,47 +98,6 @@ export const MPAControls = {
 
     },
     methods: {
-        fetchDepths() {
-            // Only proceed if we have a valid MPA
-            if (this.mpa && this.mpa.id) {
-                // Add the MPA ID as a query parameter
-                const url = `${this.mpaDepthsUrl}?mpa_id=${this.mpa.id}`;
-
-                fetch(url)
-                    .then(response => response.json())
-                    .then(data => {
-                        this.state.depths = data.depths || [];
-                    })
-                    .catch(error => {
-                        console.error("Failed to fetch depths:", error);
-                    });
-            } else {
-                // Reset depths if no MPA is selected
-                this.state.depths = [];
-            }
-        },
-        fetchClimateModels() {
-            // Only proceed if we have a valid MPA
-            if (this.mpa && this.mpa.id) {
-                // Add the MPA ID as a query parameter
-                const url = `${this.mpaClimateModelsUrl}?mpa_id=${this.mpa.id}`;
-
-                fetch(url)
-                    .then(response => response.json())
-                    .then(data => {
-                        this.state.climate_models = data.climate_models || [];
-                        this.state.climate_model = this.state.climate_models[0][0];
-                    })
-                    .catch(error => {
-                        console.error("Failed to fetch depths:", error);
-                    });
-
-            } else {
-                // Reset climate models if no MPA is selected
-                this.state.climate_models = [];
-                this.state.climate_model = "";
-            }
-        },
         panFrame(years) {
             // Create new Date objects from current values
             const startDate = new Date(this.state.dates.start_date);
@@ -207,74 +163,56 @@ export const MPAControls = {
         <div class="card">
             <div class="card-body">
                 <div class="row justify-content-center">
+                    <div class="col-auto align-content-center">
+                        <label for="btm_depth">{{ t.bottom_depth || 'Bottom Depth' }}</label>
+                        <select class="form-select" id="btm_depth"
+                            v-model="state.depth"
+                            @change="setSelectedDepth(state.depth)">
+                            <option v-for="depth in state.depths" 
+                                    :key="depth[0]" 
+                                    :value="depth[0]">
+                                {{ depth[1] }}
+                            </option>
+                            <option value="">{{ t.total_average_bottom_timeseries || 'Total Average Bottom Timeseries' }}</option>
+                        </select>
+                    </div>
+                    <div class="col-auto align-content-center mt-4">
+                        <button type="button" class="btn btn-secondary me-1" :title="'-10 ' + (t.year_s || 'year(s)')"
+                                @click="panFrame(-10)"><<<</button>
+                        <button type="button" class="btn btn-secondary me-1" :title="'-5 ' + (t.year_s || 'year(s)')"
+                                @click="panFrame(-5)"><<</button>
+                        <button type="button" class="btn btn-secondary" :title="'-1 ' + (t.year_s || 'year(s)')"
+                                @click="panFrame(-1)"><</button>
+                    </div>
                     <div class="col">
-                        <div class="row">
-                            <div class="col align-content-center">
-                                <label for="btm_depth">{{ t.climate_model || 'Climate Model' }}</label>
-                                <select class="form-select" id="btm_depth"
-                                    v-model="state.climate_model"
-                                    @change="setSelectedClimateModel(state.climate_model)">
-                                    <option v-for="model in state.climate_models" 
-                                            :key="model[0]" 
-                                            :value="model[0]">
-                                        {{ model[1] }}
-                                    </option>
-                                </select>
-                            </div>
-                            <div class="col align-content-center">
-                                <label for="btm_depth">{{ t.bottom_depth || 'Bottom Depth' }}</label>
-                                <select class="form-select" id="btm_depth"
-                                    v-model="state.depth"
-                                    @change="setSelectedDepth(state.depth)">
-                                    <option v-for="depth in state.depths" 
-                                            :key="depth[0]" 
-                                            :value="depth[0]">
-                                        {{ depth[1] }}
-                                    </option>
-                                    <option value="">{{ t.total_average_bottom_timeseries || 'Total Average Bottom Timeseries' }}</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row mt-2">
-                            <div class="col-auto align-content-center mt-4">
-                                <button type="button" class="btn btn-secondary me-1" :title="'-10 ' + (t.year_s || 'year(s)')"
-                                        @click="panFrame(-10)"><<<</button>
-                                <button type="button" class="btn btn-secondary me-1" :title="'-5 ' + (t.year_s || 'year(s)')"
-                                        @click="panFrame(-5)"><<</button>
-                                <button type="button" class="btn btn-secondary" :title="'-1 ' + (t.year_s || 'year(s)')"
-                                        @click="panFrame(-1)"><</button>
-                            </div>
-                            <div class="col">
-                                <label for="date_min" class="form-label">{{ t.start_date || 'Start Date' }}</label>
-                                <input id="date_min" type="date" class="form-control"
-                                       v-model="state.dates.start_date"
-                                       @change="setDateRange"
-                                       max="9999-12-31"/>
-                            </div>
-                            <div class="col">
-                                <label for="selected_date"
-                                       class="form-label">{{ t.selected_date || 'Selected Date' }}</label>
-                                <input id="selected_date" type="date" class="form-control"
-                                       v-model="state.dates.selected_date"
-                                       @change="setSelectedDate(state.dates.selected_date)"
-                                       max="9999-12-31"/>
-                            </div>
-                            <div class="col">
-                                <label for="date_end" class="form-label">{{ t.end_date || 'End Date' }}</label>
-                                <input id="date_end" type="date" class="form-control"
-                                       v-model="state.dates.end_date"
-                                       @change="setDateRange"
-                                       max="9999-12-31"/>
-                            </div>
-                            <div class="col-auto align-content-center mt-4">
-                                <button type="button" class="btn btn-secondary me-1" :title="'+1 ' + (t.year_s || 'year(s)')"
-                                        @click="panFrame(1)">></button>
-                                <button type="button" class="btn btn-secondary me-1" :title="'+5 ' + (t.year_s || 'year(s)')"
-                                        @click="panFrame(5)">>></button>
-                                <button type="button" class="btn btn-secondary" :title="'+10 ' + (t.year_s || 'year(s)')"
-                                        @click="panFrame(10)">>>></button>
-                            </div>
-                        </div>
+                        <label for="date_min" class="form-label">{{ t.start_date || 'Start Date' }}</label>
+                        <input id="date_min" type="date" class="form-control"
+                               v-model="state.dates.start_date"
+                               @change="setDateRange"
+                               max="9999-12-31"/>
+                    </div>
+                    <div class="col">
+                        <label for="selected_date"
+                               class="form-label">{{ t.selected_date || 'Selected Date' }}</label>
+                        <input id="selected_date" type="date" class="form-control"
+                               v-model="state.dates.selected_date"
+                               @change="setSelectedDate(state.dates.selected_date)"
+                               max="9999-12-31"/>
+                    </div>
+                    <div class="col">
+                        <label for="date_end" class="form-label">{{ t.end_date || 'End Date' }}</label>
+                        <input id="date_end" type="date" class="form-control"
+                               v-model="state.dates.end_date"
+                               @change="setDateRange"
+                               max="9999-12-31"/>
+                    </div>
+                    <div class="col-auto align-content-center mt-4">
+                        <button type="button" class="btn btn-secondary me-1" :title="'+1 ' + (t.year_s || 'year(s)')"
+                                @click="panFrame(1)">></button>
+                        <button type="button" class="btn btn-secondary me-1" :title="'+5 ' + (t.year_s || 'year(s)')"
+                                @click="panFrame(5)">>></button>
+                        <button type="button" class="btn btn-secondary" :title="'+10 ' + (t.year_s || 'year(s)')"
+                                @click="panFrame(10)">>>></button>
                     </div>
                 </div>
             </div>

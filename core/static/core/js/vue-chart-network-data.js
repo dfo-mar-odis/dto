@@ -167,8 +167,8 @@ export const NetworkIndicators = {
             }
         },
         computeAnomaly(data) {
-            if (data && data.ts_data !== undefined && data.clim !== undefined) {
-                return (Number(data.ts_data) - Number(data.clim)) / Number(data.std_dev);
+            if (data && data.ts_data !== undefined && data.climatology !== undefined) {
+                return (Number(data.ts_data) - Number(data.climatology)) / Number(data.std_dev);
             }
         },
         setPolygonData(polygon, climate_data) {
@@ -185,7 +185,7 @@ export const NetworkIndicators = {
             if (!polygon.quantile) return '';
 
             const value = parseFloat(polygon.data.ts_data);
-            const clim = parseFloat(polygon.data.clim)
+            const clim = parseFloat(polygon.data.climatology)
             const upperQ = parseFloat(polygon.quantile.upperq);
             const lowerQ = parseFloat(polygon.quantile.lowerq);
 
