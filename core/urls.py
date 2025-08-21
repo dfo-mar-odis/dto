@@ -4,7 +4,8 @@ from . import views, models
 
 app_name = 'core'
 urlpatterns = [
-    path('', views.bottom, name='bottom'),
+    path('bottom/', views.bottom, name='bottom'),
+    path('surface/', views.bottom, name='surface'),
 
     # path(f'', views.index, name='map'),
     path('timeseries/', views.get_timeseries, name='timeseries'),

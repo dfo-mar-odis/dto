@@ -44,7 +44,7 @@ def load_series(mpa, timeseries, climate_model_id=1, depth=None, indicator=1, ba
                 # Create new time series entry
                 add_time_series.append(
                     models.Timeseries(
-                        mpa=mpa,
+                        zone=mpa,
                         model=timeseries_model,
                         date_time=row[0],
                         value=value,
@@ -245,7 +245,7 @@ def build_mpa_dictionary(data_directory) -> dict:
     return data
 
 def load_mpas():
-
+    model = models.ClimateModels.objects.get_or_create(name="GLORYS", priority=1)
     data_directory = Path('./scripts/data/GLORYS/')
     glorys_data = build_mpa_dictionary(data_directory)
-    load_mpas_from_dict(glorys_data, climate_model_id=1)
+    load_mpas_from_dict(glorys_data, climate_model_id=model[0].pk)

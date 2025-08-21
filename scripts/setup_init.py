@@ -1,10 +1,11 @@
-from scripts import load_species, load_timeseries, load_mpa_shapes
+from scripts import load_species, load_timeseries, load_mpa_shapes, load_observations
 
 
 def setup():
     load_species.load_species()
     load_mpa_shapes.load_mpas()
     load_timeseries.load_mpas()
+    load_observations.load_mpa()
 
 
 if __name__ == '__main__':

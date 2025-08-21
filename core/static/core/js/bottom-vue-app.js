@@ -15,12 +15,14 @@ const mapApp = createApp({
         const state = reactive({
             mapLoading: false,
             selectedPolygon: null,
+            selectedPolygons: [],
             mpa: {
                 id: 0,
                 name: '',
                 url: '',
                 class: '',
-                km2: 0
+                km2: 0,
+                depths: []
             },
             dates: {
                 selected_date: null,
@@ -28,7 +30,6 @@ const mapApp = createApp({
                 end_date: ''
             },
             depth: '',
-            climateModel: 1, // by default 1 is the GLORYS Climate model
             loading: false,
             activeTab: 'timeseries_data',
             urls: {
@@ -43,7 +44,6 @@ const mapApp = createApp({
                 timeseries: null,
             },
             timeseriesData: null,
-            selectedPolygons: [],
             isCtrlPressed: false,
             highlightStyles: {
                 primary: {
@@ -106,7 +106,6 @@ const mapApp = createApp({
         }
 
         function initialize(mpasUrl, timeseriesUrl, legendUrl, speciesUrl, networkIndicatorUrl) {
-            state.climateModel = 1;
             state.urls.mpasWithTimeseriesList = mpasUrl;
             state.urls.timeseriesUrl = timeseriesUrl;
             state.urls.legendUrl = legendUrl;
@@ -168,6 +167,7 @@ const mapApp = createApp({
         async function loadMPAPolygons() {
             if (!state.map || !state.urls.mpasWithTimeseriesList) return;
 
+            const page_size = 5;
             state.mapLoading = true;
             try {
                 // if you query the api with geometry=false you get the mpa metadata without the geometry
@@ -185,17 +185,19 @@ const mapApp = createApp({
                 const initialData = await initialResponse.json();
 
                 if (!initialData.count) {
-                    console.error("Unable to determine total count from headers.");
+                    // no polygons were returned
+                    state.mapLoading = false;
                     return;
                 }
 
                 // Calculate total pages based on count and results per page
-                const totalPages = Math.ceil(initialData.count / initialData.page_size);
+                const totalPages = Math.ceil(initialData.count / page_size);
 
                 // Fetch and process all pages
                 const pagePromises = [];
                 for (let page = 1; page <= totalPages; page++) {
                     const pageUrl = new URL(state.urls.mpasWithTimeseriesList, window.location.origin);
+                    pageUrl.searchParams.set('page_size', page_size)
                     if (state.filterMPAs) {
                         state.filterMPAs.forEach(mpa => {
                             pageUrl.searchParams.append('mpa_id', mpa);
@@ -512,12 +514,6 @@ const mapApp = createApp({
             getData();
         }
 
-        function setSelectedClimateModel(climate_model) {
-            state.climateModel = climate_model;
-            fetchNetworkIndicatorData();
-            getData();
-        }
-
         async function getData() {
             state.loading = true;
 
@@ -535,8 +531,6 @@ const mapApp = createApp({
                 // if depth isn't specified then it'll be None and will return the
                 // Total Average Bottom Timeseries
                 tsUrl.searchParams.set('depth', state.depth);
--
-                tsUrl.searchParams.set('climate_model', state.climateModel);
 
                 const response = await fetch(tsUrl.toString());
                 state.timeseriesData = await response.json();
@@ -562,7 +556,6 @@ const mapApp = createApp({
             setSelectedDate,
             setSelectedDateRange,
             setSelectedDepth,
-            setSelectedClimateModel,
             getData,
             updateSelectedPolygons,
             updateNetworkIndicator,

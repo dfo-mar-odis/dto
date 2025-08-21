@@ -8,7 +8,6 @@ export const QuantileChart = {
     props: {
         dataUrl: String,
         depth: '',
-        climateModel: 1,
         startDate: null,
         endDate: null,
     },
@@ -95,7 +94,6 @@ export const QuantileChart = {
                 const url = new URL(this.dataUrl, window.location.origin);
                 url.searchParams.append('mpa', this.mpa.id);
                 url.searchParams.append('depth', this.depth);
-                url.searchParams.append('climate_model', this.climateModel);
                 url.searchParams.append('start_date', this.startDate);
                 url.searchParams.append('end_date', this.endDate);
                 url.searchParams.append('upper_quantile', this.upperQuantile);

@@ -32,19 +32,14 @@ logger = logging.getLogger('')
 
 colormap = cm.linear.Paired_07.scale(-2, 35)
 
-
-def bottom(request, **kwargs):
-
-    # ids = models.Timeseries.objects.values_list('mpa', flat=True).distinct()
-    # mpas = [json.dumps(add_attributes(mpa)) for mpa in
-    #         models.MPAZone.objects.filter(name__in=ids)]
+def get_common_context(request):
     context = {
-        # 'mpas': mpas,
-        # 'proxy_url': settings.PROXY_URL,
     }
 
     models_array = [(m.pk, f'{m.name}') for m in models.ClimateModels.objects.all()]
     context['models'] = models_array
+    context['selected_model'] = {'id': int(request.session.get('selected_model', 1))}
+    context['selected_model']['name'] = models.ClimateModels.objects.get(id=context['selected_model']['id']).name
 
     mpa_ids = []
     get_mpa_ids = request.GET.getlist('mpa_id')
@@ -55,7 +50,16 @@ def bottom(request, **kwargs):
     if mpa_ids:
         context['mpa_ids'] = mpa_ids
 
+    return context
+
+def bottom(request, **kwargs):
+    context = get_common_context(request)
     return render(request, 'core/bottom_map.html', context)
+
+
+def surface(request, **kwargs):
+    context = get_common_context(request)
+    return render(request, 'core/surface_map.html', context)
 
 
 def set_model(request):
@@ -414,7 +418,7 @@ def get_timeseries(request):
 
 def parse_request_variables(request):
     mpa_id = int(request.GET.get('mpa', -1))
-    climate_model = int(request.GET.get('climate_model', 1))
+    climate_model = int(request.session.get('selected_model', 1))
     depth = request.GET.get('depth', None)
     depth = None if depth == '' or depth is None else int(depth)
 
@@ -471,61 +475,6 @@ def get_species_range(request, species_id=None):
         lower = species.lower_temperature
 
     return JsonResponse({'upper': upper, 'lower': lower})
-
-
-def indicators(request):
-    mpa = int(request.GET.get('mpa', 0))
-    date_string = request.GET.get('date', None)
-    if date_string is None:
-        return JsonResponse({})
-
-    date = datetime.strptime(date_string, '%Y-%m-%d')
-
-    climate_model = request.GET.get('climate_model', None)
-    climate_model = int(climate_model) if climate_model else None
-
-    depth = request.GET.get('depth', None)
-    depth = int(depth) if depth else None
-
-    mpa_zone = models.MPAZones.objects.get(pk=mpa)
-    df = get_timeseries_dataframe(mpa_zone, climate_model, depth)
-
-    if df is None:
-        return None
-
-    # using a 30 year timeseries for the climatology from 1993-01-01 to 2022-120-31
-    clim = df[(df.index <= '2022-12-31')]
-    clim = clim.groupby([clim.index.month, clim.index.day]).quantile()
-    upper_c = df.groupby([df.index.month, df.index.day]).quantile(q=0.9)
-    lower_c = df.groupby([df.index.month, df.index.day]).quantile(q=0.1)
-
-    max_val = df[(df.value == df.max().value)]
-    min_val = df[(df.value == df.min().value)]
-
-    min_ts = round(df.min().value - clim.at[(min_val.index.month[0], min_val.index.day[0]), 'value'], 3)
-    max_ts = round(df.max().value - clim.at[(max_val.index.month[0], max_val.index.day[0]), 'value'], 3)
-    current = round(df.at[date, "value"] - clim.at[(date.month, date.day), 'value'], 3)
-    upper = round(upper_c.at[(date.month, date.day), "value"] - clim.at[(date.month, date.day), 'value'], 3)
-    lower = round(lower_c.at[(date.month, date.day), "value"] - clim.at[(date.month, date.day), 'value'], 3)
-
-    return JsonResponse(
-        {"mpa": mpa, "date": date.strftime('%Y-%m-%d'), "min": min_ts, "max": max_ts, "current": current,
-         "lower": lower, "upper": upper})
-
-
-def get_polygons(request):
-    page_size = 5
-
-    if request.GET.get('page', None):
-        page_start = (int(request.GET.get('page')) - 1) * page_size
-        page_end = page_start + page_size
-        ids = models.Timeseries.objects.values_list('mpa', flat=True).distinct()[page_start:page_end]
-    else:
-        ids = models.Timeseries.objects.values_list('mpa', flat=True).distinct()
-
-    json_data = [add_attributes(mpa) for mpa in models.MPAZones.objects.filter(pk__in=ids).order_by('-km2')]
-
-    return JsonResponse(json_data, safe=False)
 
 
 def get_classification_colours(request):

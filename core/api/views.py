@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 
+from core.api.pagination import CustomPageNumberPagination
 from core.api.serializers import MPAZonesSerializer, MPAZonesWithoutGeometrySerializer, SpeciesSerializer
 from core import models
 
@@ -183,6 +184,7 @@ class MPAZonesViewSet(viewsets.ModelViewSet):
 class MPAZonesWithTimeseriesViewSet(viewsets.ReadOnlyModelViewSet):
     """ViewSet that only returns MPAZones that have Timeseries data"""
     serializer_class = MPAZonesSerializer
+    pagination_class = CustomPageNumberPagination
 
     def get_serializer_class(self):
         # Use the serializer without geometry unless 'include_geometry' is requested
@@ -196,7 +198,8 @@ class MPAZonesWithTimeseriesViewSet(viewsets.ReadOnlyModelViewSet):
         if "mpa_id" in self.request.GET:
             filter_mpas = self.request.GET.getlist('mpa_id')
 
-        timeseries = models.Timeseries.objects.all()
+        model = int(self.request.session.get('selected_model', 1))
+        timeseries = models.Timeseries.objects.filter(model__id=model)
         if filter_mpas:
             timeseries = timeseries.filter(zone__pk__in=filter_mpas)
 

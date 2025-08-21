@@ -42,15 +42,13 @@
         <div class="col">
             <mpa-controls
                     max-date-url="{% url 'core:get_max_date' %}"
-                    mpa-climate-models-url="{% url 'core:get_climate_models' %}"
                     :mpa="state.mpa"
                     :initial-start-date="state.dates.start_date"
                     :initial-end-date="state.dates.end_date"
                     :selected-date="state.dates.selected_date"
                     @get-data="getData"
                     @date-range-change="setSelectedDateRange"
-                    @depth-selected="setSelectedDepth"
-                    @climate-model-selected="setSelectedClimateModel">
+                    @depth-selected="setSelectedDepth">
             </mpa-controls>
         </div>
     </div>
@@ -78,7 +76,6 @@
                     <quantile-chart
                             :mpa="state.mpa"
                             :depth="state.depth"
-                            :climate-model="state.climateModel"
                             :start-date="state.dates.start_date"
                             :end-date="state.dates.end_date"
                             :selected-date="state.dates.selected_date"
@@ -177,6 +174,6 @@
     </script>
 
     <!-- Add Vue app script -->
-    <script type="module" src="{% static 'core/js/vue-app.js' %}"></script>
+    <script type="module" src="{% static 'core/js/bottom-vue-app.js' %}"></script>
 
 {% endblock %}

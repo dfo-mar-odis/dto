@@ -5,10 +5,6 @@ export const MPAControls = {
             type: String,
             required: true
         },
-        mpaClimateModelsUrl: {
-            type: String,
-            required: true
-        },
     },
     computed: {
         t() {
@@ -19,14 +15,12 @@ export const MPAControls = {
         return {
             state: {
                 depth: "",
-                climate_model: "",
                 dates: {
                     start_date: null,
                     end_date: null,
                     selected_date: null
                 },
                 depths: [],
-                climate_models: [],
             },
             debounceTimer: null
         };
@@ -153,10 +147,6 @@ export const MPAControls = {
             this.$emit('depth-selected', this.state.depth);
         },
 
-        setSelectedClimateModel() {
-            // Fetch data based on selected depth
-            this.$emit('climate-model-selected', this.state.climate_model);
-        },
     },
 
     template: `
