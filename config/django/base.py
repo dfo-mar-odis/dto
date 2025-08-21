@@ -141,7 +141,7 @@ LOCALE_PATHS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'core.api.pagination.CustomPageNumberPagination',
-    'PAGE_SIZE': 5,
+    'PAGE_SIZE': 20,
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.SessionAuthentication',
     ],

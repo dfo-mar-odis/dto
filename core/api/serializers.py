@@ -36,12 +36,19 @@ class MPAZonesWithoutGeometrySerializer(serializers.ModelSerializer):
 class MPAZonesSerializer(MPAZonesWithoutGeometrySerializer):
     class Meta:
         model = models.MPAZones
-        fields = ['id', 'name_e', 'url_e', 'km2', 'classification', 'geometry']
+        fields = ['id', 'name_e', 'url_e', 'km2', 'classification', 'geometry', 'serialized_representation']
 
     def to_representation(self, instance):
         # Create a proper GeoJSON Feature object
         representation = super().to_representation(instance)
-        representation['geometry'] = json.loads(instance.geom.geojson) if instance.geom else None
+        if hasattr(instance, 'serialized_representation') and instance.serialized_representation:
+            representation['geometry'] = instance.serialized_representation
+        else:
+            representation['geometry'] = json.loads(instance.geom.geojson) if instance.geom else None
+            if representation['geometry']:
+                instance.serialized_representation = representation['geometry']
+                instance.save()
+
         return representation
 
 

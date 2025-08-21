@@ -19,6 +19,7 @@ class MPAZones(models.Model):
     km2 = models.FloatField(null=True)
     classification = models.ForeignKey(Classifications, on_delete=models.PROTECT, null=True)
     geom = models.MultiPolygonField()
+    serialized_representation = models.JSONField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.name_e}"
