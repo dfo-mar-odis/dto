@@ -175,6 +175,7 @@ const mapApp = createApp({
                 // calls we'll have to make to load them all.
                 const url = new URL(state.urls.mpasWithTimeseriesList, window.location.origin);
                 url.searchParams.set('geometry', 'false'); // Add geometry=false to the query parameters
+                url.searchParams.set('page_size', 1)
                 if (state.filterMPAs) {
                     state.filterMPAs.forEach(mpa => {
                         url.searchParams.append('mpa_id', mpa);
