@@ -24,8 +24,6 @@ from django.shortcuts import render, redirect
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import activate
 
-from django.views.generic import TemplateView
-from django.contrib.gis.db.models.functions import Transform
 
 from core import models
 from core.api.views import get_timeseries_dataframe, get_timeseries_data
