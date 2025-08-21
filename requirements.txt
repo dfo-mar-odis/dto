@@ -11,6 +11,7 @@ boto3
 reportlab
 
 django>=4.2,<5.0
+django_extensions
 
 # web page formattting css
 django-environ==0.11.2

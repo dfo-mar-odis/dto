@@ -80,7 +80,7 @@
                             :end-date="state.dates.end_date"
                             :selected-date="state.dates.selected_date"
                             :timeseries-data="state.timeseriesData"
-                            data-url="{% url 'core:quantiles' %}"
+                            data-url="{% url 'api:quantile-data' %}"
                             :is-active="state.activeTab === 'timeseries_data'"
                             :is-loading="state.loading"
                             @date-selected="setSelectedDate"
@@ -164,7 +164,7 @@
             {% endif %}
             app.initialize(
                 "{% url 'api:mpas-with-timeseries-list' %}", // used to get the mpa polygons, but only ones with a timeseries
-                "{% url 'core:timeseries' %}",  // retrieves the timeseries data that's used by multiple objects
+                "{% url 'api:timeseries-data' %}",  // retrieves the timeseries data that's used by multiple objects
                 "{% url 'core:get_classification_colours' %}", // adds the legend to the map
                 "{% url 'api:species-list' %}?all=true",  // used to get the list of species and assciated data
                 "{% url 'api:network-indicators-list' %}"

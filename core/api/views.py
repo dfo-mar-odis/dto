@@ -13,9 +13,10 @@ from core.api.serializers import MPAZonesSerializer, MPAZonesWithoutGeometrySeri
 from core import models
 
 
-def get_timeseries_dataframe(mpa_zone: models.MPAZones, climate_model=1, depth=None, start_date=None, end_date=None, indicator=1):
+def get_timeseries_dataframe(mpa_zone: models.MPAZones, climate_model=1, timeseries_type=1, depth=None, start_date=None, end_date=None, indicator=1):
     mpa_timeseries = mpa_zone.timeseries.filter(
         model__pk=climate_model,
+        type=timeseries_type,
         depth=depth,
         indicator=indicator
     ).order_by('date_time')
@@ -53,32 +54,40 @@ def get_timeseries_dataframe(mpa_zone: models.MPAZones, climate_model=1, depth=N
     return df
 
 
-def get_base_timeseries(mpa_zone, climate_model=1, depth=None, indicator=1):
+def get_base_timeseries(mpa_zone, climate_model=1, timeseries_type=1, depth=None, indicator=1):
+
+    data_dict = {}
 
     # Get dataframe for processing
-    df = get_timeseries_dataframe(mpa_zone, climate_model, depth, indicator=indicator)
+    df = get_timeseries_dataframe(
+        mpa_zone,
+        climate_model,
+        timeseries_type,
+        depth,
+        indicator=indicator
+    )
     if df is None:
         raise ValueError(f"No data found for zone {mpa_zone}")
 
     # our climatology data is based off the first 30 years of data we have, basically start of 1993 to end of 2022
     timeseries_30_year = df[(df.index <= '2022-12-31')]
-    data = timeseries_30_year.groupby([timeseries_30_year.index.month, timeseries_30_year.index.day])
+    data_dict['data'] = timeseries_30_year.groupby([timeseries_30_year.index.month, timeseries_30_year.index.day])
 
-    std = data.std()
-    climatology = data.quantile()
+    data_dict['std'] = data_dict['data'].std()
+    data_dict['climatology'] = data_dict['data'].quantile()
 
     # Calculate min/max deltas
     max_val = df[(df.value == df.max().value)]
     min_val = df[(df.value == df.min().value)]
 
     # min and max possible difference across the entire timeseries
-    max_delta = df.max().value - climatology.loc[(max_val.index.month[0], max_val.index.day[0])].value
-    min_delta = df.min().value - climatology.loc[(min_val.index.month[0], min_val.index.day[0])].value
+    data_dict['max_delta'] = df.max().value - data_dict['climatology'].loc[(max_val.index.month[0], max_val.index.day[0])].value
+    data_dict['min_delta'] = df.min().value - data_dict['climatology'].loc[(min_val.index.month[0], min_val.index.day[0])].value
 
-    return df, data, climatology, std, min_delta, max_delta
+    return df, data_dict
 
 
-def get_timeseries_data(mpa_id, climate_model=1, depth=None, start_date=None, end_date=None, indicator=1):
+def get_timeseries_data(mpa_id, climate_model=1, timeseries_type=1, depth=None, start_date=None, end_date=None, indicator=1):
     results = {}
 
     if mpa_id == -1 or not models.MPAZones.objects.filter(pk=mpa_id).exists():
@@ -87,10 +96,10 @@ def get_timeseries_data(mpa_id, climate_model=1, depth=None, start_date=None, en
     mpa_zone = models.MPAZones.objects.get(pk=mpa_id)
     results['name'] = mpa_zone.name_e
 
-    df, data, climatology, std, min_delta, max_delta = get_base_timeseries(mpa_zone, climate_model, depth, indicator)
+    df, data_dict = get_base_timeseries(mpa_zone, climate_model, timeseries_type, depth, indicator)
 
-    results['max_delta'] = max_delta
-    results['min_delta'] = min_delta
+    results['max_delta'] = data_dict['max_delta']
+    results['min_delta'] = data_dict['min_delta']
 
     df = df[(df.index >= start_date) & (df.index <= end_date)]
 
@@ -103,8 +112,8 @@ def get_timeseries_data(mpa_id, climate_model=1, depth=None, start_date=None, en
     results['data'] = [{
         "date": f'{date.strftime("%Y-%m-%d")} 00:01',
         "ts_data": str(daily_data['value'].item()),
-        "climatology": f'{climatology["value"][date.month, date.day]}',
-        "std_dev": f'{std["value"][date.month, date.day]}',
+        "climatology": f'{data_dict['climatology']["value"][date.month, date.day]}',
+        "std_dev": f'{data_dict['std']["value"][date.month, date.day]}',
         "observation": ({
             'value': daily_data['observation'],
             'count': daily_data['count'],
@@ -113,8 +122,37 @@ def get_timeseries_data(mpa_id, climate_model=1, depth=None, start_date=None, en
 
     return results
 
+def get_quantile_data(mpa_id, climate_model=1, timeseries_type=1, depth=None, start_date=None,
+                      end_date=None, indicator=1, quantile_upper=None, quantile_lower=None):
+    results = {}
 
-def get_selected_date_data(mpa_id, selected_date, climate_model=1, depth=None, lower_quantile=0.1, upper_quantile=0.9, indicator=1):
+    if mpa_id == -1 or not models.MPAZones.objects.filter(pk=mpa_id).exists():
+        return results
+
+    mpa_zone = models.MPAZones.objects.get(pk=mpa_id)
+    results['name'] = mpa_zone.name_e
+
+    df, data_dict = get_base_timeseries(mpa_zone, climate_model, timeseries_type, depth, indicator)
+
+    if df is None:
+        return None
+
+    lower = data_dict['data'].quantile(quantile_lower)
+    upper = data_dict['data'].quantile(quantile_upper)
+
+    # the min/max delta is used by the progress bar to have an absolute zero and absolute max
+    results['max_delta'] = data_dict['max_delta']
+    results['min_delta'] = data_dict['min_delta']
+
+    df = df[(df.index >= start_date) & (df.index <= end_date)]
+    results['data'] = [{"date": f'{date.strftime("%Y-%m-%d")} 00:01',
+                        "lowerq": f'{lower["value"][date.month, date.day]}',
+                        "upperq": f'{upper["value"][date.month, date.day]}'}
+                       for date, mt in df.iterrows()]
+    return results
+
+
+def get_selected_date_data(mpa_id, selected_date, climate_model=1, timeseries_type=1, depth=None, lower_quantile=0.1, upper_quantile=0.9, indicator=1):
 
     results = {}
     if mpa_id == -1 or not models.MPAZones.objects.filter(pk=mpa_id).exists():
@@ -123,7 +161,7 @@ def get_selected_date_data(mpa_id, selected_date, climate_model=1, depth=None, l
     mpa_zone = models.MPAZones.objects.get(pk=mpa_id)
     results['name'] = mpa_zone.name_e
 
-    df, data, climatology, std, min_delta, max_delta = get_base_timeseries(mpa_zone, climate_model, depth, indicator)
+    df, data_dict = get_base_timeseries(mpa_zone, climate_model, timeseries_type, depth, indicator)
 
     # Filter for just the selected date
     selected_date = pd.to_datetime(selected_date)
@@ -133,13 +171,13 @@ def get_selected_date_data(mpa_id, selected_date, climate_model=1, depth=None, l
     q_upper = float(upper_quantile)
     q_lower = float(lower_quantile)
 
-    upper = data.quantile(q=q_upper)
-    lower = data.quantile(q=q_lower)
+    upper = data_dict['data'].quantile(q=q_upper)
+    lower = data_dict['data'].quantile(q=q_lower)
 
     # Prepare combined response
     results = {
-        'min_delta': min_delta,
-        'max_delta': max_delta,
+        'min_delta': data_dict['min_delta'],
+        'max_delta': data_dict['max_delta'],
         'name': mpa_zone.name_e,
         'data': {},
         'quantile': {}
@@ -154,8 +192,8 @@ def get_selected_date_data(mpa_id, selected_date, climate_model=1, depth=None, l
         results['data'] = {
             'date': f'{date_str} 00:01',
             'ts_data': float(row['value']),
-            'climatology': float(climatology.loc[(selected_date.month, selected_date.day), 'value']),
-            'std_dev': float(std.loc[(selected_date.month, selected_date.day), 'value'  ])
+            'climatology': float(data_dict['climatology'].loc[(selected_date.month, selected_date.day), 'value']),
+            'std_dev': float(data_dict['std'].loc[(selected_date.month, selected_date.day), 'value'  ])
         }
 
         results['data']['observations'] = { 'value': None, 'std_dev': None, 'count': None }
@@ -273,7 +311,11 @@ class SelectedDateDataView(APIView):
         # Extract query parameters
         mpa_id = request.query_params.get('mpa_id')
         selected_date = request.query_params.get('selected_date')
-        climate_model = request.query_params.get('climate_model', 1)
+
+        # use the session variable for the climate model, unless otherwise specified
+        model = int(self.request.session.get('selected_model', 1))
+        model = request.query_params.get('climate_model', model)
+
         depth = request.query_params.get('depth', None)
         lower_quantile = request.query_params.get('lower_quantile', 0.1)
         upper_quantile = request.query_params.get('upper_quantile', 0.9)
@@ -287,7 +329,7 @@ class SelectedDateDataView(APIView):
         result = get_selected_date_data(
             mpa_id=int(mpa_id),
             selected_date=selected_date,
-            climate_model=int(climate_model),
+            climate_model=int(model),
             depth=int(depth) if depth else None,
             lower_quantile=float(lower_quantile),
             upper_quantile=float(upper_quantile),
@@ -300,7 +342,12 @@ class TimeseriesDataView(APIView):
     def get(self, request):
         # Extract query parameters
         mpa_id = request.query_params.get('mpa_id')
-        climate_model = request.query_params.get('climate_model', 1)
+
+        # use the session variable for the climate model, unless otherwise specified
+        model = int(self.request.session.get('selected_model', 1))
+        model = request.query_params.get('climate_model', model)
+
+        timeseries_type = request.query_params.get('timeseries_type', 1)
         depth = request.query_params.get('depth', None)
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
@@ -313,10 +360,48 @@ class TimeseriesDataView(APIView):
         # Call the function and return the result
         result = get_timeseries_data(
             mpa_id=int(mpa_id),
-            climate_model=int(climate_model),
+            climate_model=int(model),
+            timeseries_type=int(timeseries_type),
             depth=int(depth) if depth else None,
             start_date=start_date,
             end_date=end_date,
             indicator=int(indicator)
+        )
+        return Response(result)
+
+
+class QuantileDataView(APIView):
+    def get(self, request):
+        # Extract query parameters
+        mpa_id = request.query_params.get('mpa_id')
+
+        # use the session variable for the climate model, unless otherwise specified
+        model = int(self.request.session.get('selected_model', 1))
+        model = request.query_params.get('climate_model', model)
+
+        timeseries_type = request.query_params.get('timeseries_type', 1)
+        depth = request.query_params.get('depth', None)
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        indicator = request.query_params.get('indicator', 1)
+
+        upper_quantile = request.query_params.get('upper_quantile', 0.9)
+        lower_quantile = request.query_params.get('lower_quantile', 0.1)
+
+        # Validate required parameters
+        if not mpa_id or not start_date or not end_date:
+            raise ValidationError("Missing required parameters: 'mpa_id', 'start_date', and 'end_date'")
+
+        # Call the function and return the result
+        result = get_quantile_data(
+            mpa_id=int(mpa_id),
+            climate_model=int(model),
+            timeseries_type=int(timeseries_type),
+            depth=int(depth) if depth else None,
+            start_date=start_date,
+            end_date=end_date,
+            indicator=int(indicator),
+            quantile_upper=float(upper_quantile),
+            quantile_lower=float(lower_quantile)
         )
         return Response(result)

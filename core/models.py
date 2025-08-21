@@ -35,8 +35,13 @@ class ClimateModels(models.Model):
 
 
 class Timeseries(models.Model):
+    TIMESERIES_TYPES = (
+        (1, 'BOTTOM'),
+        (2, 'SURFACE')
+    )
     model = models.ForeignKey(ClimateModels, on_delete=models.CASCADE, related_name='timeseries')
     zone = models.ForeignKey(MPAZones, on_delete=models.CASCADE, related_name='timeseries')
+    type = models.IntegerField(choices=TIMESERIES_TYPES, default=1)
     indicator = models.ForeignKey(Indicators, on_delete=models.CASCADE, related_name='timeseries')
     date_time = models.DateField(verbose_name="Date")
     depth = models.IntegerField(verbose_name="Depth", null=True)  # if null this is a total average bottom timeseries

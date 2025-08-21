@@ -92,7 +92,7 @@ export const QuantileChart = {
 
                 // Build URL with query parameters
                 const url = new URL(this.dataUrl, window.location.origin);
-                url.searchParams.append('mpa', this.mpa.id);
+                url.searchParams.append('mpa_id', this.mpa.id);
                 url.searchParams.append('depth', this.depth);
                 url.searchParams.append('start_date', this.startDate);
                 url.searchParams.append('end_date', this.endDate);

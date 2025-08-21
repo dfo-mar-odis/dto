@@ -525,7 +525,7 @@ const mapApp = createApp({
 
                 // This endpoint will return a timeseries and climatology that can be used in multiple charts
                 const tsUrl = new URL(state.urls.timeseriesUrl, window.location.origin);
-                tsUrl.searchParams.set('mpa', state.mpa.id);
+                tsUrl.searchParams.set('mpa_id', state.mpa.id);
                 tsUrl.searchParams.set('start_date', state.dates.start_date);
                 tsUrl.searchParams.set('end_date', state.dates.end_date);
 

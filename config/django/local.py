@@ -7,3 +7,5 @@ from django.conf import settings
 
 if settings.DEBUG:
     print("Debugging")
+
+settings.INSTALLED_APPS.append('django_extensions')
