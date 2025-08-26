@@ -297,7 +297,7 @@ export const TimeseriesChart = {
                         ctx.font = '14px Arial';
                         ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
                         ctx.textAlign = 'left';
-                        ctx.fillText(`RMSE: ${component.timeseriesData.rmse.toFixed(2)}`, 10, 20);
+                        ctx.fillText(`${(window.translations?.rmse || 'RMSE' )}: ${component.timeseriesData.rmse.toFixed(2)} °C`, 10, 20);
                         ctx.restore();
                     }
                 };
