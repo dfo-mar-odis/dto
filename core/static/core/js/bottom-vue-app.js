@@ -273,10 +273,10 @@ const mapApp = createApp({
 
             // Add network indicators if a date is selected
             if (state.dates.selected_date) {
-                const curValue = (netdata.data.ts_data - netdata.data.clim)
+                const curValue = (netdata.data.ts_data - netdata.data.climatology)
                 const curAnom = curValue / netdata.data.std_dev
                 let maxAnom = netdata.max_delta / netdata.data.std_dev
-                if (curValue < netdata.data.clim)
+                if (curValue < netdata.data.climatology)
                     maxAnom = Math.abs(netdata.max_delta / netdata.data.std_dev)
 
                 const percentage = Math.abs(curAnom) / maxAnom
@@ -501,9 +501,16 @@ const mapApp = createApp({
         }
 
         function setSelectedDateRange(dateRange) {
+            let update_network_data = false;
             if (typeof dateRange === 'object' && dateRange !== null) {
+                if(dateRange.selected_date !== state.dates.selected_date)
+                    update_network_data = true
+
                 // Handle dateRange object from MPAControls
                 state.dates = dateRange.date
+                if(update_network_data) {
+                    fetchNetworkIndicatorData();
+                }
             }
 
             // Check canvas exists before attempting to draw
