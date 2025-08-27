@@ -174,7 +174,11 @@ const mapApp = createApp({
                 // this loads much faster to help us determine how many polygons there'll be and how many
                 // calls we'll have to make to load them all.
                 const url = new URL(state.urls.mpasWithTimeseriesList, window.location.origin);
-                url.searchParams.set('geometry', 'false'); // Add geometry=false to the query parameters
+                // We're specifically interested in bottom data for this app
+                url.searchParams.set('type', 1);
+
+                // Add geometry=false to the query parameters
+                url.searchParams.set('geometry', 'false');
                 url.searchParams.set('page_size', 1)
                 if (state.filterMPAs) {
                     state.filterMPAs.forEach(mpa => {
@@ -389,7 +393,7 @@ const mapApp = createApp({
                 const url = new URL(state.urls.networkIndicatorUrl, window.location.origin);
 
                 // Add parameters using searchParams API
-                url.searchParams.set('id', polygonIds.join(','));
+                url.searchParams.set('mpa_id', polygonIds.join(','));
                 url.searchParams.set('date', state.dates.selected_date);
 
                 const response = await fetch(url.toString());
@@ -402,8 +406,12 @@ const mapApp = createApp({
 
                 // Update tooltips only for layers with returned data
                 polygonLayersMap.forEach((layer, id) => {
-                    if (data[id]) {
-                        getTooltipContent(layer, data[id]);
+                    try {
+                        if (data[id]) {
+                            getTooltipContent(layer, data[id]);
+                        }
+                    } catch (error) {
+                        console.error(`Error loading network indicator data: ${id}`, error);
                     }
                 });
             } catch (error) {

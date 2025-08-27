@@ -126,23 +126,23 @@ export const NetworkIndicator = {
                     <table class="table table-sm table-bordered" v-if="dataPoint">
                         <tbody>
                             <tr>
-                                <th scope="row">{{ t.anomaly || 'Standard Anomaly' }}</th>
+                                <th scope="row">{{ t.standard_anomaly }}</th>
                                 <td>{{ formatValue(currentDelta) }}</td>
                             </tr>
                             <tr>
-                                <th scope="row">{{ t.current_value || 'Current Value' }}</th>
+                                <th scope="row">{{ t.current_value }}</th>
                                 <td>{{ formatValue(dataPoint.ts_data) }}°C</td>
                             </tr>
                             <tr>
-                                <th scope="row">{{ t.climatology || 'Climatology' }}</th>
+                                <th scope="row">{{ t.climatology }}</th>
                                 <td>{{ formatValue(dataPoint.climatology) }}°C</td>
                             </tr>
                             <tr>
-                                <th scope="row">{{ t.standard_deviation || 'Standard Deviation (σ)' }}</th>
+                                <th scope="row">{{ t.standard_deviation }}</th>
                                 <td>{{ formatValue(dataPoint.std_dev) }}°C</td>
                             </tr>
                             <tr v-if="quantile">
-                                <th scope="row">{{ t.upper_quantile || 'Upper Quantile' }} ({{ formatQuantileLabel(upperQuantileLabel) }})</th>
+                                <th scope="row">{{ t.upper_quantile }} ({{ formatQuantileLabel(upperQuantileLabel) }})</th>
                                 <td>{{ formatValue(quantile.upperq) }}°C</td>
                             </tr>
                             <tr v-if="quantile">

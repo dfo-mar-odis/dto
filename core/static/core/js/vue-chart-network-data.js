@@ -133,7 +133,7 @@ export const NetworkIndicators = {
             try {
                 // Build query params with all polygon IDs
                 const idParams = polygonsToFetch.map(polygon =>
-                    `id=${polygon.mpa.properties.id}`
+                    `mpa_id=${polygon.mpa.properties.id}`
                 ).join('&');
 
                 const url = `${this.dataUrl}?${idParams}&date=${this.selectedDate}`;

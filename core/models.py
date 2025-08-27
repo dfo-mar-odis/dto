@@ -1,4 +1,5 @@
 from django.contrib.gis.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.translation import gettext as _
 
 
@@ -56,6 +57,16 @@ class Observations(models.Model):
     value = models.FloatField(verbose_name="Value")
     count = models.IntegerField(verbose_name="Count", help_text=_('Number of observations recorded at a depth for a specific date and location'))
     std = models.FloatField(verbose_name="Standard Deviation")
+
+
+class OnsetOfSpringAnomalies(models.Model):
+    zone = models.ForeignKey(MPAZones, on_delete=models.CASCADE, related_name='onsets')
+    model = models.ForeignKey(ClimateModels, on_delete=models.CASCADE, related_name='onsets')
+    year = models.IntegerField(
+        validators=[MinValueValidator(1000), MaxValueValidator(9999)],
+        verbose_name=_("Year")
+    )
+    anomaly = models.FloatField(verbose_name="Anomaly")
 
 
 class SpeciesGrouping(models.IntegerChoices):

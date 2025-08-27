@@ -431,7 +431,8 @@ def get_classification_colours(request):
 
 
 def get_max_date(request):
-    return JsonResponse({'max_date': models.Timeseries.objects.aggregate(Max('date_time'))["date_time__max"]})
+    ts_type = request.GET.get('type', 1)  # we need bottom or surfce data
+    return JsonResponse({'max_date': models.Timeseries.objects.filter(type=ts_type).aggregate(Max('date_time'))["date_time__max"]})
 
 def get_climate_models(request):
     mpa_id = int(request.GET.get('mpa_id', -1))

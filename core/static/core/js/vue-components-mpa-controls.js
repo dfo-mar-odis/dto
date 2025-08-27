@@ -65,8 +65,14 @@ export const MPAControls = {
 
     },
     mounted() {
+        // This endpoint will return a timeseries and climatology that can be used in multiple charts
+        const tsUrl = new URL(this.maxDateUrl, window.location.origin);
+
+        // We need to tell the url call that we only want dates for bottom data
+        tsUrl.searchParams.set('type', 1);
+
         // Fetch the max date from the server when component is mounted
-        fetch(this.maxDateUrl)
+        fetch(tsUrl.toString())
             .then(response => response.json())
             .then(data => {
                 // Calculate start date (5 years before end date)
