@@ -1,6 +1,7 @@
 // Export the component definition instead of registering it immediately
 export const StandardAnomalyChart = {
     props: {
+        timeseries_type: 1,
         mpa: {
             type: Object,
             default: () => ({})
@@ -44,6 +45,7 @@ export const StandardAnomalyChart = {
             // Build the URL with parameters
             const url = new URL(this.dataUrl, window.location.origin);
             url.searchParams.set('mpa', this.mpa.id);
+            url.searchParams.set('type', this.timeseries_type)
 
             // Fetch and update the chart
             fetch(url.toString())

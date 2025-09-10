@@ -6,6 +6,7 @@ export const NetworkIndicators = {
     },
 
     props: {
+        timeseries_type: 1,
         selectedPolygon: {
             type: Object,
             default: null
@@ -131,13 +132,14 @@ export const NetworkIndicators = {
             this.requestQueue = [] ;
 
             try {
-                // Build query params with all polygon IDs
-                const idParams = polygonsToFetch.map(polygon =>
-                    `mpa_id=${polygon.mpa.properties.id}`
-                ).join('&');
+                const url = new URL(this.dataUrl, window.location.origin);
+                polygonsToFetch.forEach(polygon => {
+                    url.searchParams.append('mpa_id', polygon.mpa.properties.id);
+                });
+                url.searchParams.set("date", this.selectedDate)
+                url.searchParams.set("type", this.timeseries_type)
 
-                const url = `${this.dataUrl}?${idParams}&date=${this.selectedDate}`;
-                const response = await fetch(url);
+                const response = await fetch(url.toString());
                 const data = await response.json();
 
                 // Update polygons with fetched data

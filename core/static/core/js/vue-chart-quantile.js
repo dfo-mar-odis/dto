@@ -6,6 +6,7 @@ export const QuantileChart = {
     // Extend the TimeseriesChart component
     extends: TimeseriesChart,
     props: {
+        timeseries_type: 1,
         dataUrl: String,
         depth: '',
         startDate: null,
@@ -93,6 +94,7 @@ export const QuantileChart = {
                 // Build URL with query parameters
                 const url = new URL(this.dataUrl, window.location.origin);
                 url.searchParams.append('mpa_id', this.mpa.id);
+                url.searchParams.append('type', this.timeseries_type);
                 url.searchParams.append('depth', this.depth);
                 url.searchParams.append('start_date', this.startDate);
                 url.searchParams.append('end_date', this.endDate);

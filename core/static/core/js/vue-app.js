@@ -24,6 +24,8 @@ const mapApp = createApp({
                 km2: 0,
                 depths: []
             },
+            // 1 for Bottom timeseries, 2 for Surface. This is how it's defined in the core.model
+            // timeseries_type: 1,
             dates: {
                 selected_date: null,
                 start_date: '',
@@ -31,7 +33,6 @@ const mapApp = createApp({
             },
             depth: '',
             loading: false,
-            activeTab: 'timeseries_data',
             urls: {
                 mpasWithTimeseriesList: '', // Will be populated from template
                 timeseriesUrl: '',
@@ -72,6 +73,14 @@ const mapApp = createApp({
             filterMPAs: []
         });
 
+        // Populate the tabs data structure
+        // eg. this will set the first tab as the active tab
+        // {
+        //      activeTab: 'tab_id',
+        //      tabList: { tab_id: { title: "label" }, tab1_id: { title: "label_1"}, ... }
+        // }
+        const tabs = reactive({});
+
         // Initialize everything
         onMounted(() => {
             // Using Esri World Imagery as satellite base map
@@ -87,42 +96,12 @@ const mapApp = createApp({
                 layers: [satellite],
             }); // Center on world view
 
-            // Initialize map
-            if (typeof MapApp !== 'undefined') {
-                MapApp.init(
-                    state.urls.mpasWithTimeseriesList,
-                    state.urls.timeseriesUrl,
-                    state.urls.legendUrl,
-                    state.urls.speciesURL,
-                    state.urls.networkIndicatorUrl,
-                );
-            }
-
             initCtrlKeyTracking();
         });
 
         function addFilterMPA(mpa_id) {
             state.filterMPAs.push(mpa_id)
         }
-
-        function initialize(mpasUrl, timeseriesUrl, legendUrl, speciesUrl, networkIndicatorUrl) {
-            state.urls.mpasWithTimeseriesList = mpasUrl;
-            state.urls.timeseriesUrl = timeseriesUrl;
-            state.urls.legendUrl = legendUrl;
-            state.urls.speciesUrl = speciesUrl;
-            state.urls.networkIndicatorUrl = networkIndicatorUrl;
-
-            loadMPAPolygons();
-            loadSpecies();
-        }
-
-        // Populate the tabs data structure
-        const tabs = reactive({
-            timeseries_data: {title: window.translations?.timeseries || 'Timeseries'},
-            standard_anomaly_data: {title: window.translations?.standard_anomalies || 'Standard Anomalies'},
-            species_data: {title: window.translations?.species_data || 'Species Data'},
-            network_data: {title: window.translations?.network_data || 'Network Data'},
-        });
 
         // Methods
         function setMapView(lat, lng, zoom) {
@@ -175,7 +154,7 @@ const mapApp = createApp({
                 // calls we'll have to make to load them all.
                 const url = new URL(state.urls.mpasWithTimeseriesList, window.location.origin);
                 // We're specifically interested in bottom data for this app
-                url.searchParams.set('type', 1);
+                url.searchParams.set('type', state.timeseries_type);
 
                 // Add geometry=false to the query parameters
                 url.searchParams.set('geometry', 'false');
@@ -395,6 +374,7 @@ const mapApp = createApp({
                 // Add parameters using searchParams API
                 url.searchParams.set('mpa_id', polygonIds.join(','));
                 url.searchParams.set('date', state.dates.selected_date);
+                url.searchParams.set('type', state.timeseries_type);
 
                 const response = await fetch(url.toString());
 
@@ -407,7 +387,7 @@ const mapApp = createApp({
                 // Update tooltips only for layers with returned data
                 polygonLayersMap.forEach((layer, id) => {
                     try {
-                        if (data[id]) {
+                        if (data[id] && data[id].data) {
                             getTooltipContent(layer, data[id]);
                         }
                     } catch (error) {
@@ -543,6 +523,7 @@ const mapApp = createApp({
                 tsUrl.searchParams.set('mpa_id', state.mpa.id);
                 tsUrl.searchParams.set('start_date', state.dates.start_date);
                 tsUrl.searchParams.set('end_date', state.dates.end_date);
+                tsUrl.searchParams.set('type', state.timeseries_type);
 
                 // if depth isn't specified then it'll be None and will return the
                 // Total Average Bottom Timeseries
@@ -562,6 +543,19 @@ const mapApp = createApp({
             state.networkIndicatorData = data;
         }
 
+        function initialize(mpasUrl, timeseriesUrl, legendUrl, speciesUrl, networkIndicatorUrl, timeseries_type, tabsData) {
+            state.urls.mpasWithTimeseriesList = mpasUrl;
+            state.urls.timeseriesUrl = timeseriesUrl;
+            state.urls.legendUrl = legendUrl;
+            state.urls.speciesUrl = speciesUrl;
+            state.urls.networkIndicatorUrl = networkIndicatorUrl;
+
+            state.timeseries_type = timeseries_type
+            Object.assign(tabs, tabsData)
+
+            loadMPAPolygons();
+            loadSpecies();
+        }
 
         return {
             state,

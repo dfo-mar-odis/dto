@@ -1,6 +1,10 @@
 export const MPAControls = {
     props: {
         mpa: Object,
+        timeseries_type: {
+            type: Number,
+            default: 1
+        },
         maxDateUrl: {
             type: String,
             required: true
@@ -69,7 +73,7 @@ export const MPAControls = {
         const tsUrl = new URL(this.maxDateUrl, window.location.origin);
 
         // We need to tell the url call that we only want dates for bottom data
-        tsUrl.searchParams.set('type', 1);
+        tsUrl.searchParams.set('type', this.timeseries_type);
 
         // Fetch the max date from the server when component is mounted
         fetch(tsUrl.toString())
@@ -159,7 +163,7 @@ export const MPAControls = {
         <div class="card">
             <div class="card-body">
                 <div class="row justify-content-center">
-                    <div class="col-auto align-content-center">
+                    <div v-if="timeseries_type==1" class="col-auto align-content-center">
                         <label for="btm_depth">{{ t.bottom_depth || 'Bottom Depth' }}</label>
                         <select class="form-select" id="btm_depth"
                             v-model="state.depth"

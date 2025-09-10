@@ -38,7 +38,7 @@ urlpatterns += api_urls.urlpatterns
 
 # Localized URLs (user-facing pages)
 urlpatterns += i18n_patterns(
-    path('', views.bottom, name='index'),
+    path('', views.surface, name='index'),
     path('', include('core.urls')),
 )
 

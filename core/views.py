@@ -240,7 +240,7 @@ def add_plot(title, mpa_id, depth=None, start_date='2020-01-01', end_date='2023-
 
 
 def generate_pdf(request):
-    mpa_id, climate_model, depth, start_date, end_date = parse_request_variables(request)
+    mpa_id, climate_model, depth, start_date, end_date, timeseries_type = parse_request_variables(request)
 
     timeseries = models.Timeseries.objects.order_by('date_time')
     if not start_date:
@@ -332,10 +332,10 @@ def generate_pdf(request):
 
 
 def get_anomaly(request):
-    mpa_id, climate_model, depth, start_date, end_date = parse_request_variables(request)
+    mpa_id, climate_model, depth, start_date, end_date, timeseries_type = parse_request_variables(request)
     mpa_zone = models.MPAZones.objects.get(pk=mpa_id)
 
-    mpa_timeseries = mpa_zone.timeseries.filter(indicator=1, depth=None).order_by('date_time')
+    mpa_timeseries = mpa_zone.timeseries.filter(indicator=1, type=timeseries_type, depth=None).order_by('date_time')
 
     df = pd.DataFrame(list(mpa_timeseries.values('date_time', 'depth', 'value')))
     df['date_time'] = pd.to_datetime(df['date_time'])
@@ -375,18 +375,9 @@ def parse_request_variables(request):
     end_date = request.GET.get('end_date', None)
     end_date = None if end_date == '' or end_date is None else end_date
 
-    return mpa_id, climate_model, depth, start_date, end_date
+    timeseries_type = request.GET.get('type', 1)
 
-
-def get_standard_anomalies_chart(request):
-    chart_id = request.GET.get('chart_name')
-
-    context = {
-        'id': chart_id,
-        # 'proxy_url': settings.PROXY_URL
-    }
-    html = render(request, 'core/partials/stda_chart_row.html', context)
-    return HttpResponse(html)
+    return mpa_id, climate_model, depth, start_date, end_date, timeseries_type
 
 
 def get_range_chart(request):
