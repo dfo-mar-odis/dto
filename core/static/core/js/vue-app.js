@@ -349,6 +349,7 @@ const mapApp = createApp({
                 km2: mpa.properties.km2 || '',
                 depths: mpa.properties.depths || []
             });
+            getData();
         }
 
         // This forces the refresh of the network indicator data that's used in popups when hovering
@@ -476,8 +477,10 @@ const mapApp = createApp({
         }
 
         function setSelectedDate(date) {
-            state.dates.selected_date = date;
-            fetchNetworkIndicatorData();
+            if(date !== state.dates.selected_date) {
+                state.dates.selected_date = date;
+                fetchNetworkIndicatorData();
+            }
         }
 
         function setSelectedDateRange(dateRange) {
@@ -501,13 +504,15 @@ const mapApp = createApp({
             }
 
             getData();
-            fetchNetworkIndicatorData();
+            // fetchNetworkIndicatorData();
         }
 
         function setSelectedDepth(depth) {
-            state.depth = String(depth);
-            fetchNetworkIndicatorData();
-            getData();
+            if(String(depth) != state.depth) {
+                state.depth = String(depth);
+                fetchNetworkIndicatorData();
+                getData();
+            }
         }
 
         async function getData() {
