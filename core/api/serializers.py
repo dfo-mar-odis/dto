@@ -32,6 +32,9 @@ class MPAZonesWithoutGeometrySerializer(serializers.ModelSerializer):
         }
         return representation
 
+    def get_sorted_zones(self, queryset):
+        return queryset.order_by('-km2')
+
 
 class MPAZonesSerializer(MPAZonesWithoutGeometrySerializer):
     class Meta:
