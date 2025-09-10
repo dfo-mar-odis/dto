@@ -9,7 +9,7 @@ from tqdm import tqdm
 # --------------------------------------------------------------------
 # | date | 66 m T | 66 m std(T) | 66 m | 78 m T | 78 m std(T) | 78 m | etc...
 # --------------------------------------------------------------------
-def load_observations(zone: models.MPAZones, indicator: models.Indicators, dataframe: pd.DataFrame):
+def load_observations(zone: models.MPAZones, indicator: models.TimeseriesVariables, dataframe: pd.DataFrame):
     # Find all depths from column names (e.g., '66 m T')
     depth_pattern = re.compile(r"(\d+)\s*m\s*T")
     depths = []
@@ -42,7 +42,7 @@ def load_mpa():
     data_dir = os.path.join("scripts", "data", "MPA_Observations")
     files = [f for f in os.listdir(data_dir) if os.path.isfile(os.path.join(data_dir, f))]
 
-    temp_indicator = models.Indicators.objects.get(id=1)  # for now we're only loading temperature data
+    temp_indicator = models.TimeseriesVariables.objects.get(id=1)  # for now we're only loading temperature data
 
     for file_name in tqdm(files, desc=f"Loading files"):
         if not (site_id_str:=file_name.split('_')[0]).isdigit():

@@ -26,7 +26,7 @@ class MPAZones(models.Model):
         return f"{self.name_e}"
 
 
-class Indicators(models.Model):
+class TimeseriesVariables(models.Model):
     name = models.CharField(max_length=50, verbose_name=_('Indicator Name'))
 
 
@@ -43,7 +43,7 @@ class Timeseries(models.Model):
     model = models.ForeignKey(ClimateModels, on_delete=models.CASCADE, related_name='timeseries')
     zone = models.ForeignKey(MPAZones, on_delete=models.CASCADE, related_name='timeseries')
     type = models.IntegerField(choices=TIMESERIES_TYPES, default=1)
-    indicator = models.ForeignKey(Indicators, on_delete=models.CASCADE, related_name='timeseries')
+    indicator = models.ForeignKey(TimeseriesVariables, on_delete=models.CASCADE, related_name='timeseries')
     date_time = models.DateField(verbose_name="Date")
     depth = models.IntegerField(verbose_name="Depth", null=True)  # if null this is a total average bottom timeseries
     value = models.FloatField(verbose_name="Value")
@@ -51,7 +51,7 @@ class Timeseries(models.Model):
 
 class Observations(models.Model):
     zone = models.ForeignKey(MPAZones, on_delete=models.CASCADE, related_name='observations')
-    indicator = models.ForeignKey(Indicators, on_delete=models.CASCADE, related_name='observations')
+    indicator = models.ForeignKey(TimeseriesVariables, on_delete=models.CASCADE, related_name='observations')
     date_time = models.DateField(verbose_name="Date")
     depth = models.IntegerField(verbose_name="Depth")
     value = models.FloatField(verbose_name="Value")
@@ -59,14 +59,20 @@ class Observations(models.Model):
     std = models.FloatField(verbose_name="Standard Deviation")
 
 
-class OnsetOfSpringAnomalies(models.Model):
-    zone = models.ForeignKey(MPAZones, on_delete=models.CASCADE, related_name='onsets')
-    model = models.ForeignKey(ClimateModels, on_delete=models.CASCADE, related_name='onsets')
+class IndicatorTypes(models.Model):
+    name = models.CharField(max_length=50, verbose_name=_('Indicator Type'))
+    description = models.CharField(max_length=150, verbose_name=_('Description'))
+
+
+class Indicators(models.Model):
+    zone = models.ForeignKey(MPAZones, on_delete=models.CASCADE, related_name='indicators')
+    type = models.ForeignKey(IndicatorTypes, on_delete=models.CASCADE, related_name='indicators')
+    model = models.ForeignKey(ClimateModels, on_delete=models.CASCADE, related_name='indicators')
     year = models.IntegerField(
         validators=[MinValueValidator(1000), MaxValueValidator(9999)],
         verbose_name=_("Year")
     )
-    anomaly = models.FloatField(verbose_name="Anomaly")
+    value = models.FloatField(verbose_name="Value", blank=True, null=True)
 
 
 class SpeciesGrouping(models.IntegerChoices):

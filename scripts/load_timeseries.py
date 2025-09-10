@@ -9,7 +9,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 
-def load_series(mpa, timeseries, climate_model: models.ClimateModels, timeseries_type=1, depth=None, indicator=1, batch_size=1000):
+def load_series(mpa, timeseries, climate_model: models.ClimateModels, timeseries_type=1, depth=None, variable=1, batch_size=1000):
     """
     Load time series data into the database with batched bulk inserts.
 
@@ -19,12 +19,12 @@ def load_series(mpa, timeseries, climate_model: models.ClimateModels, timeseries
     climate_model: What climate model to use when saving data
     timeseries_type: 1 = Bottom timeseries, 2 = Surface timeseries
     depth: Depth value (in meters) for the time series, or None for surface data
-    Indicators: ID of the indicator type (default: 1 for temperature)
+    variable: ID of the indicator type (default: 1 for temperature)
     batch_size: Number of records to insert in each database batch
     """
     try:
         # Get indicator object once outside the loop
-        timeseries_indicator = models.Indicators.objects.get(pk=indicator)
+        timeseries_indicator = models.TimeseriesVariables.objects.get(pk=variable)
 
         # Setup tracking variables
         add_time_series = []
@@ -95,6 +95,7 @@ def load_onset_of_spring(mpa, data, climate_model, batch_size=1000):
         total_rows = len(data)
         rows_processed = 0
         batches_completed = 0
+        indicator_type = models.IndicatorTypes.objects.get(pk=1)
 
         # Initialize progress bar
         with tqdm(total=total_rows, desc=f"Loading data (onset of spring)") as pbar:
@@ -108,11 +109,12 @@ def load_onset_of_spring(mpa, data, climate_model, batch_size=1000):
 
                 # Create new time series entry
                 add_data.append(
-                    models.OnsetOfSpringAnomalies(
+                    models.Indicators(
                         zone=mpa,
+                        type=indicator_type,  # by default 1 is the onset of spring indicator type
                         model=climate_model,
                         year=row[0],
-                        anomaly=value,
+                        value=value,
                     )
                 )
 
@@ -120,7 +122,7 @@ def load_onset_of_spring(mpa, data, climate_model, batch_size=1000):
 
                 # Batch insert when reaching batch size
                 if len(add_data) >= batch_size:
-                    models.OnsetOfSpringAnomalies.objects.bulk_create(add_data)
+                    models.Indicators.objects.bulk_create(add_data)
                     batches_completed += 1
                     pbar.set_postfix(batches=batches_completed)
                     add_data = []
@@ -130,7 +132,7 @@ def load_onset_of_spring(mpa, data, climate_model, batch_size=1000):
 
             # Insert any remaining records
             if add_data:
-                models.OnsetOfSpringAnomalies.objects.bulk_create(add_data)
+                models.Indicators.objects.bulk_create(add_data)
                 batches_completed += 1
 
         print(f"Completed loading {rows_processed} records in {batches_completed} batches")
@@ -370,7 +372,7 @@ def build_surface_mpa_dictionary(data_directory) -> dict:
     # Stage 1: Scan directory for files
     print("Stage 1: Scanning directory...")
     all_files = [file for file in data_directory.glob('*.csv') if (file.name.startswith('aveSST_') or
-                                                                   file.name.startswith('aveonsetsprint_') )]
+                                                                   file.name.startswith('aveonsetspring_') )]
     total_files = len(all_files)
     print(f"Found {total_files} files to process")
 
@@ -380,7 +382,7 @@ def build_surface_mpa_dictionary(data_directory) -> dict:
         file_name = file_path.name
 
         # Skip files that don't match our naming patterns
-        if not file_name.startswith('aveSST_') or file_name.startswith('aveonsetsprint_'):
+        if not file_name.startswith('aveSST_') and not file_name.startswith('aveonsetspring_'):
             continue
 
         # Extract MPA ID from filename
@@ -396,7 +398,7 @@ def build_surface_mpa_dictionary(data_directory) -> dict:
 
         data[mpa_id]['TYPE'] = 2
         # Classify file type and add to appropriate category
-        if file_name.startswith('aveonsetsprint_'):
+        if file_name.startswith('aveonsetspring_'):
             data[mpa_id]['ONSET_OF_SPRING'] = str(file_path)
         elif file_name.startswith('aveSST_'):
             data[mpa_id]['TS'] = str(file_path)

@@ -173,7 +173,7 @@ def add_plot(title, mpa_id, depth=None, start_date='2020-01-01', end_date='2023-
     q_lower = 0.1
 
     mpa_zone = models.MPAZones.objects.get(site_id=mpa_id)
-    indicator = models.Indicators.objects.get(pk=indicator)
+    indicator = models.TimeseriesVariables.objects.get(pk=indicator)
     df = get_timeseries_dataframe(mpa_zone, depth, indicator=indicator)
 
     clim = df[(df.index <= '2022-12-31')]
