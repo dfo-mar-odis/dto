@@ -25,8 +25,10 @@ def load_onset_of_spring(mpa, data, climate_model, batch_size=1000):
         total_rows = len(data)
         rows_processed = 0
         batches_completed = 0
+        unit = "Onset of Spring Anomalies (weeks)"
+
         indicator_category = models.IndicatorCategories.objects.get_or_create(name="Unknown")[0]
-        indicator_type = models.IndicatorTypes.objects.get_or_create(name="Anomaly in Onset of Spring (weeks)", category=indicator_category)[0]
+        indicator_type = models.IndicatorTypes.objects.get_or_create(name="Anomaly in Onset of Spring (weeks)", unit=unit, category=indicator_category)[0]
         models.IndicatorWeights.objects.get_or_create(type=indicator_type, zone=mpa)
         indicator_type.indicators.filter(zone=mpa).delete()
 
@@ -124,7 +126,6 @@ def load_mpas_from_dict(data: dict, climate_model):
     data (dict): Dictionary with MPA IDs as keys and file paths as values
     """
     print(f"Stage 1: Processing {len(data)} MPAs...")
-
     # Main progress bar for MPAs
     with tqdm(total=len(data), desc="Loading MPAs") as mpa_pbar:
         for mpa_id, mpa_dict in data.items():
@@ -285,12 +286,13 @@ def load_std_anomalies():
     types = [1, 2] # 1 is Bottom, 2 is surface
     depth = None
 
+    unit = 'Standardized Anomalies (σ)'
     for climate_model in climate_models:
         for zone in zones:
             for timeseries_type in types:
                 name = ("Total Average Bottom" if timeseries_type == 1 else "Surface") + " Standardized Temperature Anomaly"
                 std_anom_indicator = \
-                models.IndicatorTypes.objects.get_or_create(name=name, category=indicator_category)[0]
+                models.IndicatorTypes.objects.get_or_create(name=name, unit=unit, category=indicator_category)[0]
                 models.IndicatorWeights.objects.get_or_create(type=std_anom_indicator, zone=zone)
                 load_std_anomaly(std_anom_indicator, climate_model, zone, timeseries_type)
 

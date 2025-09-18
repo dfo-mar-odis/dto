@@ -1,4 +1,5 @@
 import {StandardAnomalyChart} from "./vue-chart-standard-anomaly.js";
+import {SiteIndicatorsChart} from "./vue-chart-site-indicators.js";
 import {QuantileChart} from "./vue-chart-quantile.js";
 import {SpeciesChartContainer} from "./vue-components-species.js";
 import {MPAInfo} from "./vue-components-mpa-info.js";
@@ -618,6 +619,7 @@ const mapApp = createApp({
 });
 
 mapApp.component('standard-anomaly-chart', StandardAnomalyChart);
+mapApp.component('site-indicators-chart', SiteIndicatorsChart);
 mapApp.component('quantile-chart', QuantileChart);
 mapApp.component('species-chart-container', SpeciesChartContainer);
 mapApp.component('mpa-info', MPAInfo);

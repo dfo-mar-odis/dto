@@ -470,8 +470,10 @@ class NetworkIndicatorsViewSet(viewsets.ReadOnlyModelViewSet):
                     max = min_max['max_value']
 
                     indicator_meta = {
+                        "indicator_id": indicator_type_meta.id,
                         "title": indicator_type_meta.name,
                         "description": indicator_type_meta.description,
+                        "unit": indicator_type_meta.unit,
                         "min": min,
                         "max": max,
                         "weight": zone.indicator_weights.get(type=indicator_type_meta).weight,

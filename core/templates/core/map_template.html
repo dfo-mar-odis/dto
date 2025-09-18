@@ -134,12 +134,11 @@
             id="individual_indicators">
             <div class="row">
                 <div class="col">
-                    <standard-anomaly-chart
-                            :timeseries_type="state.timeseries_type"
+                    <site-indicators-chart
                             :mpa="state.mpa"
-                            data-url="{% url 'core:anomaly' %}"
                             :is-active="tabs.activeTab === 'individual_indicators'"
-                    ></standard-anomaly-chart>
+                            data-url="{% url 'api:network-indicator-list' %}"
+                    ></site-indicators-chart>
                 </div>
             </div>
         </div>

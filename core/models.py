@@ -68,6 +68,7 @@ class IndicatorTypes(models.Model):
     name = models.CharField(max_length=80, verbose_name=_('Indicator Type'))
     description = models.CharField(max_length=150, verbose_name=_('Description'))
     category = models.ForeignKey(IndicatorCategories, on_delete=models.CASCADE, related_name='indicator_types')
+    unit = models.CharField(max_length=45, verbose_name=_('Indicator Unit'))
 
 
 class IndicatorWeights(models.Model):

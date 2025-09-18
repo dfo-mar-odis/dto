@@ -122,7 +122,7 @@ export const StandardAnomalyChart = {
             }
 
             // Format data for Chart.js
-            const formattedData = this.formatChartData(this.chartData);
+            const formattedData = this.formatChartData();
             // Set up dynamic background colors based on values
             if (formattedData.datasets[0] && formattedData.datasets[0].data) {
                 formattedData.datasets[0].backgroundColor = formattedData.datasets[0].data.map(point =>
