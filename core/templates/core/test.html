@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="row mt-2">
+        {% for mpa_indicator in mpa_indicators %}
+        <div class="col-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white mb-2">
+                    <div class="card-title">
+                        Network Indicators : <br />{{ mpa_indicator.mpa.name_e }}
+                    </div>
+                </div>
+                <div class="card-body">
+                {% with mpa_indicator.indicators as indicators %}
+                    {% for indicator in indicators %}
+                    <div class="mb-1 card bg-body-tertiary">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col"><span class="bi bi-question-circle me-1" title="{{ indicator.description }}{% if indicator.weight %}
+
+Weight: {{ indicator.weight }}{% endif %}"></span>{{ indicator.title }} : {{ indicator.year }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col">
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-{{ indicator.colorbar }}" role="progressbar" aria-valuenow="{{ indicator.value }}"
+                                             aria-valuemin="{{ indicator.min }}" aria-valuemax="{{ indicator.max }}" style="width: {{ indicator.width }}%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endwith %}
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+    </div>
+{% endblock %}

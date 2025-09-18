@@ -5,6 +5,7 @@ from .views import (
     MPAZonesViewSet,
     MPAZonesWithTimeseriesViewSet,
     SpeciesViewSet,
+    HeatWaveIndicatorsViewSet,
     NetworkIndicatorsViewSet,
     SelectedDateDataView,
     TimeseriesDataView,
@@ -17,7 +18,8 @@ app_name = "api"
 router = DefaultRouter()
 router.register(r'mpas', MPAZonesViewSet)
 router.register(r'species', SpeciesViewSet, basename='species')
-router.register(r'network-indicators', NetworkIndicatorsViewSet, basename='network-indicators')
+router.register(r'heat-wave-indicators', HeatWaveIndicatorsViewSet, basename='heat-wave-indicators')
+router.register(r'network-indicator', NetworkIndicatorsViewSet, basename='network-indicator')
 router.register(r'mpas-with-timeseries', MPAZonesWithTimeseriesViewSet, basename='mpas-with-timeseries')
 
 api_urlpatterns = router.urls + [

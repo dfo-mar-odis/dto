@@ -1,6 +1,11 @@
 import pandas as pd
 import numpy as np
 
+from itertools import groupby
+from operator import attrgetter
+
+from django.db.models import Min, Max
+
 from django.http import JsonResponse
 
 from rest_framework import viewsets
@@ -272,7 +277,7 @@ class SpeciesViewSet(viewsets.ReadOnlyModelViewSet):
         return super().list(request, *args, **kwargs)
 
 
-class NetworkIndicatorsViewSet(viewsets.ReadOnlyModelViewSet):
+class HeatWaveIndicatorsViewSet(viewsets.ReadOnlyModelViewSet):
 
     def list(self, request):
         mpa_ids = request.query_params.getlist('mpa_id')
@@ -416,3 +421,81 @@ class QuantileDataView(APIView):
             quantile_lower=float(lower_quantile)
         )
         return Response(result)
+
+
+class NetworkIndicatorsViewSet(viewsets.ReadOnlyModelViewSet):
+
+    def list(self, request):
+        results = []
+
+        # accepts:
+        #   map_id: list of selected mpas,
+        #   climate Model: 1 - GLORYS (default),
+        #   year: If none all years will be included, else just the provided year is included
+        mpa_ids = request.query_params.getlist('mpa_id')
+        ts_model = request.query_params.get('model', 1)
+
+        if not mpa_ids:
+            return JsonResponse({"error": "Missing required parameters: 'id' and 'date'"}, status=400)
+
+        # bottom or surface may not matter for Network indicators. Either the indicator exists for a given MPA, Climate Model
+        ts_type = request.query_params.get('type', 1)
+
+        # if a year isn't provided then we'll include the indicator with all data.
+        year = request.query_params.get('year', None)
+
+        climate_model = models.ClimateModels.objects.get(pk=ts_model)
+        for mid in mpa_ids:
+            zone = models.MPAZones.objects.get(site_id=mid)
+            db_indicators = zone.indicators.filter(model=climate_model)
+            if year:
+                db_indicators = db_indicators.filter(year=year)
+
+            if db_indicators:
+                indicator_types = db_indicators.values_list('type', flat=True).distinct()
+                indicator = {
+                    "mpa": {
+                        "id": zone.site_id,
+                        "name": zone.name_e,
+                    },
+                    "indicators": []
+                }
+                for indicator_type in indicator_types:
+                    indicator_type_meta = models.IndicatorTypes.objects.get(pk=indicator_type)
+                    min_max = indicator_type_meta.indicators.exclude(value=np.nan).aggregate(
+                        min_value=Min('value'),
+                        max_value=Max('value')
+                    )
+                    min = min_max['min_value']
+                    max = min_max['max_value']
+
+                    indicator_meta = {
+                        "title": indicator_type_meta.name,
+                        "description": indicator_type_meta.description,
+                        "min": min,
+                        "max": max,
+                        "weight": zone.indicator_weights.get(type=indicator_type_meta).weight,
+                        "data": []
+                    }
+                    tmp_indicators = db_indicators.filter(type=indicator_type)
+                    for tmp_indicator in tmp_indicators:
+                        value = tmp_indicator.value
+                        # Ensure min and max are not equal to avoid division by zero
+                        if max != min:
+                            percentage = ((value - min) / (max - min)) * 100
+                        else:
+                            percentage = 0  # Default to 0 if min and max are the same
+                        indicator_meta["data"].append({
+                            "year": tmp_indicator.year,
+                            "value": str(value),
+                            "width": str(percentage),
+                            "colorbar": "success"
+                        })
+                    indicator["indicators"].append(indicator_meta)
+
+                results.append(indicator)
+
+        return Response(results)
+
+    def get_queryset(self):
+        return None

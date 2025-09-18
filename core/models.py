@@ -59,9 +59,21 @@ class Observations(models.Model):
     std = models.FloatField(verbose_name="Standard Deviation")
 
 
-class IndicatorTypes(models.Model):
-    name = models.CharField(max_length=50, verbose_name=_('Indicator Type'))
+class IndicatorCategories(models.Model):
+    name = models.CharField(max_length=50, verbose_name=_('Indicator Category'))
     description = models.CharField(max_length=150, verbose_name=_('Description'))
+
+
+class IndicatorTypes(models.Model):
+    name = models.CharField(max_length=80, verbose_name=_('Indicator Type'))
+    description = models.CharField(max_length=150, verbose_name=_('Description'))
+    category = models.ForeignKey(IndicatorCategories, on_delete=models.CASCADE, related_name='indicator_types')
+
+
+class IndicatorWeights(models.Model):
+    weight = models.IntegerField(verbose_name=_('Indicator Weight'), default=1)
+    type = models.ForeignKey(IndicatorTypes, on_delete=models.CASCADE, related_name='indicator_weights')
+    zone = models.ForeignKey(MPAZones, on_delete=models.CASCADE, related_name='indicator_weights')
 
 
 class Indicators(models.Model):
@@ -72,7 +84,10 @@ class Indicators(models.Model):
         validators=[MinValueValidator(1000), MaxValueValidator(9999)],
         verbose_name=_("Year")
     )
-    value = models.FloatField(verbose_name="Value", blank=True, null=True)
+    value = models.FloatField(verbose_name="Value")
+
+    def __str__(self):
+        return f"{self.model.name} : {self.zone.site_id} - {self.zone.name_e} : {self.type.name} : {self.value}"
 
 
 class SpeciesGrouping(models.IntegerChoices):

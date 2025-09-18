@@ -79,69 +79,6 @@ def load_series(mpa, timeseries, climate_model: models.ClimateModels, timeseries
         raise
 
 
-def load_onset_of_spring(mpa, data, climate_model, batch_size=1000):
-    """
-    Load onset of spring data into the database with batched bulk inserts.
-
-    Parameters:
-    mpa: MPA object to associate with the time series data
-    data: Pandas DataFrame containing onset of spring data
-    climate_model: What climate model to use when saving data
-    batch_size: Number of records to insert in each database batch
-    """
-    try:
-        # Setup tracking variables
-        add_data = []
-        total_rows = len(data)
-        rows_processed = 0
-        batches_completed = 0
-        indicator_type = models.IndicatorTypes.objects.get(pk=1)
-
-        # Initialize progress bar
-        with tqdm(total=total_rows, desc=f"Loading data (onset of spring)") as pbar:
-            # Process each row
-            for row in data.iterrows():
-                try:
-                    # Convert value to float or NaN
-                    value = float(row[1].iloc[0])
-                except ValueError:
-                    value = np.nan
-
-                # Create new time series entry
-                add_data.append(
-                    models.Indicators(
-                        zone=mpa,
-                        type=indicator_type,  # by default 1 is the onset of spring indicator type
-                        model=climate_model,
-                        year=row[0],
-                        value=value,
-                    )
-                )
-
-                rows_processed += 1
-
-                # Batch insert when reaching batch size
-                if len(add_data) >= batch_size:
-                    models.Indicators.objects.bulk_create(add_data)
-                    batches_completed += 1
-                    pbar.set_postfix(batches=batches_completed)
-                    add_data = []
-
-                # Update progress bar
-                pbar.update(1)
-
-            # Insert any remaining records
-            if add_data:
-                models.Indicators.objects.bulk_create(add_data)
-                batches_completed += 1
-
-        print(f"Completed loading {rows_processed} records in {batches_completed} batches")
-
-    except Exception as e:
-        print(f"Error loading onset of spring data: {str(e)}")
-        raise
-
-
 def read_timeseries(mpa, filename, climate_model, timeseries_type=1, date_col='Date', chunksize=100000):
     """
     Read and load time series data from a CSV file with chunking for large files.
@@ -179,48 +116,6 @@ def read_timeseries(mpa, filename, climate_model, timeseries_type=1, date_col='D
             timeseries = timeseries.set_index(date_col)
             print(f"Read {len(timeseries)} time series records")
             load_series(mpa, timeseries, climate_model, timeseries_type)
-
-    except Exception as e:
-        print(f"Error reading time series file {filename}: {str(e)}")
-        raise
-
-
-def read_onset_of_spring(mpa, filename, climate_model, date_col='Date', chunksize=100000):
-    """
-    Read and load onset of spring data from a CSV file with chunking for large files.
-
-    Parameters:
-    mpa: MPA object to associate with the time series
-    filename: Path to CSV file containing time series data
-    date_col: Column name containing date information
-    chunksize: Number of rows to process at once (for large files)
-    """
-    try:
-        file_path = Path(filename)
-        print(f"Loading time series from {file_path.name}")
-
-        # Get file size for reporting
-        file_size_mb = file_path.stat().st_size / (1024 * 1024)
-        print(f"File size: {file_size_mb:.2f} MB")
-
-        # For large files, use chunking
-        if file_size_mb > 50:  # Threshold for chunking (50MB)
-            print(f"Large file detected, processing in chunks of {chunksize} rows")
-
-            # Process file in chunks with progress bar
-            reader = pd.read_csv(filename, chunksize=chunksize)
-
-            # Process each chunk
-            for i, chunk in enumerate(tqdm(reader, desc="Processing chunks")):
-                chunk = chunk.set_index(date_col)
-                load_onset_of_spring(mpa, chunk, climate_model)
-
-        else:
-            # For smaller files, read all at once
-            timeseries = pd.read_csv(filename)
-            timeseries = timeseries.set_index(date_col)
-            print(f"Read {len(timeseries)} time series records")
-            load_onset_of_spring(mpa, timeseries, climate_model)
 
     except Exception as e:
         print(f"Error reading time series file {filename}: {str(e)}")
@@ -301,12 +196,6 @@ def load_mpas_from_dict(data: dict, climate_model):
                 if depth_ts:
                     read_depth_timeseries(mpa, depth_ts, climate_model, timeseries_type)
 
-                # Stage 4: Process Onset Of Spring
-                mpa_pbar.set_postfix(file="Onset of Spring Anomalies")
-                spring_anom = mpa_dict.get('ONSET_OF_SPRING')
-                if spring_anom:
-                    read_onset_of_spring(mpa, spring_anom, climate_model)
-
                 mpa_pbar.update(1)
 
             except models.MPAZones.DoesNotExist:
@@ -371,8 +260,7 @@ def build_surface_mpa_dictionary(data_directory) -> dict:
 
     # Stage 1: Scan directory for files
     print("Stage 1: Scanning directory...")
-    all_files = [file for file in data_directory.glob('*.csv') if (file.name.startswith('aveSST_') or
-                                                                   file.name.startswith('aveonsetspring_') )]
+    all_files = [file for file in data_directory.glob('*.csv') if file.name.startswith('aveSST_')]
     total_files = len(all_files)
     print(f"Found {total_files} files to process")
 
@@ -382,7 +270,7 @@ def build_surface_mpa_dictionary(data_directory) -> dict:
         file_name = file_path.name
 
         # Skip files that don't match our naming patterns
-        if not file_name.startswith('aveSST_') and not file_name.startswith('aveonsetspring_'):
+        if not file_name.startswith('aveSST_'):
             continue
 
         # Extract MPA ID from filename
@@ -398,9 +286,7 @@ def build_surface_mpa_dictionary(data_directory) -> dict:
 
         data[mpa_id]['TYPE'] = 2
         # Classify file type and add to appropriate category
-        if file_name.startswith('aveonsetspring_'):
-            data[mpa_id]['ONSET_OF_SPRING'] = str(file_path)
-        elif file_name.startswith('aveSST_'):
+        if file_name.startswith('aveSST_'):
             data[mpa_id]['TS'] = str(file_path)
 
     print(f"Completed! Found data for {len(data)} MPAs")

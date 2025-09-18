@@ -18,14 +18,14 @@
                     generate-pdf-url="{% url 'core:generate_pdf' %}"
                     icon-url="{% static 'icons/favicon.png' %}"
             ></mpa-info>
-            <network-indicator class="card"
+            <heat-wave-indicator class="card"
                 :data-point="state.networkIndicatorData.currentPoint"
                 :quantile="state.networkIndicatorData.currentQuantile"
                 :min-delta="state.networkIndicatorData.quantileData?.min_delta"
                 :max-delta="state.networkIndicatorData.quantileData?.max_delta"
                 :upper-quantile-label="state.networkIndicatorData.label?.upper"
                 :lower-quantile-label="state.networkIndicatorData.label?.lower"
-            ></network-indicator>
+            ></heat-wave-indicator>
         </div>
         <div class="col">
             <div id="map" class="map-container">
@@ -90,28 +90,11 @@
                             :selected-date="state.dates.selected_date"
                             :timeseries-data="state.timeseriesData"
                             data-url="{% url 'api:quantile-data' %}"
-                            :is-active="state.activeTab === 'timeseries_data'"
+                            :is-active="tabs.activeTab === 'timeseries_data'"
                             :is-loading="state.loading"
                             @date-selected="setSelectedDate"
                             @quantile-data-updated="updateNetworkIndicator"
                     ></quantile-chart>
-                </div>
-            </div>
-        </div>
-            {% endblock %}
-            {% block standard-anomaly-tab %}
-
-        <div class="tab-pane fade"
-            :class="{ 'show active': tabs.activeTab === 'standard_anomaly_data' }"
-            id="standard_anomaly_data">
-            <div class="row">
-                <div class="col">
-                    <standard-anomaly-chart
-                            :timeseries_type="state.timeseries_type"
-                            :mpa="state.mpa"
-                            data-url="{% url 'core:anomaly' %}"
-                            :is-active="state.activeTab === 'standard_anomaly_data'"
-                    ></standard-anomaly-chart>
                 </div>
             </div>
         </div>
@@ -125,7 +108,7 @@
                     :species-list="state.species"
                     :timeseries-data="state.timeseriesData"
                     :selected-date="state.dates.selected_date"
-                    :is-active="state.activeTab === 'species_data'"
+                    :is-active="tabs.activeTab === 'species_data'"
                     :is-loading="state.loading"
                     @date-selected="setSelectedDate"
             ></species-chart-container>
@@ -144,19 +127,34 @@
             </div>
         </div>
             {% endblock %}
+            {% block standard-anomaly-tab %}
+
+        <div class="tab-pane fade"
+            :class="{ 'show active': tabs.activeTab === 'individual_indicators' }"
+            id="individual_indicators">
+            <div class="row">
+                <div class="col">
+                    <standard-anomaly-chart
+                            :timeseries_type="state.timeseries_type"
+                            :mpa="state.mpa"
+                            data-url="{% url 'core:anomaly' %}"
+                            :is-active="tabs.activeTab === 'individual_indicators'"
+                    ></standard-anomaly-chart>
+                </div>
+            </div>
+        </div>
+            {% endblock %}
             {% block network-tab %}
         <div class="tab-pane fade"
             :class="{ 'show active': tabs.activeTab === 'network_data' }"
              id="network_data">
             <div class="mt-2" id="div_id_network_card">
                 <network-indicators
-                        :timeseries_type="state.timeseries_type"
-                        :selected-depth="state.depth"
                         :selected-polygon="state.selectedPolygon"
+                        :selected-polygons="state.selectedPolygons"
                         :selected-date="state.dates.selected_date"
-                        :is-ctrl-pressed="state.isCtrlPressed"
-                        data-url="{% url 'api:network-indicators-list' %}"
-                        @polygon-list-updated="updateSelectedPolygons"
+                        :is-active="tabs.activeTab === 'network_data'"
+                        data-url="{% url 'api:network-indicator-list' %}"
                 ></network-indicators>
             </div>
         </div>
@@ -182,9 +180,9 @@
                 activeTab: 'timeseries_data', {# active tab should match the id of the tab above #}
                 tabList: {
                     timeseries_data: {title: window.translations?.timeseries || 'Timeseries'},
-                    standard_anomaly_data: {title: window.translations?.standard_anomalies || 'Standard Anomalies'},
                     species_data: {title: window.translations?.species_data || 'Species Data'},
-                    network_data: {title: window.translations?.network_data || 'Network Data'},
+                    individual_indicators: {title: window.translations?.individual_indicators || 'Individual Indicators'},
+                    network_data: {title: window.translations?.network_comparison || 'Network Comparison'},
                 }
             };
             {% endblock %}
@@ -203,7 +201,7 @@
                 "{% url 'api:timeseries-data' %}",  // retrieves the timeseries data that's used by multiple objects
                 "{% url 'core:get_classification_colours' %}", // adds the legend to the map
                 "{% url 'api:species-list' %}?all=true",  // used to get the list of species and assciated data
-                "{% url 'api:network-indicators-list' %}",
+                "{% url 'api:heat-wave-indicators-list' %}",
                 {% block timeseries_type %}1{% endblock %},
                 tabsData
             );

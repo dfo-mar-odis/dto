@@ -1,5 +1,5 @@
-import {LegendSectionPlugin} from './vue-chart-plugin-legend.js';
-import {ToggleObservationsPlugin} from './vue-chart-plugin-toggle-observations.js';
+import {LegendSectionPlugin} from './vue-plugin-legend.js';
+import {ToggleObservationsPlugin} from './vue-plugin-toggle-observations.js';
 
 export const TimeseriesChart = {
     props: {

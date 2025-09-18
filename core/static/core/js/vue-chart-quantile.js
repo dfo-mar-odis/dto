@@ -1,6 +1,5 @@
 import {TimeseriesChart} from "./vue-chart-timeseries.js";
-import {LegendSectionPlugin} from './vue-chart-plugin-legend.js';
-import { NetworkIndicator } from './vue-components-network-indicator.js';
+import {LegendSectionPlugin} from './vue-plugin-legend.js';
 
 export const QuantileChart = {
     // Extend the TimeseriesChart component
@@ -13,7 +12,6 @@ export const QuantileChart = {
         endDate: null,
     },
     components: {
-        NetworkIndicator
     },
     computed: {
         t() {
@@ -248,14 +246,6 @@ export const QuantileChart = {
                             step="0.1"
                             class="form-control">
                         </div>
-<!--                        <network-indicator-->
-<!--                            :data-point="currentPoint"-->
-<!--                            :quantile="currentQuantile"-->
-<!--                            :min-delta="quantileData?.min_delta"-->
-<!--                            :max-delta="quantileData?.max_delta"-->
-<!--                            :upper-quantile-label="upperQuantile"-->
-<!--                            :lower-quantile-label="lowerQuantile">-->
-<!--                        </network-indicator>-->
                     </div>
                 </div>
             </div>

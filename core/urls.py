@@ -6,6 +6,7 @@ app_name = 'core'
 urlpatterns = [
     path('bottom/', views.bottom, name='bottom'),
     path('surface/', views.surface, name='surface'),
+    path('test/', views.test, name='test'),
 
     # path(f'', views.index, name='map'),
     # path('timeseries/', views.get_timeseries, name='timeseries'),

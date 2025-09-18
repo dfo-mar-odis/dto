@@ -1,5 +1,5 @@
 import {TimeseriesChart} from "./vue-chart-timeseries.js";
-import {LegendSectionPlugin} from './vue-chart-plugin-legend.js';
+import {LegendSectionPlugin} from './vue-plugin-legend.js';
 
 export const SpeciesChart = {
     // Extend the TimeseriesChart component

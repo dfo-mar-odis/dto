@@ -1,137 +1,15 @@
-{% load static %}
-{% load i18n %}
+{% extends 'base.html' %}
+{% block additional_header %}
+<style>
+    #map {
+        position: relative;
+        width: 100%;
+        height: 475px;
+    }
 
-<!DOCTYPE html>
-<html>
-<head>
+    .leaflet-container {
+        font-size: 1rem;
+    }
 
-    <title>{% block title %}{% trans 'Digital Twin Ocean Viewer' %}{% endblock %}</title>
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
-    <link rel="shortcut icon" type="image/png" href="{% static 'icons/favicon.png' %}"/>
-
-    <script>
-        L_NO_TOUCH = false;
-        L_DISABLE_3D = false;
-    </script>
-
-    {# provides French locale translations for chartJS #}
-    <script src="{% static 'core/js/bundle.js' %}"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
-
-<!--    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css"/>-->
-<!--    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>-->
-<!--    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>-->
-<!--    <link rel="stylesheet"-->
-<!--          href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>-->
-<!--    <link rel="stylesheet"-->
-<!--          href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>-->
-
-    <link rel="stylesheet" href="{% static 'core/css/bundle.css' %}">
-    {% block custom_css %}
-    {% endblock custom_css %}
-
-    <meta name="viewport" content="width=device-width,
-                initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-    <style>
-        #map {
-            position: relative;
-            width: 100%;
-            height: 475px;
-        }
-
-        .leaflet-container {
-            font-size: 1rem;
-        }
-
-        .tooltip-inner {
-            text-align: left;
-        }
-
-        .loader-lg {
-            border: 160px solid #f3f3f3; /* Light grey */
-            border-top: 160px solid #3498db; /* Blue */
-            border-radius: 50%;
-            width: 400px;
-            height: 400px;
-            animation: spin 2s linear infinite;
-        }
-
-        .loader {
-            border: 16px solid #f3f3f3; /* Light grey */
-            border-top: 16px solid #3498db; /* Blue */
-            border-radius: 50%;
-            width: 120px;
-            height: 120px;
-            animation: spin 2s linear infinite;
-        }
-
-        .loader-sm {
-            border: 16px solid #f3f3f3; /* Light grey */
-            border-top: 16px solid #3498db; /* Blue */
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 2s linear infinite;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-    </style>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
-
-    <style>
-        .leaflet-image-layer {
-            /* old android/safari*/
-            image-rendering: -webkit-optimize-contrast;
-            image-rendering: crisp-edges; /* safari */
-            image-rendering: pixelated; /* chrome */
-            image-rendering: -moz-crisp-edges; /* firefox */
-            image-rendering: -o-crisp-edges; /* opera */
-            -ms-interpolation-mode: nearest-neighbor; /* ie */
-        }
-    </style>
-
-
-</head>
-<body>
-
-{% include 'base_nav.html' %}
-
-<div class="container">
-    {% block content %}
-    {% endblock %}
-</div>
-
-</body>
-{% block scripts %}
+</style>
 {% endblock %}
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Make sure bootstrap is available globally
-        if (typeof bootstrap !== 'undefined') {
-            // Initialize tooltips
-            var tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-            tooltipTriggerList.forEach(function(tooltipTriggerEl) {
-                new bootstrap.Tooltip(tooltipTriggerEl);
-            });
-
-            // Initialize dropdowns
-            var dropdownTriggerList = document.querySelectorAll('[data-bs-toggle="dropdown"]');
-            dropdownTriggerList.forEach(function(dropdownTriggerEl) {
-                new bootstrap.Dropdown(dropdownTriggerEl);
-            });
-        } else {
-            console.error('Bootstrap is not available globally');
-        }
-    });
-</script>
-
-</html>

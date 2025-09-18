@@ -4,7 +4,7 @@ import {SpeciesChartContainer} from "./vue-components-species.js";
 import {MPAInfo} from "./vue-components-mpa-info.js";
 import {MPAControls} from "./vue-components-mpa-controls.js";
 import {NetworkIndicators} from "./vue-chart-network-data.js";
-import {NetworkIndicator} from "./vue-components-network-indicator.js";
+import {HeatWaveIndicator} from "./vue-components-heat-wave-indicator.js";
 
 const {createApp, ref, reactive, watch, computed, onMounted} = Vue;
 
@@ -38,7 +38,7 @@ const mapApp = createApp({
                 timeseriesUrl: '',
                 legendUrl: '',
                 speciesUrl: '',
-                networkIndicatorUrl: ''
+                heatWaveIndicatorUrl: ''
             },
             charts: {
                 standardAnomalies: null,
@@ -46,22 +46,6 @@ const mapApp = createApp({
             },
             timeseriesData: null,
             isCtrlPressed: false,
-            highlightStyles: {
-                primary: {
-                    color: '#5D3FD3',      // Deep purple border
-                    weight: 3,
-                    opacity: 0.9,
-                    fillColor: '#8A2BE2',  // Purple fill
-                    fillOpacity: 0.6
-                },
-                secondary: {
-                    color: '#9370DB',      // Medium purple border
-                    weight: 2,
-                    opacity: 0.8,
-                    fillColor: '#D8BFD8',  // Lavender fill
-                    fillOpacity: 0.5
-                }
-            },
             networkIndicatorData: {
                 currentPoint: null,
                 currentQuantile: null,
@@ -81,6 +65,22 @@ const mapApp = createApp({
         // }
         const tabs = reactive({});
 
+        const highlightStyles = {
+            primary: {
+                color: '#5D3FD3',      // Deep purple border
+                weight: 3,
+                opacity: 0.9,
+                fillColor: '#8A2BE2',  // Purple fill
+                fillOpacity: 0.6
+            },
+            secondary: {
+                color: '#9370DB',      // Medium purple border
+                weight: 2,
+                opacity: 0.8,
+                fillColor: '#D8BFD8',  // Lavender fill
+                fillOpacity: 0.5
+            }
+        }
         // Initialize everything
         onMounted(() => {
             // Using Esri World Imagery as satellite base map
@@ -336,11 +336,50 @@ const mapApp = createApp({
 
         function handlePolygonSelection(layer, mpa) {
 
-            // Always update the MPA info panel with the most recently selected polygon
-            state.selectedPolygon = {layer, mpa}
+            const newPoly = {layer, mpa}
+            // If CTRL is pressed
             if (state.isCtrlPressed) {
-                state.selectedPolygon.layer.setStyle(mpa.style);
+
+                // If MPA is not the currently selected polygon
+                const existingIndex = state.selectedPolygons.findIndex(
+                    item => item.mpa?.properties?.id === mpa.properties.id
+                );
+
+                // If it's not in the Poly list
+                //  set the style of other polys in the list to be active, but not primary
+                //  highlight the new poly
+                //  add it to the list
+                // else
+                //   Remove it from the Poly list
+                //   reset its style
+                if(mpa.properties.id !== state.selectedPolygon.mpa.properties.id) {
+                    state.selectedPolygons.forEach((item, index) => {
+                        item.layer.setStyle(highlightStyles.secondary);
+                    });
+                    if(existingIndex <= -1) {
+                        state.selectedPolygons.push(newPoly)
+                    }
+                    newPoly.layer.setStyle(highlightStyles.primary)
+                } else {
+                    state.selectedPolygons.splice(existingIndex, 1);
+                    newPoly.layer.setStyle(mpa.style)
+                }
+
+            } else {
+                // if CTRL isn't pressed
+                //   reset the styles of all polys in the list
+                //   clear the selected polygon list
+                //   add the new poly as the only polygon
+                state.selectedPolygons.forEach((item, index) => {
+                    item.layer.setStyle(item.mpa.style);
+                });
+                newPoly.layer.setStyle(highlightStyles.primary);
+                state.selectedPolygons = [newPoly]
             }
+
+            // make it the currently selected MPA
+            // Always update the MPA info panel with the most recently selected polygon
+            state.selectedPolygon = newPoly
             setMPA({
                 id: mpa.properties.id,
                 name: mpa.properties.name || 'Unknown MPA',
@@ -350,54 +389,6 @@ const mapApp = createApp({
                 depths: mpa.properties.depths || []
             });
             getData();
-        }
-
-        // This forces the refresh of the network indicator data that's used in popups when hovering
-        // over an area on the map
-        async function fetchNetworkIndicatorData() {
-            if (!state.dates.selected_date || !state.urls.networkIndicatorUrl) return;
-
-            try {
-                // Collect polygon layers and their IDs in a single pass
-                const polygonLayersMap = new Map();
-                state.map.eachLayer(layer => {
-                    if (layer.feature?.properties?.id) {
-                        polygonLayersMap.set(layer.feature.properties.id, layer);
-                    }
-                });
-
-                if (polygonLayersMap.size === 0) return;
-
-                // Use comma-separated IDs for a more compact URL
-                const polygonIds = Array.from(polygonLayersMap.keys());
-                const url = new URL(state.urls.networkIndicatorUrl, window.location.origin);
-
-                // Add parameters using searchParams API
-                url.searchParams.set('mpa_id', polygonIds.join(','));
-                url.searchParams.set('date', state.dates.selected_date);
-                url.searchParams.set('type', state.timeseries_type);
-
-                const response = await fetch(url.toString());
-
-                if (!response.ok) {
-                    throw new Error(`Network response error: ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                // Update tooltips only for layers with returned data
-                polygonLayersMap.forEach((layer, id) => {
-                    try {
-                        if (data[id] && data[id].data) {
-                            getTooltipContent(layer, data[id]);
-                        }
-                    } catch (error) {
-                        console.error(`Error loading network indicator data: ${id}`, error);
-                    }
-                });
-            } catch (error) {
-                console.error("Error fetching network indicator data:", error);
-            }
         }
 
         function updateSelectedPolygons(polygonList) {
@@ -417,7 +408,7 @@ const mapApp = createApp({
             state.selectedPolygons = polygonList;
             state.selectedPolygons.forEach((item, index) => {
                 const isLast = item === state.selectedPolygon;
-                const style = isLast ? state.highlightStyles.primary : state.highlightStyles.secondary;
+                const style = isLast ? highlightStyles.primary : highlightStyles.secondary;
                 item.layer.setStyle(style);
             });
         }
@@ -515,6 +506,54 @@ const mapApp = createApp({
             }
         }
 
+        // This forces the refresh of the network indicator data that's used in popups when hovering
+        // over an area on the map
+        async function fetchNetworkIndicatorData() {
+            if (!state.dates.selected_date || !state.urls.heatWaveIndicatorUrl) return;
+
+            try {
+                // Collect polygon layers and their IDs in a single pass
+                const polygonLayersMap = new Map();
+                state.map.eachLayer(layer => {
+                    if (layer.feature?.properties?.id) {
+                        polygonLayersMap.set(layer.feature.properties.id, layer);
+                    }
+                });
+
+                if (polygonLayersMap.size === 0) return;
+
+                // Use comma-separated IDs for a more compact URL
+                const polygonIds = Array.from(polygonLayersMap.keys());
+                const url = new URL(state.urls.heatWaveIndicatorUrl, window.location.origin);
+
+                // Add parameters using searchParams API
+                url.searchParams.set('mpa_id', polygonIds.join(','));
+                url.searchParams.set('date', state.dates.selected_date);
+                url.searchParams.set('type', state.timeseries_type);
+
+                const response = await fetch(url.toString());
+
+                if (!response.ok) {
+                    throw new Error(`Network response error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Update tooltips only for layers with returned data
+                polygonLayersMap.forEach((layer, id) => {
+                    try {
+                        if (data[id] && data[id].data) {
+                            getTooltipContent(layer, data[id]);
+                        }
+                    } catch (error) {
+                        console.error(`Error loading network indicator data: ${id}`, error);
+                    }
+                });
+            } catch (error) {
+                console.error("Error fetching network indicator data:", error);
+            }
+        }
+
         async function getData() {
             state.loading = true;
 
@@ -548,12 +587,12 @@ const mapApp = createApp({
             state.networkIndicatorData = data;
         }
 
-        function initialize(mpasUrl, timeseriesUrl, legendUrl, speciesUrl, networkIndicatorUrl, timeseries_type, tabsData) {
+        function initialize(mpasUrl, timeseriesUrl, legendUrl, speciesUrl, heatWaveIndicatorUrl, timeseries_type, tabsData) {
             state.urls.mpasWithTimeseriesList = mpasUrl;
             state.urls.timeseriesUrl = timeseriesUrl;
             state.urls.legendUrl = legendUrl;
             state.urls.speciesUrl = speciesUrl;
-            state.urls.networkIndicatorUrl = networkIndicatorUrl;
+            state.urls.heatWaveIndicatorUrl = heatWaveIndicatorUrl;
 
             state.timeseries_type = timeseries_type
             Object.assign(tabs, tabsData)
@@ -584,6 +623,6 @@ mapApp.component('species-chart-container', SpeciesChartContainer);
 mapApp.component('mpa-info', MPAInfo);
 mapApp.component('mpa-controls', MPAControls);
 mapApp.component('network-indicators', NetworkIndicators);
-mapApp.component('network-indicator', NetworkIndicator);
+mapApp.component('heat-wave-indicator', HeatWaveIndicator);
 
 window.mapApp = mapApp;

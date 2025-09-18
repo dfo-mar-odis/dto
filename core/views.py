@@ -1,6 +1,6 @@
 import io
 import os
-
+import numpy as np
 import pandas as pd
 import branca.colormap as cm
 import logging
@@ -8,7 +8,7 @@ import logging
 import matplotlib.pyplot as plt
 
 from PIL import Image
-from django.db.models import Max
+from django.db.models import Max, Min
 
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
@@ -58,6 +58,90 @@ def bottom(request, **kwargs):
 def surface(request, **kwargs):
     context = get_common_context(request)
     return render(request, 'core/surface_map.html', context)
+
+
+def get_network_indicators(year, zone, climate_model):
+    indicators = [
+        # {
+        #     'title': "Total Average Bottom Heat/Cold Wave",
+        #     'description': 'Some description of what or how this indicator is computed',
+        #     'year': 2025,
+        #     'value': 50,
+        #     'weight': 1,
+        #     'colorbar': 'danger-subtle'
+        # },
+    ]
+
+    db_indicators = zone.indicators.filter(model=climate_model, year=year)
+    if db_indicators.exists():
+        for db_indicator in db_indicators:
+            value = db_indicator.value
+            min_max = db_indicator.type.indicators.exclude(value=np.nan).aggregate(
+                min_value=Min('value'),
+                max_value=Max('value')
+            )
+            min = min_max['min_value']
+            max = min_max['max_value']
+            # Ensure min and max are not equal to avoid division by zero
+            if max != min:
+                percentage = ((value - min) / (max - min)) * 100
+            else:
+                percentage = 0  # Default to 0 if min and max are the same
+            indicators.append({
+                'title': db_indicator.type.name,
+                'description': db_indicator.type.description,
+                'year': db_indicator.year,
+                'value': value,
+                'min': min,
+                'max': max,
+                'width': percentage,
+                'weight': zone.indicator_weights.get(type=db_indicator.type).weight,
+                'colorbar': 'success'
+            })
+
+        weight = 0
+        weighted_value = 0
+        weighted_min = 0
+        weighted_max = 0
+        weighted_width = 0
+        for indicator in indicators:
+            weight += indicator['weight']
+            weighted_min += indicator['min'] * indicator['weight']
+            weighted_max += indicator['max'] * indicator['weight']
+            weighted_width += indicator['width'] * indicator['weight']
+            weighted_value += indicator['value'] * indicator['weight']
+
+        overall_health = {
+            'title': "Overall Health",
+            'description': 'A weighted average of the available indicators',
+            'year': year,
+            'min': (weighted_min / weight),
+            'max': (weighted_max / weight),
+            'value': (weighted_value / weight),
+            'width': (weighted_width / weight),
+            'colorbar': 'primary'
+        }
+        indicators.insert(0, overall_health)
+
+    return indicators
+
+
+# this is a view for me to mockup and test out UI design ideas.
+def test(request, **kwargs):
+    context = get_common_context(request)
+
+    year = 2024
+    climate_model = models.ClimateModels.objects.get(pk=1)
+    zones = [35, 8, 42]
+    context['mpa_indicators'] = []
+
+    for zone_id in zones:
+        zone = models.MPAZones.objects.get(pk=zone_id)
+        context['mpa_indicators'].append({
+            'mpa': zone,
+            'indicators': get_network_indicators(year, zone, climate_model)
+        })
+    return render(request, 'core/test.html', context)
 
 
 def set_model(request):
