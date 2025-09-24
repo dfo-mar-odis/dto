@@ -41,7 +41,7 @@ export const NetworkIndicator = {
                 <div class="row">
                   <div class="col"><span class="bi bi-question-circle me-1"
                                          :title="indicator.description + (indicator.weight ? '\\n\\nWeight: ' + indicator.weight : '')"></span>
-                    {{ indicator.title }} : {{ indicator.year }}
+                    {{ indicator.title }} : [ {{indicator.min }} : {{ indicator.max }} ] : {{ indicator.year }}
                   </div>
                 </div>
                 <div v-for="val in indicator.data" class="row">

@@ -19,15 +19,77 @@ export const SpeciesChart = {
         return {
             ...TimeseriesChart.data(),
             selectedSpecies: null,
-            speciesLoading: false
+            speciesLoading: false,
+            loadingSpeciesImage: true
         };
     },
 
-    watch: {},
+    watch: {
+        selectedSpecies(newSpecies) {
+            if (newSpecies) {
+                this.fetchSpeciesImage();
+            }
+        }
+    },
 
     methods: {
         async fetchChartData() {
 
+        },
+
+        fetchSpeciesImage() {
+            if (!this.selectedSpecies) {
+                return;
+            }
+
+            const phylopic_url = "https://api.phylopic.org/images?build=517&page=0";
+
+            const url = new URL(phylopic_url, window.location.origin);
+            url.searchParams.append('filter_name', this.selectedSpecies.scientific_name.toLowerCase());
+
+            this.loadingSpeciesImage = true;
+            fetch(url.toString())
+                .then(response => response.json())
+                .then(data => {
+                    if (data._links && data._links.items && data._links.items.length > 0) {
+                        const href = data._links.items[data._links.items.length - 1].href;
+                        const nextUrl = new URL(href, "https://api.phylopic.org");
+                        return fetch(nextUrl.toString());
+                    } else {
+                        return null;
+                    }
+                })
+                .then(response => { if(response) return response.json(); })
+                .then(nextData => {
+                    console.log(nextData);
+                    if (nextData && nextData._links && nextData._links.vectorFile) {
+                        const vectorFile = nextData._links.vectorFile;
+                        const [width, height] = vectorFile.sizes.split('x').map(Number);
+
+                        this.selectedSpecies.vector_link = vectorFile.href;
+
+                        if (height > width) {
+                            // Rotate -90 degrees aournd the top left corner and then
+                            // translate down by the 96px, which is what we set the
+                            // size of the species-vector class to in the main.css
+                            this.selectedSpecies.rotationStyle = `
+                                width: 96px;
+                                transform-origin: top left;
+                                transform: rotate(-90deg) translateX(-96px);
+                            `;
+                        } else {
+                            this.selectedSpecies.rotationStyle = `
+                                height: 96px;
+                            `;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching data:", error);
+                })
+                .finally(() => {
+                    this.loadingSpeciesImage = false;
+                });
         },
 
         selectSpeciesById(speciesId) {
@@ -136,79 +198,88 @@ export const SpeciesChart = {
 
     // Override the template to add species selection panel
     template: `
-        <div class="row mb-1">
-            <div class="col-md-3 species-panel">
-                <div class="card">
-                    <div class="card-header">{{ t.species_select || 'Species Select' }}</div>
-                    <div class="card-body">
-                        <div v-if="speciesLoading" class="text-center p-3">
-                            <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                <span class="visually-hidden">{{ t.loading || 'Loading...' }}</span>
-                            </div>
-                        </div>
-                        <div v-else-if="speciesList.length === 0" class="text-center text-muted p-3">
-                            <i class="bi bi-fish"></i>
-                            <p>{{ t.no_data_available || 'No data available' }}</p>
-                        </div>
-                        <div v-else class="species-list">
-                            <select class="form-select form-select-sm" 
-                                    :disabled="speciesLoading"
-                                    @change="selectSpeciesById($event.target.value)">
-                                <option value="">{{ t.select_species || 'Select a Species' }}</option>
-                                <option v-for="species in speciesList"
-                                        :key="species.id"
-                                        :value="species.id"
-                                        :selected="selectedSpecies && selectedSpecies.id === species.id">
-                                    {{ species.name }}
-                                </option>
-                            </select>
-                        
-                            <div v-if="selectedSpecies" class="species-details mt-3">
-                                <p class="text-muted fst-italic">{{ selectedSpecies.scientific_name }}</p>
-                                
-                                <div class="species-info">
-                                    <div v-if="selectedSpecies.grouping" class="mb-2">
-                                        <strong>{{ t.species_group || 'Group' }} :</strong> {{ selectedSpecies.grouping.display }}
-                                    </div>
-                                    <div v-if="selectedSpecies.status" class="mb-2">
-                                        <strong>{{ t.species_status || 'Status' }} :</strong> {{ selectedSpecies.status.display }}
-                                    </div>
-                                    <div v-if="selectedSpecies.importance" class="mb-2">
-                                        <strong>{{ t.species_importance || 'Importance' }} :</strong> {{ selectedSpecies.importance.display }}
-                                    </div>
-                            
-                                    <hr>
-                            
-                                    <div class="mb-2">
-                                        <strong>{{ t.temperature_range || 'Temperature Range' }} :</strong><br>
-                                        {{ selectedSpecies.lower_temperature }}°C - {{ selectedSpecies.upper_temperature }}°C
-                                    </div>
-                                    <div class="mb-2">
-                                        <strong>{{ t.depth_range || 'Depth Range' }} :</strong><br>
-                                        {{ selectedSpecies.lower_depth }}m - {{ selectedSpecies.upper_depth }}m
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+      <div class="row mb-1">
+        <div class="col-md-3 species-panel">
+          <div class="card">
+            <div class="card-header">{{ t.species_select || 'Species Select' }}</div>
+            <div class="card-body">
+              <div v-if="speciesLoading" class="text-center p-3">
+                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                  <span class="visually-hidden">{{ t.loading || 'Loading...' }}</span>
                 </div>
-            </div>
-            <div class="col-md-9">
-                <div class="chart-container position-relative">
-                    <div v-if="isLoading || localLoading" class="chart-loading-overlay">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">{{ t.loading || 'Loading...' }}</span>
-                        </div>
+              </div>
+              <div v-else-if="speciesList.length === 0" class="text-center text-muted p-3">
+                <i class="bi bi-fish"></i>
+                <p>{{ t.no_data_available || 'No data available' }}</p>
+              </div>
+              <div v-else class="species-list">
+                <select class="form-select form-select-sm"
+                        :disabled="speciesLoading"
+                        @change="selectSpeciesById($event.target.value)">
+                  <option value="">{{ t.select_species || 'Select a Species' }}</option>
+                  <option v-for="species in speciesList"
+                          :key="species.id"
+                          :value="species.id"
+                          :selected="selectedSpecies && selectedSpecies.id === species.id">
+                    {{ species.name }}
+                  </option>
+                </select>
+
+                <div v-if="selectedSpecies" class="species-details mt-1">
+                  <p class="text-muted fst-italic">{{ selectedSpecies.scientific_name }}</p>
+                  <div v-if="loadingSpeciesImage" class="species-vector">
+                    <div class="spinner-border text-primary" role="status">
+                      <span class="visually-hidden">{{ t.loading || 'Loading...' }}</span>
                     </div>
-                    <div :id="'custom-observation-placeholder-' + chartInstanceId"></div>
-                    <div :id="'custom-legend-placeholder-' + chartInstanceId" class="chart-legend-container"></div>
-                    <canvas ref="chartCanvas"></canvas>
-                    <div v-if="!mpa.name" class="text-center text-muted mt-5 pt-5">
-                        <i class="bi bi-map"></i>
-                        <p>{{ t.select_mpa_on_map || 'Select an MPA on the map to view timeseries data' }}</p>
+                  </div>
+                  <div v-else-if="selectedSpecies.vector_link" class="species-vector">
+                    <img :src="selectedSpecies.vector_link" :alt="selectedSpecies.scientific_name" class="img-fluid"
+                         :style="selectedSpecies.rotationStyle">
+                  </div>
+                  <div class="species-info">
+                    <div v-if="selectedSpecies.grouping" class="mb-2">
+                      <strong>{{ t.species_group || 'Group' }} :</strong> {{ selectedSpecies.grouping.display }}
                     </div>
+                    <div v-if="selectedSpecies.status" class="mb-2">
+                      <strong>{{ t.species_status || 'Status' }} :</strong> {{ selectedSpecies.status.display }}
+                    </div>
+                    <div v-if="selectedSpecies.importance" class="mb-2">
+                      <strong>{{ t.species_importance || 'Importance' }} :</strong>
+                      {{ selectedSpecies.importance.display }}
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-2">
+                      <strong>{{ t.temperature }} :</strong>
+                      {{ selectedSpecies.lower_temperature }}°C - {{ selectedSpecies.upper_temperature }}°C
+                    </div>
+                    <div class="mb-2">
+                      <strong>{{ t.depth }} :</strong>
+                      {{ selectedSpecies.lower_depth }}m - {{ selectedSpecies.upper_depth }}m
+                    </div>
+                  </div>
                 </div>
+              </div>
             </div>
+          </div>
         </div>
+        <div class="col-md-9">
+          <div class="chart-container position-relative">
+            <div v-if="isLoading || localLoading" class="chart-loading-overlay">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">{{ t.loading || 'Loading...' }}</span>
+              </div>
+            </div>
+            <div :id="'custom-observation-placeholder-' + chartInstanceId"></div>
+            <div :id="'custom-legend-placeholder-' + chartInstanceId" class="chart-legend-container"></div>
+            <canvas ref="chartCanvas"></canvas>
+            <div v-if="!mpa.name" class="text-center text-muted mt-5 pt-5">
+              <i class="bi bi-map"></i>
+              <p>{{ t.select_mpa_on_map || 'Select an MPA on the map to view timeseries data' }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
     `,
 };

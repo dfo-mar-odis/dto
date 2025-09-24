@@ -36,6 +36,14 @@ body {
     border-color: #003f7f !important; /* Match border color with background */
 }
 
+.dropdown-menu {
+    z-index: 1050;
+}
+
+.species-vector {
+    height: 96px;
+}
+
 .chart-container {
     background-color: white;
     position: relative;
