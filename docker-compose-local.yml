@@ -7,7 +7,7 @@ services:
     container_name: dto-django
     restart: always
     ports:
-      - "8000:8000"
+      - "8000:8500"
     command: /bin/bash entry-point.sh
     environment:
       - "ENV_FILE=.env.local"
