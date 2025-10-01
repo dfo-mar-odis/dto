@@ -286,8 +286,10 @@ class HeatWaveIndicatorsViewSet(viewsets.ReadOnlyModelViewSet):
         if not mpa_ids or not selected_date:
             return JsonResponse({"error": "Missing required parameters: 'id' and 'date'"}, status=400)
 
-        # Optional parameters with defaults
-        ts_model = request.query_params.get('model', 1)
+        # use the session variable for the climate model, unless otherwise specified
+        ts_model = int(self.request.session.get('selected_model', 1))
+        ts_model = request.query_params.get('model', ts_model)
+
         ts_type = request.query_params.get('type', 1)
         depth = request.query_params.get('depth', None)
         lower_quantile = request.query_params.get('lower_quantile', 0.1)

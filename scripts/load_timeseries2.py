@@ -7,6 +7,9 @@ from core import models
 from pathlib import Path
 from tqdm import tqdm
 
+import logging
+
+logger = logging.getLogger('dto_info')
 
 def load_series(mpa, timeseries, climate_model: models.ClimateModels, variable: models.TimeseriesVariables,
                 timeseries_type=1, depth=None, batch_size=1000):
@@ -91,15 +94,15 @@ def read_timeseries_chunk(mpa, filename, climate_model: models.ClimateModels, va
     """
     try:
         file_path = Path(filename)
-        print(f"Loading time series from {file_path.name}")
+        logger.info(f"Loading time series from {file_path.name}")
 
         # Get file size for reporting
         file_size_mb = file_path.stat().st_size / (1024 * 1024)
-        print(f"File size: {file_size_mb:.2f} MB")
+        logger.info(f"File size: {file_size_mb:.2f} MB")
 
         # For large files, use chunking
         if file_size_mb > 50:  # Threshold for chunking (50MB)
-            print(f"Large file detected, processing in chunks of {chunksize} rows")
+            logger.info(f"Large file detected, processing in chunks of {chunksize} rows")
 
             # Process file in chunks with progress bar
             reader = pd.read_csv(filename, chunksize=chunksize)
@@ -113,11 +116,11 @@ def read_timeseries_chunk(mpa, filename, climate_model: models.ClimateModels, va
             # For smaller files, read all at once
             timeseries = pd.read_csv(filename)
             timeseries = timeseries.set_index(date_col)
-            print(f"Read {len(timeseries)} time series records")
+            logger.info(f"Read {len(timeseries)} time series records")
             load_series(mpa, timeseries, climate_model, variable, timeseries_type)
 
     except Exception as e:
-        print(f"Error reading time series file {filename}: {str(e)}")
+        logger.info(f"Error reading time series file {filename}: {str(e)}")
         raise
 
 
@@ -133,13 +136,13 @@ def read_depth_timeseries(mpa_name, filename, climate_model: models.ClimateModel
     """
     try:
         # Load the data
-        print(f"Reading depth time series from {Path(filename).name}")
+        logger.info(f"Reading depth time series from {Path(filename).name}")
         timeseries = pd.read_csv(filename)
         timeseries = timeseries.set_index(date_col)
 
         # Get total columns for progress tracking
         total_depths = len(timeseries.columns)
-        print(f"Found {total_depths} depth columns to process")
+        logger.info(f"Found {total_depths} depth columns to process")
 
         # Process each depth with progress bar
         for col in tqdm(timeseries.columns, desc="Processing depths"):
@@ -154,11 +157,11 @@ def read_depth_timeseries(mpa_name, filename, climate_model: models.ClimateModel
                 load_series(mpa_name, depth_timeseries, climate_model, variable, timeseries_type, depth)
 
             except (ValueError, IndexError) as e:
-                print(f"Error processing column '{col}': {str(e)}")
+                logger.error(f"Error processing column '{col}': {str(e)}")
                 continue
 
     except Exception as e:
-        print(f"Error processing file {filename}: {str(e)}")
+        logger.error(f"Error processing file {filename}: {str(e)}")
         raise
 
 
@@ -169,55 +172,80 @@ def load_mpas_from_array(data: list):
     Parameters:
     data (dict): Dictionary with MPA IDs as keys and file paths as values
     """
-    print(f"Stage 1: Processing {len(data)} MPAs...")
+    logger.info(f"Stage 1: Processing {len(data)} MPAs...")
 
     # Main progress bar for MPAs
     with tqdm(total=len(data), desc="Loading MPAs") as mpa_pbar:
-        for file in data:
-            climate_model = file['climate_model']
-            variable = file['variable']
-            file_name = file['file_name']
-        for mpa_id, mpa_dict in data.items():
+        for file_dict in data:
+            climate_model = file_dict['climate_model']
+            variable = file_dict['variable']
+            file_path_name = file_dict['file_name']
+            file_name = os.path.basename(file_path_name)
+            timeseries_type = file_dict['timeseries_type']
+
+            mpa_site_id = file_name.split('_')[0]
+            if not mpa_site_id.isdigit():
+                continue
+
+            mpa_pbar.set_description(f"Loading MPA {mpa_site_id}")
             try:
                 # Update description with current MPA ID
-                mpa_pbar.set_description(f"Loading MPA {mpa_id}")
 
                 # Get MPA and clear existing data
-                mpa = models.MPAZones.objects.get(pk=mpa_id)
-                timeseries_type = mpa_dict.get('TYPE', 1)  # 1 == Bottom Timeseries
-                mpa.timeseries.filter(model=climate_model, type=timeseries_type).delete()
+                mpa = models.MPAZones.objects.get(pk=mpa_site_id)
+            except:
+                logger.error(f"MPA {mpa_site_id} not found, skipping")
+                continue
 
-                # Stage 2: Process bottom temperature (simpler file)
-                print(f"Timeseries Type {timeseries_type}")
-                mpa_pbar.set_postfix(file=f"Temperature")
-                ts = mpa_dict.get('TS')
-                if ts:
-                    read_timeseries_chunk(mpa, ts, climate_model, timeseries_type)
+            # Stage 2: Process bottom temperature (simpler file)
+            logger.info(f"Timeseries Type {timeseries_type}")
+            mpa_pbar.set_postfix(file=f"Temperature")
+            if 'ts.csv' in file_name:
+                mpa.timeseries.filter(model=climate_model, indicator=variable, type=timeseries_type, depth=None).delete()
+                read_timeseries_chunk(mpa, file_path_name, climate_model, variable, timeseries_type)
+            elif 'vlev_mean.csv' in file_name:
+                mpa.timeseries.filter(model=climate_model, indicator=variable, type=timeseries_type, depth__gt=0).delete()
+                read_depth_timeseries(mpa, file_path_name, climate_model, variable, timeseries_type)
+            else:
+                logger.error(f"Skipping file: {file_name} (unrecognized pattern)")
+                continue
 
-                # Stage 3: Process depth temperature (more complex file with multiple depths)
-                mpa_pbar.set_postfix(file="Depth temperature")
-                depth_ts = mpa_dict.get('DEPTH_TS')
-                if depth_ts:
-                    read_depth_timeseries(mpa, depth_ts, climate_model, timeseries_type)
-
-                mpa_pbar.update(1)
-
-            except models.MPAZones.DoesNotExist:
-                print(f"Warning: MPA with ID {mpa_id} not found in database")
-            except Exception as e:
-                print(f"Error processing MPA {mpa_id}: {str(e)}")
-
-    print("Data loading complete!")
+    logger.info("Data loading complete!")
 
 
 def load_canso100():
-    dir = Path('./scripts/data/model_bottom_conditions_tables/Canso100/')
+    root_path = Path('./scripts/data/model_bottom_conditions_tables/Canso100/')
+    logger.info("Loading canso 100 files")
 
-    load_dict = [
-        {
-            'file_name': os.path.join(dir, "54_Canso_Ledges-Sugar_Harbour_Islands_Canso100_daily_sbt_ts.csv"),
-            'climate_model': models.ClimateModels.objects.get_or_create(name="CANSO100", priority=2)[0],
-            'time_series_type': 1, # 1 = bottom, 2 = surface
-            'indicator_type': models.TimeseriesVariables.objects.get_or_create(name="temperature")
-        }
-    ]
+    files = os.listdir(root_path)
+    logger.info(f"Found {len(files)} canso 100 files")
+
+    load_dict = []
+    for file_name in files:
+        file_path = os.path.join(root_path, file_name)
+        if '_sbt_' in file_name:
+            timeseries_type = 1
+            variable = models.TimeseriesVariables.objects.get_or_create(name="Temperature")[0]
+        elif '_sst_' in file_name:
+            timeseries_type = 2
+            variable = models.TimeseriesVariables.objects.get_or_create(name="Temperature")[0]
+        elif '_sbs_' in file_name:
+            timeseries_type = 1
+            variable = models.TimeseriesVariables.objects.get_or_create(name="Salinity")[0]
+        elif '_sss_' in file_name:
+            timeseries_type = 2
+            variable = models.TimeseriesVariables.objects.get_or_create(name="Salinity")[0]
+        else:
+            logger.error(f"Unrecognized file type: {file_name}")
+            return
+
+        load_dict.append(
+            {
+                'file_name': file_path,
+                'climate_model': models.ClimateModels.objects.get_or_create(name="CANSO100", priority=2)[0],
+                'timeseries_type': timeseries_type, # 1 = bottom, 2 = surface
+                'variable': variable
+            }
+        )
+
+    load_mpas_from_array(load_dict)

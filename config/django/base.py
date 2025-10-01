@@ -164,6 +164,20 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+LOGGERS = (
+    {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": True,
+        },
+        "dto_info": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": True,
+        },
+    },
+)
 
 LOGGING = {
     "version": 1,
@@ -183,12 +197,7 @@ LOGGING = {
             "maxBytes": 1024 * 1024 * 2  # 2 MB
         }
     },
-    "loggers": {
-        "": {
-            "level": "DEBUG",
-            "handlers": ["console", "file"],
-        }
-    },
+    "loggers": LOGGERS[0],
     "formatters": {
         "verbose": {
             "format": "[{levelname}] {asctime} - {name} {module}.py (line: {lineno:d}): {message}",

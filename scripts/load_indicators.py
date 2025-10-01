@@ -135,8 +135,6 @@ def load_mpas_from_dict(data: dict, climate_model):
 
                 # Get MPA and clear existing data
                 mpa = models.MPAZones.objects.get(pk=mpa_id)
-                timeseries_type = mpa_dict.get('TYPE', 1)  # 1 == Bottom Timeseries, 2 == Surface Timeseries
-                mpa.timeseries.filter(model=climate_model, type=timeseries_type).delete()
 
                 # Stage 1: Process Onset Of Spring
                 mpa_pbar.set_postfix(file="Onset of Spring Anomalies")
