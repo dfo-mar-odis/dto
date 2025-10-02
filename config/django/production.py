@@ -9,7 +9,7 @@ STATIC_URL = FORCE_SCRIPT_NAME + '/static/'
 
 LANGUAGE_COOKIE_SECURE = True  # Set to True in production with HTTPS
 
-ALLOWED_HOSTS = ["poc.fsdh-dhsf.science.cloud-nuage.canada.ca"]
-CSRF_TRUSTED_ORIGINS = ["https://poc.fsdh-dhsf.science.cloud-nuage.canada.ca"]
-CSRF_ALLOWED_ORIGINS = ["https://poc.fsdh-dhsf.science.cloud-nuage.canada.ca"]
-CORS_ORIGINS_WHITELIST = ["https://poc.fsdh-dhsf.science.cloud-nuage.canada.ca"]
+ALLOWED_HOSTS = ["poc.fsdh-dhsf.science.cloud-nuage.canada.ca", "fsdh-proj-dto-webapp-poc.azurewebsites.net"]
+CSRF_TRUSTED_ORIGINS = ["https://poc.fsdh-dhsf.science.cloud-nuage.canada.ca", "https://fsdh-proj-dto-webapp-poc.azurewebsites.net"]
+CSRF_ALLOWED_ORIGINS = ["https://poc.fsdh-dhsf.science.cloud-nuage.canada.ca", "https://fsdh-proj-dto-webapp-poc.azurewebsites.net"]
+CORS_ORIGINS_WHITELIST = ["https://poc.fsdh-dhsf.science.cloud-nuage.canada.ca", "https://fsdh-proj-dto-webapp-poc.azurewebsites.net"]
