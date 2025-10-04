@@ -435,7 +435,10 @@ class NetworkIndicatorsViewSet(viewsets.ReadOnlyModelViewSet):
         #   climate Model: 1 - GLORYS (default),
         #   year: If none all years will be included, else just the provided year is included
         mpa_ids = request.query_params.getlist('mpa_id')
-        ts_model = request.query_params.get('model', 1)
+
+        # use the session variable for the climate model, unless otherwise specified
+        ts_model = int(self.request.session.get('selected_model', 1))
+        ts_model = request.query_params.get('model', ts_model)
 
         if not mpa_ids:
             return JsonResponse({"error": "Missing required parameters: 'id' and 'date'"}, status=400)

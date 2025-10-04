@@ -196,10 +196,20 @@ def build_surface_mpa_dictionary(data_directory) -> dict:
 
 
 def load_std_anomaly(indicator_type, climate_model, zone, timeseries_type):
+    """
+    Load standardized anomaly data into the database for a specific indicator type, climate model, zone, and timeseries type.
+
+    Parameters:
+    indicator_type: The variable this timeseries tracks (e.g., 'Temperature', 'Salinity').
+    climate_model: The model the timeseries is based on (e.g., 'GLORYS', 'Canso100', 'CIOPS').
+    zone: The MPA (Marine Protected Area) the anomaly is being generated for.
+    timeseries_type: The type of timeseries data (1 = Bottom, 2 = Surface).
+    """
+
     print(f"Loading Std. Anomaly for : {climate_model.name} : {zone.site_id} - {zone.name_e}")
     indicator_type.indicators.filter(zone=zone, model=climate_model).delete()
 
-    mpa_timeseries = zone.timeseries.filter(indicator=1, type=timeseries_type, depth=None).order_by('date_time')
+    mpa_timeseries = zone.timeseries.filter(model=climate_model, indicator=1, type=timeseries_type, depth=None).order_by('date_time')
 
     if not mpa_timeseries.exists():
         return
@@ -273,19 +283,25 @@ def load_std_anomaly(indicator_type, climate_model, zone, timeseries_type):
     print(f"Completed loading {rows_processed} records in {batches_completed} batches")
 
 
-def load_std_anomalies():
+def load_std_anomalies(climate_model: models.ClimateModels = None):
     # for each Model, for each Zone, for each year, for each timeseries type (surface, bottom)
     # compute a standardized anomaly and store it in the Indicators table
     #
     # we won't be computing a std. anomaly for each depth. Just the general surface and the total average bottom
     indicator_category = models.IndicatorCategories.objects.get_or_create(name="Unknown")[0]
-    climate_models = models.ClimateModels.objects.all()
-    zones = models.MPAZones.objects.all()
+    if climate_model:
+        climate_models = [climate_model]
+    else:
+        climate_models = models.ClimateModels.objects.all()
+
     types = [1, 2] # 1 is Bottom, 2 is surface
     depth = None
 
     unit = 'Standardized Anomalies (σ)'
     for climate_model in climate_models:
+        timeseries = models.Timeseries.objects.filter(model=climate_model)
+        zone_ids = timeseries.values_list('zone__site_id', flat=True).distinct()
+        zones = models.MPAZones.objects.filter(site_id__in=zone_ids)
         for zone in zones:
             for timeseries_type in types:
                 name = ("Total Average Bottom" if timeseries_type == 1 else "Surface") + " Standardized Temperature Anomaly"

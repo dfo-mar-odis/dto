@@ -9,3 +9,5 @@ if settings.DEBUG:
     print("Debugging")
 
 settings.INSTALLED_APPS.append('django_extensions')
+
+ALLOWED_HOSTS = ["localhost"]

@@ -4,7 +4,7 @@ services:
     build: .
     restart: always
     ports:
-      - "80:80"
+      - "8501:8000"
     command: /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
     environment:
       - "SECRET_KEY=${SECRET_KEY}"
