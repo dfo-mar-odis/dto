@@ -4,6 +4,21 @@ import json
 from rest_framework import serializers
 from core import models
 
+
+class ClimateModelSerialzier(serializers.ModelSerializer):
+    class Meta:
+        model = models.ClimateModels
+        fields = '__all__'
+
+
+class AreaOfInterestSerializer(serializers.ModelSerializer):
+    model = ClimateModelSerialzier(read_only=True)
+
+    class Meta:
+        model = models.AreaOfInterest
+        fields = ['model', 'top', 'bottom', 'right', 'left']
+
+
 class MPAZonesWithoutGeometrySerializer(serializers.ModelSerializer):
     class Meta:
         model = models.MPAZones

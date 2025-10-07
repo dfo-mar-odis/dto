@@ -35,6 +35,14 @@ class ClimateModels(models.Model):
     priority = models.IntegerField(default=0)
 
 
+class AreaOfInterest(models.Model):
+    model = models.ForeignKey(ClimateModels, on_delete=models.CASCADE, related_name='areas_of_interest')
+    top = models.FloatField()
+    bottom = models.FloatField()
+    right = models.FloatField()
+    left = models.FloatField()
+
+
 class Timeseries(models.Model):
     TIMESERIES_TYPES = (
         (1, 'BOTTOM'),

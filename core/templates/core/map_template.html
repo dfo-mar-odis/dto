@@ -196,6 +196,8 @@
             {% endblock %}
 
             app.initialize(
+                {{ selected_model.id }},
+                "{% url 'api:climate-aois' %}",
                 "{% url 'api:mpas-with-timeseries-list' %}", // used to get the mpa polygons, but only ones with a timeseries
                 "{% url 'api:timeseries-data' %}",  // retrieves the timeseries data that's used by multiple objects
                 "{% url 'core:get_classification_colours' %}", // adds the legend to the map

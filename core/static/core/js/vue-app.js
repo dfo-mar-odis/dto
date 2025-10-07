@@ -14,6 +14,7 @@ const mapApp = createApp({
     setup() {
         // State
         const state = reactive({
+            model_id: 1,
             mapLoading: false,
             selectedPolygon: null,
             selectedPolygons: [],
@@ -35,6 +36,7 @@ const mapApp = createApp({
             depth: '',
             loading: false,
             urls: {
+                climateBoundsUrl: '',
                 mpasWithTimeseriesList: '', // Will be populated from template
                 timeseriesUrl: '',
                 legendUrl: '',
@@ -144,8 +146,30 @@ const mapApp = createApp({
             });
         }
 
+        async function loadAOIsForModel() {
+            const url = new URL(state.urls.climateBoundsUrl, window.location.origin);
+            url.searchParams.set('model_id', state.model_id);
+
+            const response = await fetch(url.toString());
+            const aois = await response.json();
+
+            aois.results.forEach(aoi => {
+                const bounds = [
+                    [aoi.bottom, aoi.left], // Southwest
+                    [aoi.top, aoi.right]    // Northeast
+                ];
+                L.rectangle(bounds, {
+                    color: "#FF7800",
+                    weight: 2,
+                    fillOpacity: 0.2
+                }).addTo(state.map);
+            });
+        }
+
         async function loadMPAPolygons() {
             if (!state.map || !state.urls.mpasWithTimeseriesList) return;
+
+            loadAOIsForModel();
 
             const page_size = 5;
             state.mapLoading = true;
@@ -588,7 +612,9 @@ const mapApp = createApp({
             state.networkIndicatorData = data;
         }
 
-        function initialize(mpasUrl, timeseriesUrl, legendUrl, speciesUrl, heatWaveIndicatorUrl, timeseries_type, tabsData) {
+        function initialize(model_id, climateBoundsUrl, mpasUrl, timeseriesUrl, legendUrl, speciesUrl, heatWaveIndicatorUrl, timeseries_type, tabsData) {
+            state.model_id = model_id;
+            state.urls.climateBoundsUrl = climateBoundsUrl;
             state.urls.mpasWithTimeseriesList = mpasUrl;
             state.urls.timeseriesUrl = timeseriesUrl;
             state.urls.legendUrl = legendUrl;

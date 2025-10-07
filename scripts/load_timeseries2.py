@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 from core import models
 
+from scripts import load_indicators
+
 from pathlib import Path
 from tqdm import tqdm
 
@@ -214,11 +216,17 @@ def load_mpas_from_array(data: list):
 
 
 def load_canso100():
-    root_path = Path('./scripts/data/model_bottom_conditions_tables/Canso100/')
-    logger.info("Loading canso 100 files")
+    load_model('Canso100', 'CANSO100')
+
+def load_model(model_dir, model_name):
+
+    root_path = Path(f'./scripts/data/model_bottom_conditions_tables/{model_dir}/')
+    logger.info(f"Loading {model_name} files")
 
     files = os.listdir(root_path)
-    logger.info(f"Found {len(files)} canso 100 files")
+    logger.info(f"Found {len(files)} {model_name} files")
+
+    climate_model = models.ClimateModels.objects.get_or_create(name=model_name, priority=2)[0]
 
     load_dict = []
     for file_name in files:
@@ -242,10 +250,12 @@ def load_canso100():
         load_dict.append(
             {
                 'file_name': file_path,
-                'climate_model': models.ClimateModels.objects.get_or_create(name="CANSO100", priority=2)[0],
+                'climate_model': climate_model,
                 'timeseries_type': timeseries_type, # 1 = bottom, 2 = surface
                 'variable': variable
             }
         )
 
     load_mpas_from_array(load_dict)
+    climate_model.indicators.filter()
+    load_indicators.load_std_anomalies(climate_model)

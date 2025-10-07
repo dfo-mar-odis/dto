@@ -8,13 +8,13 @@ from django.db.models import Min, Max
 
 from django.http import JsonResponse
 
-from rest_framework import viewsets
+from rest_framework import viewsets, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 
 from core.api.pagination import CustomPageNumberPagination
-from core.api.serializers import MPAZonesSerializer, MPAZonesWithoutGeometrySerializer, SpeciesSerializer
+from core.api.serializers import AreaOfInterestSerializer, MPAZonesSerializer, MPAZonesWithoutGeometrySerializer, SpeciesSerializer
 from core import models
 
 
@@ -506,3 +506,14 @@ class NetworkIndicatorsViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return None
+
+
+class AOIListView(generics.ListAPIView):
+    serializer_class = AreaOfInterestSerializer
+
+    def get_queryset(self):
+        model_id = self.request.query_params.get('model_id')
+        queryset = models.AreaOfInterest.objects.all()
+        if model_id:
+            queryset = queryset.filter(model_id=model_id)
+        return queryset
