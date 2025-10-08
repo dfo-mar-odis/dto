@@ -98,7 +98,7 @@ export const NetworkIndicators = {
             const year = this.selectedDate.split('-')[0];
             const url = new URL(this.dataUrl, window.location.origin);
             this.selectedPolygons.forEach(poly => {
-                url.searchParams.append('mpa_id', poly.mpa.properties.id);
+                url.searchParams.append('mpa_id', poly.feature.properties.id);
             });
             url.searchParams.append('year', year);
 

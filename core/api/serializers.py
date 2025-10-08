@@ -42,7 +42,7 @@ class MPAZonesWithoutGeometrySerializer(serializers.ModelSerializer):
                 "url": instance.url_e,
                 "class": instance.classification.name_e,
                 "km2": instance.km2,
-                "depths": instance.timeseries.order_by('depth').values_list('depth', flat=True).distinct()
+                "depths": list(instance.timeseries.order_by('depth').values_list('depth', flat=True).distinct())
             }
         }
         return representation

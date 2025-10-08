@@ -35,14 +35,6 @@ const mapApp = createApp({
             },
             depth: '',
             loading: false,
-            urls: {
-                climateBoundsUrl: '',
-                mpasWithTimeseriesList: '', // Will be populated from template
-                timeseriesUrl: '',
-                legendUrl: '',
-                speciesUrl: '',
-                heatWaveIndicatorUrl: ''
-            },
             charts: {
                 standardAnomalies: null,
                 timeseries: null,
@@ -60,6 +52,16 @@ const mapApp = createApp({
             filterMPAs: []
         });
 
+        const paths = {
+            urls: {
+                climateBoundsUrl: '',
+                mpasWithTimeseriesList: '', // Will be populated from template
+                timeseriesUrl: '',
+                legendUrl: '',
+                speciesUrl: '',
+                heatWaveIndicatorUrl: ''
+            },
+        }
         // Populate the tabs data structure
         // eg. this will set the first tab as the active tab
         // {
@@ -125,29 +127,36 @@ const mapApp = createApp({
 
         // Helper function to process MPA data and add to map
 
+        function add_feature_popups(feature, layer) {
+            layer.bindTooltip(feature.properties.name || "Unnamed MPA", {
+                permanent: false, // Set to true if you want tooltips always visible
+                direction: 'top', // Position relative to the feature (top, bottom, left, right, center)
+                className: 'my-tooltip', // Add custom CSS class for styling
+                opacity: 0.9 // Control tooltip opacity
+            });
+            layer.on('click', () => {
+                handlePolygonSelection(layer, feature);
+            });
+        }
+        function add_mpa_click(mpa) {
+            if (mpa.geometry) {
+                L.geoJSON(mpa, {
+                    style: mpa.style,
+                    onEachFeature: (feature, layer) => {
+                        add_feature_popups(feature, layer)
+                    }
+                }).addTo(state.map);
+            }
+        }
+
         function processMPAData(mpas) {
             mpas.forEach(mpa => {
-                if (mpa.geometry) {
-                    L.geoJSON(mpa, {
-                        style: mpa.style,
-                        onEachFeature: (feature, layer) => {
-                            layer.bindTooltip(mpa.properties.name || "Unnamed MPA", {
-                                permanent: false, // Set to true if you want tooltips always visible
-                                direction: 'top', // Position relative to the feature (top, bottom, left, right, center)
-                                className: 'my-tooltip', // Add custom CSS class for styling
-                                opacity: 0.9 // Control tooltip opacity
-                            });
-                            layer.on('click', () => {
-                                handlePolygonSelection(layer, mpa);
-                            });
-                        }
-                    }).addTo(state.map);
-                }
+                add_mpa_click(mpa);
             });
         }
 
         async function loadAOIsForModel() {
-            const url = new URL(state.urls.climateBoundsUrl, window.location.origin);
+            const url = new URL(paths.urls.climateBoundsUrl, window.location.origin);
             url.searchParams.set('model_id', state.model_id);
 
             const response = await fetch(url.toString());
@@ -167,7 +176,61 @@ const mapApp = createApp({
         }
 
         async function loadMPAPolygons() {
-            if (!state.map || !state.urls.mpasWithTimeseriesList) return;
+            if (!state.map) return;
+
+            // Clear existing layers if any
+            if (state.mpaLayer) {
+                state.map.removeLayer(state.mpaLayer);
+            }
+
+            state.mapLoading = true;
+            try {
+
+                const modelId = state.model_id;
+
+                // Load Areas of Interest for this model first so other features showup on top of it.
+                await loadAOIsForModel(modelId);
+                const geojsonUrl = paths.polygons_dir + `mpa_model_${modelId}.geojson`;
+
+                const response = await fetch(geojsonUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to load MPA data: ${response.statusText}`);
+                }
+
+                const geoJsonData = await response.json();
+
+                // Filter MPAs if needed
+                let filteredFeatures = geoJsonData.features;
+                if (state.filterMPAs && state.filterMPAs.length > 0) {
+                    const mpaIdsToShow = new Set(state.filterMPAs);
+                    filteredFeatures = geoJsonData.features.filter(feature =>
+                        mpaIdsToShow.has(feature.properties.id)
+                    );
+                }
+
+                // Create a new feature collection with filtered features
+                const filteredGeoJson = {
+                    type: "FeatureCollection",
+                    features: filteredFeatures
+                };
+
+                // Add to map
+                state.mpaLayer = L.geoJSON(filteredGeoJson, {
+                    style: feature => feature.style,
+                    onEachFeature: (feature, layer) => {
+                        add_feature_popups(feature, layer);
+                    }
+                }).addTo(state.map);
+
+                state.mapLoading = false;
+            } catch (error) {
+                console.error("Error loading MPA polygons:", error);
+                state.mapLoading = false;
+            }
+        }
+
+        async function loadMPAPolygons_old() {
+            if (!state.map || !paths.urls.mpasWithTimeseriesList) return;
 
             loadAOIsForModel();
 
@@ -177,7 +240,7 @@ const mapApp = createApp({
                 // if you query the api with geometry=false you get the mpa metadata without the geometry
                 // this loads much faster to help us determine how many polygons there'll be and how many
                 // calls we'll have to make to load them all.
-                const url = new URL(state.urls.mpasWithTimeseriesList, window.location.origin);
+                const url = new URL(paths.urls.mpasWithTimeseriesList, window.location.origin);
                 // We're specifically interested in bottom data for this app
                 url.searchParams.set('type', state.timeseries_type);
 
@@ -205,7 +268,7 @@ const mapApp = createApp({
                 // Fetch and process all pages
                 const pagePromises = [];
                 for (let page = 1; page <= totalPages; page++) {
-                    const pageUrl = new URL(state.urls.mpasWithTimeseriesList, window.location.origin);
+                    const pageUrl = new URL(paths.urls.mpasWithTimeseriesList, window.location.origin);
                     pageUrl.searchParams.set('page_size', page_size)
                     if (state.filterMPAs) {
                         state.filterMPAs.forEach(mpa => {
@@ -234,11 +297,11 @@ const mapApp = createApp({
         }
 
         async function loadSpecies() {
-            if (!state.urls.speciesUrl) return;
+            if (!paths.urls.speciesUrl) return;
 
             try {
                 // First fetch to get metadata and process first page
-                const initialResponse = await fetch(state.urls.speciesUrl);
+                const initialResponse = await fetch(paths.urls.speciesUrl);
                 const initialData = await initialResponse.json();
 
                 if (!initialData || !Array.isArray(initialData)) {
@@ -359,15 +422,15 @@ const mapApp = createApp({
 
         }
 
-        function handlePolygonSelection(layer, mpa) {
+        function handlePolygonSelection(layer, feature) {
 
-            const newPoly = {layer, mpa}
+            const newPoly = {layer, feature}
             // If CTRL is pressed
             if (state.isCtrlPressed) {
 
                 // If MPA is not the currently selected polygon
                 const existingIndex = state.selectedPolygons.findIndex(
-                    item => item.mpa?.properties?.id === mpa.properties.id
+                    item => item.feature?.properties?.id === feature.properties.id
                 );
 
                 // If it's not in the Poly list
@@ -377,7 +440,7 @@ const mapApp = createApp({
                 // else
                 //   Remove it from the Poly list
                 //   reset its style
-                if(mpa.properties.id !== state.selectedPolygon.mpa.properties.id) {
+                if(feature.properties.id !== state.selectedPolygon.feature.properties.id) {
                     state.selectedPolygons.forEach((item, index) => {
                         item.layer.setStyle(highlightStyles.secondary);
                     });
@@ -387,7 +450,7 @@ const mapApp = createApp({
                     newPoly.layer.setStyle(highlightStyles.primary)
                 } else {
                     state.selectedPolygons.splice(existingIndex, 1);
-                    newPoly.layer.setStyle(mpa.style)
+                    newPoly.layer.setStyle(feature.style)
                 }
 
             } else {
@@ -396,7 +459,7 @@ const mapApp = createApp({
                 //   clear the selected polygon list
                 //   add the new poly as the only polygon
                 state.selectedPolygons.forEach((item, index) => {
-                    item.layer.setStyle(item.mpa.style);
+                    item.layer.setStyle(item.feature.style);
                 });
                 newPoly.layer.setStyle(highlightStyles.primary);
                 state.selectedPolygons = [newPoly]
@@ -406,12 +469,12 @@ const mapApp = createApp({
             // Always update the MPA info panel with the most recently selected polygon
             state.selectedPolygon = newPoly
             setMPA({
-                id: mpa.properties.id,
-                name: mpa.properties.name || 'Unknown MPA',
-                url: mpa.properties.url || '',
-                class: mpa.properties.class || '',
-                km2: mpa.properties.km2 || '',
-                depths: mpa.properties.depths || []
+                id: feature.properties.id,
+                name: feature.properties.name || 'Unknown MPA',
+                url: feature.properties.url || '',
+                class: feature.properties.class || '',
+                km2: feature.properties.km2 || '',
+                depths: feature.properties.depths || []
             });
             getData();
         }
@@ -439,7 +502,7 @@ const mapApp = createApp({
         }
 
         function addLegend(map) {
-            if (!state.map || !state.urls.legendUrl) return;
+            if (!state.map || !paths.urls.legendUrl) return;
 
             // Create a custom button control
             const legendToggle = L.Control.extend({
@@ -473,7 +536,7 @@ const mapApp = createApp({
             legend.addTo(state.map);
 
             // Fetch classifications data from the endpoint
-            fetch(state.urls.legendUrl)
+            fetch(paths.urls.legendUrl)
                 .then(response => response.json())
                 .then(data => {
                     const legendContent = document.getElementById('legend-content');
@@ -534,7 +597,7 @@ const mapApp = createApp({
         // This forces the refresh of the network indicator data that's used in popups when hovering
         // over an area on the map
         async function fetchNetworkIndicatorData() {
-            if (!state.dates.selected_date || !state.urls.heatWaveIndicatorUrl) return;
+            if (!state.dates.selected_date || !paths.urls.heatWaveIndicatorUrl) return;
 
             try {
                 // Collect polygon layers and their IDs in a single pass
@@ -549,7 +612,7 @@ const mapApp = createApp({
 
                 // Use comma-separated IDs for a more compact URL
                 const polygonIds = Array.from(polygonLayersMap.keys());
-                const url = new URL(state.urls.heatWaveIndicatorUrl, window.location.origin);
+                const url = new URL(paths.urls.heatWaveIndicatorUrl, window.location.origin);
 
                 // Add parameters using searchParams API
                 url.searchParams.set('mpa_id', polygonIds.join(','));
@@ -588,7 +651,7 @@ const mapApp = createApp({
                 }
 
                 // This endpoint will return a timeseries and climatology that can be used in multiple charts
-                const tsUrl = new URL(state.urls.timeseriesUrl, window.location.origin);
+                const tsUrl = new URL(paths.urls.timeseriesUrl, window.location.origin);
                 tsUrl.searchParams.set('mpa_id', state.mpa.id);
                 tsUrl.searchParams.set('start_date', state.dates.start_date);
                 tsUrl.searchParams.set('end_date', state.dates.end_date);
@@ -612,14 +675,15 @@ const mapApp = createApp({
             state.networkIndicatorData = data;
         }
 
-        function initialize(model_id, climateBoundsUrl, mpasUrl, timeseriesUrl, legendUrl, speciesUrl, heatWaveIndicatorUrl, timeseries_type, tabsData) {
+        function initialize(polygons_dir, model_id, climateBoundsUrl, mpasUrl, timeseriesUrl, legendUrl, speciesUrl, heatWaveIndicatorUrl, timeseries_type, tabsData) {
+            paths.polygons_dir = polygons_dir;
             state.model_id = model_id;
-            state.urls.climateBoundsUrl = climateBoundsUrl;
-            state.urls.mpasWithTimeseriesList = mpasUrl;
-            state.urls.timeseriesUrl = timeseriesUrl;
-            state.urls.legendUrl = legendUrl;
-            state.urls.speciesUrl = speciesUrl;
-            state.urls.heatWaveIndicatorUrl = heatWaveIndicatorUrl;
+            paths.urls.climateBoundsUrl = climateBoundsUrl;
+            paths.urls.mpasWithTimeseriesList = mpasUrl;
+            paths.urls.timeseriesUrl = timeseriesUrl;
+            paths.urls.legendUrl = legendUrl;
+            paths.urls.speciesUrl = speciesUrl;
+            paths.urls.heatWaveIndicatorUrl = heatWaveIndicatorUrl;
 
             state.timeseries_type = timeseries_type
             Object.assign(tabs, tabsData)
