@@ -155,144 +155,62 @@ const mapApp = createApp({
             });
         }
 
+        async function add_geojson(geojsonUrl, feature_popups_func) {
+            const response = await fetch(geojsonUrl);
+            if (!response.ok) {
+                throw new Error(`Failed to load MPA data: ${response.statusText}`);
+            }
+
+            const geoJsonData = await response.json();
+
+            // Filter MPAs if needed
+            let filteredFeatures = geoJsonData.features;
+            if (state.filterMPAs && state.filterMPAs.length > 0) {
+                const mpaIdsToShow = new Set(state.filterMPAs);
+                filteredFeatures = geoJsonData.features.filter(feature =>
+                    mpaIdsToShow.has(feature.properties.id)
+                );
+            }
+
+            // Create a new feature collection with filtered features
+            const filteredGeoJson = {
+                type: "FeatureCollection",
+                features: filteredFeatures
+            };
+
+            // Add to map
+            state.mpaLayer = L.geoJSON(filteredGeoJson, {
+                style: feature => feature.style,
+                onEachFeature: (feature, layer) => {
+                    if(feature_popups_func) {
+                        feature_popups_func(feature, layer);
+                    }
+                }
+            }).addTo(state.map);
+        }
+
         async function loadAOIsForModel() {
-            const url = new URL(paths.urls.climateBoundsUrl, window.location.origin);
-            url.searchParams.set('model_id', state.model_id);
+            const modelId = state.model_id;
+            const model_file = `${modelId}_domain.geojson`;
+            const geojsonUrl = paths.polygons_dir + model_file;
 
-            const response = await fetch(url.toString());
-            const aois = await response.json();
-
-            aois.results.forEach(aoi => {
-                const bounds = [
-                    [aoi.bottom, aoi.left], // Southwest
-                    [aoi.top, aoi.right]    // Northeast
-                ];
-                L.rectangle(bounds, {
-                    color: "#FF7800",
-                    weight: 2,
-                    fillOpacity: 0.2
-                }).addTo(state.map);
-            });
+            try {
+                add_geojson(geojsonUrl, null);
+            } catch (error) {
+                console.error("Error loading MPA polygons:", error);
+            }
         }
 
         async function loadMPAPolygons() {
-            if (!state.map) return;
 
-            // Clear existing layers if any
-            if (state.mpaLayer) {
-                state.map.removeLayer(state.mpaLayer);
-            }
+            const modelId = state.model_id;
+            const model_file = `mpa_model_${modelId}.geojson`;
+            const geojsonUrl = paths.polygons_dir + model_file;
 
-            state.mapLoading = true;
             try {
-
-                const modelId = state.model_id;
-
-                // Load Areas of Interest for this model first so other features showup on top of it.
-                await loadAOIsForModel(modelId);
-                const geojsonUrl = paths.polygons_dir + `mpa_model_${modelId}.geojson`;
-
-                const response = await fetch(geojsonUrl);
-                if (!response.ok) {
-                    throw new Error(`Failed to load MPA data: ${response.statusText}`);
-                }
-
-                const geoJsonData = await response.json();
-
-                // Filter MPAs if needed
-                let filteredFeatures = geoJsonData.features;
-                if (state.filterMPAs && state.filterMPAs.length > 0) {
-                    const mpaIdsToShow = new Set(state.filterMPAs);
-                    filteredFeatures = geoJsonData.features.filter(feature =>
-                        mpaIdsToShow.has(feature.properties.id)
-                    );
-                }
-
-                // Create a new feature collection with filtered features
-                const filteredGeoJson = {
-                    type: "FeatureCollection",
-                    features: filteredFeatures
-                };
-
-                // Add to map
-                state.mpaLayer = L.geoJSON(filteredGeoJson, {
-                    style: feature => feature.style,
-                    onEachFeature: (feature, layer) => {
-                        add_feature_popups(feature, layer);
-                    }
-                }).addTo(state.map);
-
-                state.mapLoading = false;
+                add_geojson(geojsonUrl, add_feature_popups);
             } catch (error) {
                 console.error("Error loading MPA polygons:", error);
-                state.mapLoading = false;
-            }
-        }
-
-        async function loadMPAPolygons_old() {
-            if (!state.map || !paths.urls.mpasWithTimeseriesList) return;
-
-            loadAOIsForModel();
-
-            const page_size = 5;
-            state.mapLoading = true;
-            try {
-                // if you query the api with geometry=false you get the mpa metadata without the geometry
-                // this loads much faster to help us determine how many polygons there'll be and how many
-                // calls we'll have to make to load them all.
-                const url = new URL(paths.urls.mpasWithTimeseriesList, window.location.origin);
-                // We're specifically interested in bottom data for this app
-                url.searchParams.set('type', state.timeseries_type);
-
-                // Add geometry=false to the query parameters
-                url.searchParams.set('geometry', 'false');
-                url.searchParams.set('page_size', 1)
-                if (state.filterMPAs) {
-                    state.filterMPAs.forEach(mpa => {
-                        url.searchParams.append('mpa_id', mpa);
-                    });
-                }
-
-                const initialResponse = await fetch(url.toString());
-                const initialData = await initialResponse.json();
-
-                if (!initialData.count) {
-                    // no polygons were returned
-                    state.mapLoading = false;
-                    return;
-                }
-
-                // Calculate total pages based on count and results per page
-                const totalPages = Math.ceil(initialData.count / page_size);
-
-                // Fetch and process all pages
-                const pagePromises = [];
-                for (let page = 1; page <= totalPages; page++) {
-                    const pageUrl = new URL(paths.urls.mpasWithTimeseriesList, window.location.origin);
-                    pageUrl.searchParams.set('page_size', page_size)
-                    if (state.filterMPAs) {
-                        state.filterMPAs.forEach(mpa => {
-                            pageUrl.searchParams.append('mpa_id', mpa);
-                        });
-                    }
-                    pageUrl.searchParams.set('page', page.toString());
-
-                    pagePromises.push(
-                        fetch(pageUrl.toString())
-                            .then(response => response.json())
-                            .then(pageData => processMPAData(pageData.results || []))
-                            .catch(err => console.error(`Error loading page ${page}:`, err))
-                    );
-                }
-                // Load all remaining pages in parallel
-                await Promise.all(pagePromises);
-
-                state.mapLoading = false;
-                fetchNetworkIndicatorData();
-                addLegend();
-            } catch (error) {
-                console.error("Error loading MPA polygons:", error);
-                state.mapLoading = false; // Make sure to stop loading on error
             }
         }
 
@@ -675,7 +593,7 @@ const mapApp = createApp({
             state.networkIndicatorData = data;
         }
 
-        function initialize(polygons_dir, model_id, climateBoundsUrl, mpasUrl, timeseriesUrl, legendUrl, speciesUrl, heatWaveIndicatorUrl, timeseries_type, tabsData) {
+        async function initialize(model_id, polygons_dir, climateBoundsUrl, mpasUrl, timeseriesUrl, legendUrl, speciesUrl, heatWaveIndicatorUrl, timeseries_type, tabsData) {
             paths.polygons_dir = polygons_dir;
             state.model_id = model_id;
             paths.urls.climateBoundsUrl = climateBoundsUrl;
@@ -688,8 +606,22 @@ const mapApp = createApp({
             state.timeseries_type = timeseries_type
             Object.assign(tabs, tabsData)
 
-            loadMPAPolygons();
+            if (!state.map) return;
+
+            // Clear existing layers if any
+            if (state.mpaLayer) {
+                state.map.removeLayer(state.mpaLayer);
+            }
+
+            state.mapLoading = true;
             loadSpecies();
+            try {
+                await Promise.all([loadAOIsForModel(), loadMPAPolygons()]);
+            } catch (error) {
+                console.error("Error loading data:", error);
+            } finally {
+                state.mapLoading = false;
+            }
         }
 
         return {

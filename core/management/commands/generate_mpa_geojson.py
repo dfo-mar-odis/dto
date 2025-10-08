@@ -28,7 +28,7 @@ class Command(BaseCommand):
             self.stdout.write(f"Processing climate model: {model.name}")
 
             # Create a file name based on the model ID
-            filename = os.path.join(output_dir, f"mpa_model_{model.id}.geojson")
+            filename = os.path.join(output_dir, f"mpa_model_{model.name.upper()}.geojson")
 
             if os.path.exists(filename) and not options['force']:
                 self.stdout.write(f"File {filename} already exists, skipping (use --force to regenerate)")

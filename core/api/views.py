@@ -512,8 +512,16 @@ class AOIListView(generics.ListAPIView):
     serializer_class = AreaOfInterestSerializer
 
     def get_queryset(self):
-        model_id = self.request.query_params.get('model_id')
+        model = None
         queryset = models.AreaOfInterest.objects.all()
-        if model_id:
-            queryset = queryset.filter(model_id=model_id)
+
+        if model_id := self.request.query_params.get('model_id', None):
+            model = models.ClimateModels.objects.get(pk=model_id)
+        elif model_name := self.request.query_params.get('model_name', None):
+            if (model := models.ClimateModels.objects.filter(name__iexact=model_name)).exists():
+                model = model.first()
+
+        if model:
+            queryset = queryset.filter(model=model)
+
         return queryset
