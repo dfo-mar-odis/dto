@@ -1,3 +1,4 @@
+import math
 import os
 import re
 import pandas as pd
@@ -283,32 +284,37 @@ def load_std_anomaly(indicator_type, climate_model, zone, timeseries_type):
     print(f"Completed loading {rows_processed} records in {batches_completed} batches")
 
 
-def load_std_anomalies(climate_model: models.ClimateModels = None):
+def load_std_anomalies(climate_model: models.ClimateModels, batch_limit=10):
     # for each Model, for each Zone, for each year, for each timeseries type (surface, bottom)
     # compute a standardized anomaly and store it in the Indicators table
     #
     # we won't be computing a std. anomaly for each depth. Just the general surface and the total average bottom
     indicator_category = models.IndicatorCategories.objects.get_or_create(name="Unknown")[0]
-    if climate_model:
-        climate_models = [climate_model]
-    else:
-        climate_models = models.ClimateModels.objects.all()
 
     types = [1, 2] # 1 is Bottom, 2 is surface
-    depth = None
 
     unit = 'Standardized Anomalies (σ)'
-    for climate_model in climate_models:
-        timeseries = models.Timeseries.objects.filter(model=climate_model)
-        zone_ids = timeseries.values_list('zone__site_id', flat=True).distinct()
-        zones = models.MPAZones.objects.filter(site_id__in=zone_ids)
-        for zone in zones:
-            for timeseries_type in types:
-                name = ("Total Average Bottom" if timeseries_type == 1 else "Surface") + " Standardized Temperature Anomaly"
-                std_anom_indicator = \
-                models.IndicatorTypes.objects.get_or_create(name=name, unit=unit, category=indicator_category)[0]
-                models.IndicatorWeights.objects.get_or_create(type=std_anom_indicator, zone=zone)
-                load_std_anomaly(std_anom_indicator, climate_model, zone, timeseries_type)
+    zone_ids = climate_model.timeseries.values_list('zone__site_id', flat=True).distinct()
+    zones = models.MPAZones.objects.filter(site_id__in=zone_ids)
+    total = zones.count()
+    batches = math.ceil(float(total / batch_limit))
+    for batch in range(batches):
+        zones = zones[batch_limit * batch: batch_limit * batch + batch_limit]
+        with tqdm(total=total, desc=f"Loading data ({climate_model.name})") as pbar:
+            for zone in zones:
+                pbar.set_description(zone.name_e)
+                for timeseries_type in types:
+                    name = ("Total Average Bottom" if timeseries_type == 1 else "Surface") + " Standardized Temperature Anomaly"
+                    std_anom_indicator = \
+                    models.IndicatorTypes.objects.get_or_create(name=name, unit=unit, category=indicator_category)[0]
+                    models.IndicatorWeights.objects.get_or_create(type=std_anom_indicator, zone=zone)
+                    load_std_anomaly(std_anom_indicator, climate_model, zone, timeseries_type)
+                pbar.update(1)
+
+
+def load_ciopse():
+    cm = models.ClimateModels.objects.get(name__iexact='ciopse')
+    load_std_anomalies(cm, 4)
 
 
 def load_onset():
