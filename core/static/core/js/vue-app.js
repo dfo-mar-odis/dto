@@ -108,13 +108,6 @@ const mapApp = createApp({
             state.filterMPAs.push(mpa_id)
         }
 
-        // Methods
-        function setMapView(lat, lng, zoom) {
-            if (state.map) {
-                state.map.setView([lat, lng], zoom);
-            }
-        }
-
         function initCtrlKeyTracking() {
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Control') state.isCtrlPressed = true;
