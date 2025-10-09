@@ -207,7 +207,6 @@ def load_std_anomaly(indicator_type, climate_model, zone, timeseries_type):
     timeseries_type: The type of timeseries data (1 = Bottom, 2 = Surface).
     """
 
-    print(f"Loading Std. Anomaly for : {climate_model.name} : {zone.site_id} - {zone.name_e}")
     indicator_type.indicators.filter(zone=zone, model=climate_model).delete()
 
     mpa_timeseries = zone.timeseries.filter(model=climate_model, indicator=1, type=timeseries_type, depth=None).order_by('date_time')
@@ -281,8 +280,6 @@ def load_std_anomaly(indicator_type, climate_model, zone, timeseries_type):
             models.Indicators.objects.bulk_create(add_data)
             batches_completed += 1
 
-    print(f"Completed loading {rows_processed} records in {batches_completed} batches")
-
 
 def load_std_anomalies(climate_model: models.ClimateModels, batch_limit=10):
     # for each Model, for each Zone, for each year, for each timeseries type (surface, bottom)
@@ -295,21 +292,22 @@ def load_std_anomalies(climate_model: models.ClimateModels, batch_limit=10):
 
     unit = 'Standardized Anomalies (σ)'
     zone_ids = climate_model.timeseries.values_list('zone__site_id', flat=True).distinct()
-    zones = models.MPAZones.objects.filter(site_id__in=zone_ids)
-    total = zones.count()
+    zones_total = models.MPAZones.objects.filter(site_id__in=zone_ids)
+    total = zones_total.count()
     batches = math.ceil(float(total / batch_limit))
-    for batch in range(batches):
-        zones = zones[batch_limit * batch: batch_limit * batch + batch_limit]
-        with tqdm(total=total, desc=f"Loading data ({climate_model.name})") as pbar:
+    print(str(batches))
+    with tqdm(total=total, desc=f"Loading data ({climate_model.name})") as pbar:
+        for batch in range(batches):
+            zones = zones_total[batch_limit * batch: batch_limit * batch + batch_limit]
             for zone in zones:
-                pbar.set_description(zone.name_e)
                 for timeseries_type in types:
                     name = ("Total Average Bottom" if timeseries_type == 1 else "Surface") + " Standardized Temperature Anomaly"
                     std_anom_indicator = \
                     models.IndicatorTypes.objects.get_or_create(name=name, unit=unit, category=indicator_category)[0]
                     models.IndicatorWeights.objects.get_or_create(type=std_anom_indicator, zone=zone)
                     load_std_anomaly(std_anom_indicator, climate_model, zone, timeseries_type)
-                pbar.update(1)
+            pbar.update(len(zones))
+    print(f"Data Transfer Completed!")
 
 
 def load_ciopse():

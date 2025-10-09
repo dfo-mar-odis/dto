@@ -190,26 +190,28 @@ const mapApp = createApp({
         }
 
         async function loadAOIsForModel() {
-            const modelId = state.model_id;
+            const modelId = state.model_id.toString().toUpperCase();
             const model_file = `${modelId}_domain.geojson`;
             const geojsonUrl = paths.polygons_dir + model_file;
 
             try {
                 add_geojson(geojsonUrl, null);
             } catch (error) {
-                console.error("Error loading MPA polygons:", error);
+                // there may not be a file for the area of interest. GLORYS for example doesn't have one
+                console.warn("Error loading MPA polygons:", error);
             }
         }
 
         async function loadMPAPolygons() {
 
-            const modelId = state.model_id;
+            const modelId = state.model_id.toString().toUpperCase();
             const model_file = `mpa_model_${modelId}.geojson`;
             const geojsonUrl = paths.polygons_dir + model_file;
 
             try {
                 add_geojson(geojsonUrl, add_feature_popups);
             } catch (error) {
+                // there should be a file for the MPA polygons belonging to a model
                 console.error("Error loading MPA polygons:", error);
             }
         }
