@@ -1,3 +1,5 @@
+[![Build and Push DTO Image to GitHub Container Registry (GHCR)](https://github.com/dfo-mar-odis/dto/actions/workflows/build-image.yml/badge.svg?branch=master)](https://github.com/dfo-mar-odis/dto/actions/workflows/build-image.yml)
+
 # Digital Twin Ocean (DTO) Viewer
 
 A web application for viewing and analyzing climate data related to Marine Protected Areas (MPAs), enabling scientists to make physical and biological assessments concerning ocean state and marine habitat suitability.
