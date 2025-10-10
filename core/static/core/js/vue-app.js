@@ -142,19 +142,7 @@ const mapApp = createApp({
             }
         }
 
-        function processMPAData(mpas) {
-            mpas.forEach(mpa => {
-                add_mpa_click(mpa);
-            });
-        }
-
-        async function add_geojson(geojsonUrl, feature_popups_func) {
-            const response = await fetch(geojsonUrl);
-            if (!response.ok) {
-                throw new Error(`Failed to load MPA data: ${response.statusText}`);
-            }
-
-            const geoJsonData = await response.json();
+        async function add_geojson(geoJsonData, feature_popups_func) {
 
             // Filter MPAs if needed
             let filteredFeatures = geoJsonData.features;
@@ -171,15 +159,21 @@ const mapApp = createApp({
                 features: filteredFeatures
             };
 
-            // Add to map
-            state.mpaLayer = L.geoJSON(filteredGeoJson, {
-                style: feature => feature.style,
-                onEachFeature: (feature, layer) => {
-                    if(feature_popups_func) {
+            if(feature_popups_func) {
+                // Add to map
+                state.mpaLayer = L.geoJSON(filteredGeoJson, {
+                    style: feature => feature.style,
+                    onEachFeature: (feature, layer) => {
                         feature_popups_func(feature, layer);
                     }
-                }
-            }).addTo(state.map);
+                }).addTo(state.map);
+            } else {
+                // Add to map
+                state.mpaLayer = L.geoJSON(filteredGeoJson, {
+                    style: feature => feature.style,
+                    interactive: false
+                }).addTo(state.map);
+            }
         }
 
         async function loadAOIsForModel() {
@@ -188,7 +182,20 @@ const mapApp = createApp({
             const geojsonUrl = paths.polygons_dir + model_file;
 
             try {
-                add_geojson(geojsonUrl, null);
+                const response = await fetch(geojsonUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to load MPA data: ${response.statusText}`);
+                }
+
+                const geoJsonData = await response.json();
+                add_geojson(geoJsonData, null);
+
+                const legendContainer = document.getElementById('legend-container');
+                const div = L.DomUtil.create('div', 'mb-2');
+                div.id = "boundry-legend-content"
+                div.innerHTML += '<h4>Model Domain </h4>';
+                div.innerHTML += '<div><span style="background: ' + geoJsonData.features[0].style.color + '"></span> ' + geoJsonData.features[0].properties.name + '</div>';
+                legendContainer.appendChild(div)
             } catch (error) {
                 // there may not be a file for the area of interest. GLORYS for example doesn't have one
                 console.warn("Error loading MPA polygons:", error);
@@ -202,7 +209,37 @@ const mapApp = createApp({
             const geojsonUrl = paths.polygons_dir + model_file;
 
             try {
-                add_geojson(geojsonUrl, add_feature_popups);
+                const response = await fetch(geojsonUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to load MPA data: ${response.statusText}`);
+                }
+
+                const geoJsonData = await response.json();
+                add_geojson(geoJsonData, add_feature_popups);
+                            // Create a legend control
+
+                // Fetch classifications data from the endpoint
+                fetch(paths.urls.legendUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        const legendContainer = document.getElementById('legend-container');
+
+                        legendContainer.innerHTML += '<h4>' + (window.translations?.mpa_classifications || 'MPA Classifications') + '</h4>';
+                        const legendContent = L.DomUtil.create('div');
+                        legendContent.id = 'legend-content'
+
+                        // Populate legend with classification data
+                        data.forEach(classification => {
+                            legendContent.innerHTML +=
+                                '<div><span style="background:' + classification.colour +
+                                '"></span> ' + classification.name + '</div>';
+                        });
+                        legendContainer.appendChild(legendContent)
+                    })
+                    .catch(error => {
+                        console.error('Error fetching classifications:', error);
+                        document.getElementById('legend-content').innerHTML = 'Error loading legend data';
+                    });
             } catch (error) {
                 // there should be a file for the MPA polygons belonging to a model
                 console.error("Error loading MPA polygons:", error);
@@ -417,7 +454,7 @@ const mapApp = createApp({
         function addLegend(map) {
             if (!state.map || !paths.urls.legendUrl) return;
 
-            // Create a custom button control
+            // Create a custom button control to hide and show the legend
             const legendToggle = L.Control.extend({
                 options: {
                     position: 'bottomright'
@@ -435,37 +472,18 @@ const mapApp = createApp({
                     return container;
                 }
             });
+            state.map.addControl(new legendToggle());
 
-            // Create a legend control
             const legend = L.control({position: 'bottomright'});
 
             legend.onAdd = function () {
                 const div = L.DomUtil.create('div', 'info legend hidden');
-                div.innerHTML += '<h4>' + (window.translations?.mpa_classifications || 'MPA Classifications') + '</h4><div id="legend-content">' + (window.translations?.loading || 'Loading...') + '</div>';
+                div.id = 'legend-container'
+
                 return div;
             };
 
-            state.map.addControl(new legendToggle());
             legend.addTo(state.map);
-
-            // Fetch classifications data from the endpoint
-            fetch(paths.urls.legendUrl)
-                .then(response => response.json())
-                .then(data => {
-                    const legendContent = document.getElementById('legend-content');
-                    legendContent.innerHTML = '';
-
-                    // Populate legend with classification data
-                    data.forEach(classification => {
-                        legendContent.innerHTML +=
-                            '<div><span style="background:' + classification.colour +
-                            '"></span> ' + classification.name + '</div>';
-                    });
-                })
-                .catch(error => {
-                    console.error('Error fetching classifications:', error);
-                    document.getElementById('legend-content').innerHTML = 'Error loading legend data';
-                });
         }
 
         function setSelectedDate(date) {
@@ -609,14 +627,19 @@ const mapApp = createApp({
             }
 
             state.mapLoading = true;
-            loadSpecies();
             try {
-                await Promise.all([loadAOIsForModel(), loadMPAPolygons()]);
+                addLegend(state.map);
+                // make sure AOI loads first
+                await loadAOIsForModel();
+                await loadMPAPolygons();
             } catch (error) {
                 console.error("Error loading data:", error);
             } finally {
-                state.mapLoading = false;
+                setTimeout(() => {
+                    state.mapLoading = false;
+                }, 1000);
             }
+            loadSpecies();
         }
 
         return {
