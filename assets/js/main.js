@@ -16,6 +16,7 @@ import * as Vue from 'vue';
 import * as d3 from 'd3';
 import { fr } from 'date-fns/locale';
 
+
 // Make libraries available globally
 window.L = L;
 window.jQuery = window.$ = jQuery;

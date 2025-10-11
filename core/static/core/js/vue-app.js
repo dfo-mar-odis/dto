@@ -6,6 +6,7 @@ import {MPAInfo} from "./vue-components-mpa-info.js";
 import {MPAControls} from "./vue-components-mpa-controls.js";
 import {NetworkIndicators} from "./vue-chart-network-data.js";
 import {HeatWaveIndicator} from "./vue-components-heat-wave-indicator.js";
+import {SpatialAnalysis} from "./vue-component-spatial.js";
 
 const {createApp, ref, reactive, watch, computed, onMounted} = Vue;
 
@@ -666,5 +667,6 @@ mapApp.component('mpa-info', MPAInfo);
 mapApp.component('mpa-controls', MPAControls);
 mapApp.component('network-indicators', NetworkIndicators);
 mapApp.component('heat-wave-indicator', HeatWaveIndicator);
+mapApp.component('spatial-analysis', SpatialAnalysis);
 
 window.mapApp = mapApp;

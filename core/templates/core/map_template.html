@@ -127,6 +127,22 @@
                 </div>
             </div>
                 {% endblock %}
+                {% block spatial-analysis-tab %}
+            <div class="tab-pane fade"
+                :class="{ 'show active': tabs.activeTab === 'spatial_analysis' }"
+                id="spatial_analysis">
+                <div class="row">
+                    <div class="col">
+                        <spatial-analysis
+                                :mpa="state.mpa"
+                                :is-active="tabs.activeTab === 'spatial_analysis'"
+                                path_to_geofolder="{% static '/core/spatial/' %}"
+                        >
+                        </spatial-analysis>
+                    </div>
+                </div>
+            </div>
+                {% endblock %}
                 {% block standard-anomaly-tab %}
 
             <div class="tab-pane fade"
@@ -180,6 +196,7 @@
                 tabList: {
                     timeseries_data: {title: window.translations?.timeseries || 'Timeseries'},
                     species_data: {title: window.translations?.species_data || 'Species Data'},
+                    spatial_analysis: {title: window.translations?.spatial_analysis},
                     individual_indicators: {title: window.translations?.individual_indicators || 'Individual Indicators'},
                     network_data: {title: window.translations?.network_comparison || 'Network Comparison'},
                 }
