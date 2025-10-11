@@ -37,11 +37,18 @@ export const SpatialAnalysis = {
         return {
             map: null,
             geotiffLayer: null,
+            activeRaster: null,
             activeLayer: null,
             layerFiles: {
                 bathymetry: {
                     file_name: null,
-                    color_func: this.bathy_colour,
+                    colors: [
+                        {r: 0, g: 255, b: 255}, // Cyan (shallow)
+                        {r: 0, g: 180, b: 255}, // Light blue
+                        {r: 0, g: 100, b: 255}, // Medium blue
+                        {r: 0, g: 50, b: 200},  // Deeper blue
+                        {r: 0, g: 0, b: 150}    // Dark blue (deepest)
+                    ],
                     data: {
                         label: 'Depth',
                         units: 'm',
@@ -50,7 +57,14 @@ export const SpatialAnalysis = {
                 },
                 temperature: {
                     file_name: null,
-                    color_func: this.bathy_colour,
+                    colors: [
+                        {r: 0, g: 0, b: 255},    // Blue (coldest)
+                        {r: 0, g: 255, b: 255},  // Cyan
+                        {r: 0, g: 255, b: 0},    // Green
+                        {r: 255, g: 255, b: 0},  // Yellow
+                        {r: 255, g: 165, b: 0},  // Orange
+                        {r: 255, g: 0, b: 0}     // Red (hottest)
+                    ],
                     data: {
                         label: 'Temperature',
                         units: '°C',
@@ -59,7 +73,14 @@ export const SpatialAnalysis = {
                 },
                 trend: {
                     file_name: null,
-                    color_func: this.bathy_colour,
+                    colors: [
+                        {r: 255, g: 0, b: 0},     // Red (hottest)
+                        {r: 255, g: 165, b: 0},  // Orange
+                        {r: 255, g: 255, b: 0},  // Yellow
+                        {r: 0, g: 255, b: 0},    // Green
+                        {r: 0, g: 255, b: 255},  // Cyan
+                        {r: 0, g: 0, b: 255},    // Blue (coldest)
+                    ],
                     data: {
                         label: 'Trend',
                         units: '°C',
@@ -134,7 +155,7 @@ export const SpatialAnalysis = {
                 };
                 infoControl.addTo(this.map);
 
-                this.changeLayer('bathymetry')
+                this.changeLayer('temperature')
             } else {
                 console.error('Leaflet library not loaded');
             }
@@ -156,24 +177,13 @@ export const SpatialAnalysis = {
             this.loadGeoTiff(layer_props);
         },
 
-        bathy_colour(layer, values) {
+        set_color(values) {
+            const min = this.geotiffLayer.georasters[0].mins[0];
+            const max = this.geotiffLayer.georasters[0].maxs[0];
             const value = values[0];
-
-            // Define min and max depths for normalization
-            const minDepth = layer.mins[0];
-            const maxDepth = layer.maxs[0];
-
+            const colors = this.layerFiles[this.activeLayer].colors;
             // Convert to percentage (0-1 range)
-            const normalizedValue = Math.max(0, Math.min(1, (value - minDepth) / (maxDepth - minDepth)));
-
-            // Define color stops (from shallow to deep)
-            const colors = [
-                {r: 0, g: 255, b: 255}, // Cyan (shallow)
-                {r: 0, g: 180, b: 255}, // Light blue
-                {r: 0, g: 100, b: 255}, // Medium blue
-                {r: 0, g: 50, b: 200},  // Deeper blue
-                {r: 0, g: 0, b: 150}    // Dark blue (deepest)
-            ];
+            const normalizedValue = Math.max(0, Math.min(1, (value - min) / (max - min)));
 
             // Determine which color segment to use
             const numSegments = colors.length - 1;
@@ -217,12 +227,12 @@ export const SpatialAnalysis = {
                             georaster: georaster,
                             opacity: 1.0,
                             resolution: 256,
-                            pixelValuesToColorFn: values => layer_props.color_func(georaster, values)
                         });
 
                         georasterLayer.addTo(this.map);
                         this.geotiffLayer = georasterLayer;
 
+                        georasterLayer.updateColors(this.set_color)
                         // Add mousemove handler to show pixel values
                         this.map.on('mousemove', (evt) => {
                             const latlng = evt.latlng;
