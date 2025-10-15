@@ -7,14 +7,8 @@ export const SpatialAnalysis = {
         <div class="card-body">
           <div class="row">
             <div class="col-3">
-              <button class="btn btn-outline-dark mb-1" @click="changeLayer('bathymetry')"
-                      :class="{'active': activeLayer === 'bathymetry'}">Bathymetry
-              </button>
-              <button class="btn btn-outline-dark mb-1" @click="changeLayer('temperature')"
-                      :class="{'active': activeLayer === 'temperature'}">Average Bottom Temperature
-              </button>
-              <button class="btn btn-outline-dark mb-1" @click="changeLayer('trend')"
-                      :class="{'active': activeLayer === 'trend'}">Bottom Temperature Trend
+              <button class="btn btn-outline-dark mb-1" @click="changeLayer('shelf_trend')"
+                      :class="{'active': activeLayer === 'shelf_trend'}">Bottom Temperature Trend
               </button>
             </div>
             <div class="col">
@@ -25,12 +19,10 @@ export const SpatialAnalysis = {
       </div>`,
 
     props: {
-        mpa: {
-            type: Object,
-            default: null
-        },
+        climate_model: null,
         isActive: Boolean,
-        path_to_geofolder: ""
+        path_to_geofolder: "",
+        path_to_mpafolder: ""
     },
 
     data() {
@@ -40,38 +32,7 @@ export const SpatialAnalysis = {
             activeRaster: null,
             activeLayer: null,
             layerFiles: {
-                bathymetry: {
-                    file_name: null,
-                    colors: [
-                        {r: 0, g: 255, b: 255}, // Cyan (shallow)
-                        {r: 0, g: 180, b: 255}, // Light blue
-                        {r: 0, g: 100, b: 255}, // Medium blue
-                        {r: 0, g: 50, b: 200},  // Deeper blue
-                        {r: 0, g: 0, b: 150}    // Dark blue (deepest)
-                    ],
-                    data: {
-                        label: 'Depth',
-                        units: 'm',
-                        fixed: 2,
-                    }
-                },
-                temperature: {
-                    file_name: null,
-                    colors: [
-                        {r: 0, g: 0, b: 255},    // Blue (coldest)
-                        {r: 0, g: 255, b: 255},  // Cyan
-                        {r: 0, g: 255, b: 0},    // Green
-                        {r: 255, g: 255, b: 0},  // Yellow
-                        {r: 255, g: 165, b: 0},  // Orange
-                        {r: 255, g: 0, b: 0}     // Red (hottest)
-                    ],
-                    data: {
-                        label: 'Temperature',
-                        units: '°C',
-                        fixed: 4
-                    }
-                },
-                trend: {
+                shelf_trend: {
                     file_name: null,
                     colors: [
                         {r: 255, g: 0, b: 0},     // Red (hottest)
@@ -109,16 +70,16 @@ export const SpatialAnalysis = {
                 });
             }
         },
-        mpa: {
+        climate_model: {
             handler(newValue, oldValue) {
-                if (newValue?.id > 0) {
-                    this.layerFiles.bathymetry.file_name = newValue.id + "_bathymetry.tif"
-                    this.layerFiles.temperature.file_name = newValue.id + "_averageBottomTemp.tif"
-                    this.layerFiles.trend.file_name = newValue.id + "_trendBottomTemp.tif"
+                if (newValue) {
+                    this.layerFiles.shelf_trend.file_name = newValue + "_bottomTtrend.tif";
 
-                    const active = this.activeLayer;
+                    const active = this.activeLayer == null ? 'shelf_trend' : this.activeLayer;
+                    // the layer won't reload if active == this.activeLayer
                     this.activeLayer = null;
                     this.changeLayer(active);
+                    this.loadMpaFile(newValue);
                 }
             },
             deep: true,
@@ -130,6 +91,7 @@ export const SpatialAnalysis = {
         initMap() {
             // Make sure Leaflet is available
             if (typeof L !== 'undefined') {
+
                 const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                     attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
                     maxZoom: 19
@@ -141,8 +103,7 @@ export const SpatialAnalysis = {
                     layers: [satellite],
                 });
 
-
-                // Create info control for displaying depth values
+                // Create info control for displaying raster values
                 const infoControl = L.control({position: 'bottomright'});
                 infoControl.onAdd = function () {
                     this._div = L.DomUtil.create('div', 'info');
@@ -155,10 +116,36 @@ export const SpatialAnalysis = {
                 };
                 infoControl.addTo(this.map);
 
-                this.changeLayer('temperature')
+                if(this.climate_model) {
+                    this.changeLayer('shelf_trend')
+                }
             } else {
                 console.error('Leaflet library not loaded');
             }
+        },
+
+        async loadMpaFile(climate_model) {
+            const model_file = `mpa_model_${climate_model}.geojson`;
+            const geojsonUrl = this.path_to_mpafolder + model_file;
+            fetch(geojsonUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Could not load MPA Json file: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(geoJsonData => {
+                    const filteredGeoJson = {
+                        type: "FeatureCollection",
+                        features: geoJsonData.features
+                    };
+                    L.geoJSON(filteredGeoJson, {
+                        interactive: false
+                    }).addTo(this.map);
+                })
+                .catch(error => {
+                    console.error('Error loading or parsing MPA Json file:', error);
+                });
         },
 
         changeLayer(layerType) {

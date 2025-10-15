@@ -15,7 +15,7 @@ const mapApp = createApp({
     setup() {
         // State
         const state = reactive({
-            model_id: 1,
+            model_id: null,
             mapLoading: false,
             selectedPolygon: null,
             selectedPolygons: [],
@@ -131,16 +131,6 @@ const mapApp = createApp({
             layer.on('click', () => {
                 handlePolygonSelection(layer, feature);
             });
-        }
-        function add_mpa_click(mpa) {
-            if (mpa.geometry) {
-                L.geoJSON(mpa, {
-                    style: mpa.style,
-                    onEachFeature: (feature, layer) => {
-                        add_feature_popups(feature, layer)
-                    }
-                }).addTo(state.map);
-            }
         }
 
         async function add_geojson(geoJsonData, feature_popups_func) {
