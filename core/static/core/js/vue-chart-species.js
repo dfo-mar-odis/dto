@@ -42,18 +42,33 @@ export const SpeciesChart = {
                 return;
             }
 
-            const phylopic_url = "https://api.phylopic.org/images?build=517&page=0";
+            // const phylopic_url = "https://api.phylopic.org/images?build=517&page=0";
+            const phylopic_url = "https://api.phylopic.org";
+            let build = null;
 
             const url = new URL(phylopic_url, window.location.origin);
-            url.searchParams.append('filter_name', this.selectedSpecies.scientific_name.toLowerCase());
 
             this.loadingSpeciesImage = true;
             fetch(url.toString())
                 .then(response => response.json())
                 .then(data => {
+                    if (data.build) {
+                        const nextUrl = new URL(phylopic_url + "/images", window.location.origin);
+                        build = data.build
+                        nextUrl.searchParams.append('filter_name', this.selectedSpecies.scientific_name.toLowerCase());
+                        nextUrl.searchParams.append("build", data.build)
+                        nextUrl.searchParams.append("page", 0)
+                        return fetch(nextUrl.toString());
+                    } else {
+                        return null;
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
                     if (data._links && data._links.items && data._links.items.length > 0) {
                         const href = data._links.items[data._links.items.length - 1].href;
                         const nextUrl = new URL(href, "https://api.phylopic.org");
+                        nextUrl.searchParams.append("build", build)
                         return fetch(nextUrl.toString());
                     } else {
                         return null;
