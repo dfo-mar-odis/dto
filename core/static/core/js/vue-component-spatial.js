@@ -44,7 +44,7 @@ export const SpatialAnalysis = {
                     ],
                     data: {
                         label: 'Trend',
-                        units: '°C',
+                        units: '°C/year',
                         fixed: 4
                     }
                 }
@@ -116,6 +116,51 @@ export const SpatialAnalysis = {
                 };
                 infoControl.addTo(this.map);
 
+                // Create colorbar control
+                const colorbarControl = L.control({ position: 'bottomleft' });
+
+                colorbarControl.onAdd = function () {
+                    const colorbar = L.DomUtil.create('div', 'colorbar');
+                    colorbar.id = "colorbar-ramp";
+                    colorbar.style.height = '20px';
+                    colorbar.style.background = 'linear-gradient(to right, red, orange, yellow, green, cyan, blue)';
+                    colorbar.style.border = '1px solid #ccc';
+                    colorbar.style.padding = '5px';
+                    colorbar.style.textAlign = 'center';
+
+                    const cb_col = L.DomUtil.create('div', 'col');
+                    cb_col.append(colorbar);
+
+                    const cb_row = L.DomUtil.create('div', 'row');
+                    cb_row.append(cb_col);
+
+                    const lbl_col_min = L.DomUtil.create('div', 'col-auto ms-2');
+                    lbl_col_min.id = "colorbar-min"
+                    lbl_col_min.textContent = "Min";
+
+                    const lbl_units = L.DomUtil.create('div', 'col');
+                    lbl_units.id = "colorbar-units"
+                    lbl_units.textContent = "(units)";
+
+                    const lbl_col_max = L.DomUtil.create('div', 'col-auto me-2');
+                    lbl_col_max.id = "colorbar-max"
+                    lbl_col_max.textContent = "Max";
+
+                    const lbl_row = L.DomUtil.create('div', 'row');
+                    lbl_row.append(lbl_col_min);
+                    lbl_row.append(lbl_units);
+                    lbl_row.append(lbl_col_max);
+
+                    this._div = L.DomUtil.create('div', 'colorbar-container border border-black border-3');
+                    this._div.style.background = "#FFF";
+                    this._div.append(cb_row);
+                    this._div.append(lbl_row);
+                    // this._div.innerHTML = `<span id="colorbar-min">Min</span> <span id="colorbar-max" style="float: right;">Max</span>`;
+                    return this._div;
+                };
+
+                colorbarControl.addTo(this.map);
+
                 if(this.climate_model) {
                     this.changeLayer('shelf_trend')
                 }
@@ -146,6 +191,27 @@ export const SpatialAnalysis = {
                 .catch(error => {
                     console.error('Error loading or parsing MPA Json file:', error);
                 });
+        },
+
+        // Function to update the colorbar
+        updateColorbar(min, max) {
+            const colors = this.layerFiles[this.activeLayer].colors;
+            const units = this.layerFiles[this.activeLayer].data.units;
+
+            const gradient = colors.map(color => `rgb(${color.r}, ${color.g}, ${color.b})`).join(', ');
+            const colorbar = document.getElementById('colorbar-ramp');
+            if (colorbar) {
+                colorbar.style.background = `linear-gradient(to right, ${gradient})`;
+            }
+
+            const minLabel = document.getElementById('colorbar-min');
+            const unitsLabel = document.getElementById('colorbar-units');
+            const maxLabel = document.getElementById('colorbar-max');
+            if (minLabel && maxLabel) {
+                minLabel.textContent = min.toFixed(4);
+                unitsLabel.textContent = "(" + units + ")";
+                maxLabel.textContent = max.toFixed(4);
+            }
         },
 
         changeLayer(layerType) {
@@ -249,6 +315,12 @@ export const SpatialAnalysis = {
                         const bounds = georasterLayer.getBounds();
                         if (bounds && bounds.isValid()) {
                             this.map.fitBounds(bounds);
+                        }
+                    }).then(() => {
+                        if (this.geotiffLayer) {
+                            const min = this.geotiffLayer.georasters[0].mins[0];
+                            const max = this.geotiffLayer.georasters[0].maxs[0];
+                            this.updateColorbar(min, max);
                         }
                     })
                     .catch(error => {
