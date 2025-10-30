@@ -35,12 +35,12 @@ export const SpatialAnalysis = {
                 shelf_trend: {
                     file_name: null,
                     colors: [
-                        {r: 255, g: 0, b: 0},     // Red (hottest)
-                        {r: 255, g: 165, b: 0},  // Orange
-                        {r: 255, g: 255, b: 0},  // Yellow
-                        {r: 0, g: 255, b: 0},    // Green
-                        {r: 0, g: 255, b: 255},  // Cyan
                         {r: 0, g: 0, b: 255},    // Blue (coldest)
+                        {r: 0, g: 255, b: 255},  // Cyan
+                        {r: 0, g: 255, b: 0},    // Green
+                        {r: 255, g: 255, b: 0},  // Yellow
+                        {r: 255, g: 165, b: 0},  // Orange
+                        {r: 255, g: 0, b: 0},     // Red (hottest)
                     ],
                     data: {
                         label: 'Trend',
@@ -91,75 +91,14 @@ export const SpatialAnalysis = {
         initMap() {
             // Make sure Leaflet is available
             if (typeof L !== 'undefined') {
-
-                const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
-                    maxZoom: 19
-                });
                 // Initialize the map
                 this.map = L.map('spatial-map', {
                     center: [43.75, -63.5],
                     zoom: 5,
-                    layers: [satellite],
                 });
 
-                // Create info control for displaying raster values
-                const infoControl = L.control({position: 'bottomright'});
-                infoControl.onAdd = function () {
-                    this._div = L.DomUtil.create('div', 'info');
-                    this._div.id = 'layer-info-control';
-                    this._div.style.background = 'white';
-                    this._div.style.padding = '5px';
-                    this._div.style.border = '1px solid #ccc';
-                    this._div.innerHTML = 'Hover over the map';
-                    return this._div;
-                };
-                infoControl.addTo(this.map);
-
-                // Create colorbar control
-                const colorbarControl = L.control({ position: 'bottomleft' });
-
-                colorbarControl.onAdd = function () {
-                    const colorbar = L.DomUtil.create('div', 'colorbar');
-                    colorbar.id = "colorbar-ramp";
-                    colorbar.style.height = '20px';
-                    colorbar.style.background = 'linear-gradient(to right, red, orange, yellow, green, cyan, blue)';
-                    colorbar.style.border = '1px solid #ccc';
-                    colorbar.style.padding = '5px';
-                    colorbar.style.textAlign = 'center';
-
-                    const cb_col = L.DomUtil.create('div', 'col');
-                    cb_col.append(colorbar);
-
-                    const cb_row = L.DomUtil.create('div', 'row');
-                    cb_row.append(cb_col);
-
-                    const lbl_col_min = L.DomUtil.create('div', 'col-auto ms-2');
-                    lbl_col_min.id = "colorbar-min"
-                    lbl_col_min.textContent = "Min";
-
-                    const lbl_units = L.DomUtil.create('div', 'col');
-                    lbl_units.id = "colorbar-units"
-                    lbl_units.textContent = "(units)";
-
-                    const lbl_col_max = L.DomUtil.create('div', 'col-auto me-2');
-                    lbl_col_max.id = "colorbar-max"
-                    lbl_col_max.textContent = "Max";
-
-                    const lbl_row = L.DomUtil.create('div', 'row');
-                    lbl_row.append(lbl_col_min);
-                    lbl_row.append(lbl_units);
-                    lbl_row.append(lbl_col_max);
-
-                    this._div = L.DomUtil.create('div', 'colorbar-container border border-black border-3');
-                    this._div.style.background = "#FFF";
-                    this._div.append(cb_row);
-                    this._div.append(lbl_row);
-                    // this._div.innerHTML = `<span id="colorbar-min">Min</span> <span id="colorbar-max" style="float: right;">Max</span>`;
-                    return this._div;
-                };
-
-                colorbarControl.addTo(this.map);
+                this.addBaseLayer();
+                this.addMapControls()
 
                 if(this.climate_model) {
                     this.changeLayer('shelf_trend')
@@ -167,6 +106,80 @@ export const SpatialAnalysis = {
             } else {
                 console.error('Leaflet library not loaded');
             }
+        },
+
+        addBaseLayer() {
+            // L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', {
+            //     attribution: 'Tiles &copy; Esri &mdash; Sources: GEBCO, NOAA, CHS, OSU, UNH, CSUMB, National Geographic, DeLorme, NAVTEQ, and Esri',
+            //     maxZoom: 13
+            // }).addTo(this.map);
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+                maxZoom: 19
+            }).addTo(this.map);
+        },
+
+        addMapControls() {
+            // Create info control for displaying raster values
+            const infoControl = L.control({position: 'bottomright'});
+            infoControl.onAdd = function () {
+                this._div = L.DomUtil.create('div', 'info');
+                this._div.id = 'layer-info-control';
+                this._div.style.background = 'white';
+                this._div.style.padding = '5px';
+                this._div.style.border = '1px solid #ccc';
+                this._div.innerHTML = 'Hover over the map';
+                return this._div;
+            };
+            infoControl.addTo(this.map);
+
+            // Add mousemove handler to show pixel values
+            this.map.on('mousemove', this.handleMouseOver);
+
+            // Create colorbar control
+            const colorbarControl = L.control({ position: 'bottomleft' });
+
+            colorbarControl.onAdd = function () {
+                const colorbar = L.DomUtil.create('div', 'colorbar');
+                colorbar.id = "colorbar-ramp";
+                colorbar.style.height = '20px';
+                colorbar.style.background = 'linear-gradient(to right, red, orange, yellow, green, cyan, blue)';
+                colorbar.style.border = '1px solid #ccc';
+                colorbar.style.padding = '5px';
+                colorbar.style.textAlign = 'center';
+
+                const cb_col = L.DomUtil.create('div', 'col');
+                cb_col.append(colorbar);
+
+                const cb_row = L.DomUtil.create('div', 'row');
+                cb_row.append(cb_col);
+
+                const lbl_col_min = L.DomUtil.create('div', 'col-auto ms-2');
+                lbl_col_min.id = "colorbar-min"
+                lbl_col_min.textContent = "Min";
+
+                const lbl_units = L.DomUtil.create('div', 'col');
+                lbl_units.id = "colorbar-units"
+                lbl_units.textContent = "(units)";
+
+                const lbl_col_max = L.DomUtil.create('div', 'col-auto me-2');
+                lbl_col_max.id = "colorbar-max"
+                lbl_col_max.textContent = "Max";
+
+                const lbl_row = L.DomUtil.create('div', 'row');
+                lbl_row.append(lbl_col_min);
+                lbl_row.append(lbl_units);
+                lbl_row.append(lbl_col_max);
+
+                this._div = L.DomUtil.create('div', 'colorbar-container border border-black border-3');
+                this._div.style.background = "#FFF";
+                this._div.append(cb_row);
+                this._div.append(lbl_row);
+                // this._div.innerHTML = `<span id="colorbar-min">Min</span> <span id="colorbar-max" style="float: right;">Max</span>`;
+                return this._div;
+            };
+
+            colorbarControl.addTo(this.map);
         },
 
         async loadMpaFile(climate_model) {
@@ -191,6 +204,37 @@ export const SpatialAnalysis = {
                 .catch(error => {
                     console.error('Error loading or parsing MPA Json file:', error);
                 });
+        },
+
+        handleMouseOver(evt) {
+            if(!this.geotiffLayer) {
+                return;
+            }
+
+            const layer_props = this.layerFiles[this.activeLayer];
+            const infoControl= document.getElementById('layer-info-control')
+            const georaster = this.geotiffLayer.georasters[0];
+            const latlng = evt.latlng;
+            try {
+                // Access the georaster directly and use its values method
+                const x = Math.floor((latlng.lng - georaster.xmin) / georaster.pixelWidth);
+                const y = Math.floor((georaster.ymax - latlng.lat) / georaster.pixelHeight);
+
+                // Check if within bounds
+                if (x >= 0 && x < georaster.width && y >= 0 && y < georaster.height) {
+                    const value = georaster.values[0][y][x];
+                    if (value !== undefined && value !== null && value !== -9999 && value !== 0) {
+                        infoControl.innerHTML = `<b>${layer_props.data.label}: ${parseFloat(value).toFixed(layer_props.data.fixed)} ${layer_props.data.units}</b>`;
+                    } else {
+                        infoControl.innerHTML = 'No data at this point';
+                    }
+                } else {
+                    infoControl.innerHTML = 'Outside data area';
+                }
+            } catch (e) {
+                console.error('Error getting value:', e);
+                infoControl.innerHTML = 'Outside data area';
+            }
         },
 
         // Function to update the colorbar
@@ -226,7 +270,7 @@ export const SpatialAnalysis = {
             }
 
             // Load the new layer
-            const layer_props = this.layerFiles[layerType];
+            const layer_props = this.layerFiles[this.activeLayer];
             this.loadGeoTiff(layer_props);
         },
 
@@ -274,49 +318,16 @@ export const SpatialAnalysis = {
                     })
                     .then(arrayBuffer => {
                         return parseGeoraster(arrayBuffer);
-                    })
-                    .then(georaster => {
-                        const georasterLayer = new GeoRasterLayer({
+                    }).then(georaster => {
+                        this.geotiffLayer = new GeoRasterLayer({
                             georaster: georaster,
                             opacity: 1.0,
                             resolution: 256,
                         });
 
-                        georasterLayer.addTo(this.map);
-                        this.geotiffLayer = georasterLayer;
+                        this.geotiffLayer.addTo(this.map);
+                        this.geotiffLayer.updateColors(this.set_color)
 
-                        georasterLayer.updateColors(this.set_color)
-                        // Add mousemove handler to show pixel values
-                        this.map.on('mousemove', (evt) => {
-                            const latlng = evt.latlng;
-                            let infoControl = document.getElementById('layer-info-control');
-                            try {
-                                // Access the georaster directly and use its values method
-                                const x = Math.floor((latlng.lng - georaster.xmin) / georaster.pixelWidth);
-                                const y = Math.floor((georaster.ymax - latlng.lat) / georaster.pixelHeight);
-
-                                // Check if within bounds
-                                if (x >= 0 && x < georaster.width && y >= 0 && y < georaster.height) {
-                                    const value = georaster.values[0][y][x];
-                                    if (value !== undefined && value !== null && value !== -9999 && value !== 0) {
-                                        infoControl.innerHTML = `<b>${layer_props.data.label}: ${parseFloat(value).toFixed(layer_props.data.fixed)} ${layer_props.data.units}</b>`;
-                                    } else {
-                                        infoControl.innerHTML = 'No data at this point';
-                                    }
-                                } else {
-                                    infoControl.innerHTML = 'Outside data area';
-                                }
-                            } catch (e) {
-                                console.error('Error getting value:', e);
-                                infoControl.innerHTML = 'Outside data area';
-                            }
-                        });
-
-                        const bounds = georasterLayer.getBounds();
-                        if (bounds && bounds.isValid()) {
-                            this.map.fitBounds(bounds);
-                        }
-                    }).then(() => {
                         if (this.geotiffLayer) {
                             const min = this.geotiffLayer.georasters[0].mins[0];
                             const max = this.geotiffLayer.georasters[0].maxs[0];
