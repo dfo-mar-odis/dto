@@ -168,12 +168,12 @@ LOGGERS = (
     {
         "django": {
             "handlers": ["console"],
-            "level": "INFO",
+            "level": "DEBUG" if DEBUG else "INFO",
             "propagate": True,
         },
         "dto_info": {
             "handlers": ["console", "file"],
-            "level": "INFO",
+            "level": "DEBUG" if DEBUG else "INFO",
             "propagate": True,
         },
     },
