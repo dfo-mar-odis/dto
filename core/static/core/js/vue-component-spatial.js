@@ -1,14 +1,17 @@
 export const SpatialAnalysis = {
     template: `
       <div class="card">
-        <div class="card-header">
-          <div class="card-title h4">Spatial Analysis</div>
-        </div>
         <div class="card-body">
           <div class="row">
             <div class="col-3">
               <button class="btn btn-outline-dark mb-1" @click="changeLayer('shelf_trend')"
                       :class="{'active': activeLayer === 'shelf_trend'}">Bottom Temperature Trend
+              </button>
+              <button class="btn btn-outline-dark mb-1" @click="changeLayer('mean_bottom_temp')"
+                      :class="{'active': activeLayer === 'mean_bottom_temp'}">Mean Bottom Temperature
+              </button>
+              <button class="btn btn-outline-dark mb-1" @click="changeLayer('thermal_stress')"
+                      :class="{'active': activeLayer === 'thermal_stress'}">Thermal Stress
               </button>
             </div>
             <div class="col">
@@ -33,18 +36,167 @@ export const SpatialAnalysis = {
             activeLayer: null,
             layerFiles: {
                 shelf_trend: {
+                    // file_name gets set in the watch function, and depends on the selected climate model. It follows
+                    // the format [climate_model_id]_bottomTtrend.tif
                     file_name: null,
+                    file_postfix: "_bottomTtrend.tif",
                     colors: [
-                        {r: 0, g: 0, b: 255},    // Blue (coldest)
-                        {r: 0, g: 255, b: 255},  // Cyan
-                        {r: 0, g: 255, b: 0},    // Green
-                        {r: 255, g: 255, b: 0},  // Yellow
-                        {r: 255, g: 165, b: 0},  // Orange
-                        {r: 255, g: 0, b: 0},     // Red (hottest)
+                        {r: 59, g: 76, b: 124},
+                        {r: 255, g: 255, b: 255},
+                        {r: 254, g: 250, b: 240},
+                        {r: 254, g: 246, b: 225},
+                        {r: 254, g: 242, b: 211},
+                        {r: 254, g: 238, b: 196},
+                        {r: 254, g: 234, b: 181},
+                        {r: 254, g: 230, b: 167},
+                        {r: 254, g: 226, b: 152},
+                        {r: 253, g: 221, b: 141},
+                        {r: 253, g: 214, b: 135},
+                        {r: 253, g: 208, b: 129},
+                        {r: 253, g: 201, b: 122},
+                        {r: 253, g: 195, b: 116},
+                        {r: 253, g: 188, b: 110},
+                        {r: 253, g: 181, b: 104},
+                        {r: 253, g: 175, b: 98},
+                        {r: 252, g: 167, b: 93},
+                        {r: 250, g: 158, b: 89},
+                        {r: 249, g: 150, b: 85},
+                        {r: 248, g: 141, b: 82},
+                        {r: 247, g: 132, b: 78},
+                        {r: 246, g: 124, b: 74},
+                        {r: 244, g: 115, b: 70},
+                        {r: 243, g: 107, b: 66},
+                        {r: 239, g: 99, b: 62},
+                        {r: 235, g: 91, b: 58},
+                        {r: 231, g: 83, b: 55},
+                        {r: 227, g: 75, b: 51},
+                        {r: 224, g: 67, b: 47},
+                        {r: 220, g: 59, b: 44},
+                        {r: 216, g: 51, b: 40},
+                        {r: 211, g: 44, b: 38},
+                        {r: 204, g: 37, b: 38},
+                        {r: 197, g: 31, b: 38},
+                        {r: 191, g: 25, b: 38},
+                        {r: 184, g: 18, b: 38},
+                        {r: 178, g: 12, b: 38},
+                        {r: 171, g: 6, b: 38},
+                        {r: 165, g: 0, b: 38},
                     ],
                     data: {
                         label: 'Trend',
-                        units: '°C/year',
+                        units: '°C/decade',
+                        fixed: 4
+                    }
+                },
+                mean_bottom_temp: {
+                    // file_name gets set in the watch function, and depends on the selected climate model. It follows
+                    // the format [climate_model_id]_meanBottomTemp.tif
+                    file_name: null,
+                    file_postfix: "_meanBottomTemp.tif",
+                    colors: [
+                        {r: 253, g: 231, b: 37},
+                        {r: 239, g: 229, b: 28},
+                        {r: 223, g: 227, b: 24},
+                        {r: 208, g: 225, b: 28},
+                        {r: 192, g: 223, b: 37},
+                        {r: 173, g: 220, b: 48},
+                        {r: 157, g: 217, b: 59},
+                        {r: 142, g: 214, b: 69},
+                        {r: 127, g: 211, b: 78},
+                        {r: 110, g: 206, b: 88},
+                        {r: 96, g: 202, b: 96},
+                        {r: 84, g: 197, b: 104},
+                        {r: 72, g: 193, b: 110},
+                        {r: 59, g: 187, b: 117},
+                        {r: 50, g: 182, b: 122},
+                        {r: 42, g: 176, b: 127},
+                        {r: 37, g: 171, b: 130},
+                        {r: 32, g: 164, b: 134},
+                        {r: 31, g: 159, b: 136},
+                        {r: 31, g: 153, b: 138},
+                        {r: 32, g: 147, b: 140},
+                        {r: 34, g: 141, b: 141},
+                        {r: 36, g: 135, b: 142},
+                        {r: 38, g: 130, b: 142},
+                        {r: 40, g: 124, b: 142},
+                        {r: 43, g: 117, b: 142},
+                        {r: 45, g: 112, b: 142},
+                        {r: 48, g: 106, b: 142},
+                        {r: 50, g: 100, b: 142},
+                        {r: 54, g: 93, b: 141},
+                        {r: 57, g: 86, b: 140},
+                        {r: 60, g: 80, b: 139},
+                        {r: 62, g: 73, b: 137},
+                        {r: 66, g: 65, b: 134},
+                        {r: 68, g: 58, b: 131},
+                        {r: 70, g: 51, b: 127},
+                        {r: 71, g: 44, b: 122},
+                        {r: 72, g: 35, b: 116},
+                        {r: 72, g: 27, b: 109},
+                        {r: 71, g: 19, b: 101},
+                        {r: 70, g: 10, b: 93},
+                        {r: 68, g: 1, b: 84},
+                        {r: 68, g: 1, b: 84}
+                    ],
+                    data: {
+                        label: 'Mean Bottom Temp.',
+                        units: '°C',
+                        fixed: 4
+                    }
+                },
+                thermal_stress: {
+                    // file_name gets set in the watch function, and depends on the selected climate model. It follows
+                    // the format [climate_model_id]_meanThermalStress.tif
+                    file_name: null,
+                    file_postfix: "_meanThermalStress.tif",
+                    colors: [
+                        {r: 253, g: 231, b: 37},
+                        {r: 239, g: 229, b: 28},
+                        {r: 223, g: 227, b: 24},
+                        {r: 208, g: 225, b: 28},
+                        {r: 192, g: 223, b: 37},
+                        {r: 173, g: 220, b: 48},
+                        {r: 157, g: 217, b: 59},
+                        {r: 142, g: 214, b: 69},
+                        {r: 127, g: 211, b: 78},
+                        {r: 110, g: 206, b: 88},
+                        {r: 96, g: 202, b: 96},
+                        {r: 84, g: 197, b: 104},
+                        {r: 72, g: 193, b: 110},
+                        {r: 59, g: 187, b: 117},
+                        {r: 50, g: 182, b: 122},
+                        {r: 42, g: 176, b: 127},
+                        {r: 37, g: 171, b: 130},
+                        {r: 32, g: 164, b: 134},
+                        {r: 31, g: 159, b: 136},
+                        {r: 31, g: 153, b: 138},
+                        {r: 32, g: 147, b: 140},
+                        {r: 34, g: 141, b: 141},
+                        {r: 36, g: 135, b: 142},
+                        {r: 38, g: 130, b: 142},
+                        {r: 40, g: 124, b: 142},
+                        {r: 43, g: 117, b: 142},
+                        {r: 45, g: 112, b: 142},
+                        {r: 48, g: 106, b: 142},
+                        {r: 50, g: 100, b: 142},
+                        {r: 54, g: 93, b: 141},
+                        {r: 57, g: 86, b: 140},
+                        {r: 60, g: 80, b: 139},
+                        {r: 62, g: 73, b: 137},
+                        {r: 66, g: 65, b: 134},
+                        {r: 68, g: 58, b: 131},
+                        {r: 70, g: 51, b: 127},
+                        {r: 71, g: 44, b: 122},
+                        {r: 72, g: 35, b: 116},
+                        {r: 72, g: 27, b: 109},
+                        {r: 71, g: 19, b: 101},
+                        {r: 70, g: 10, b: 93},
+                        {r: 68, g: 1, b: 84},
+                        {r: 68, g: 1, b: 84}
+                    ],
+                    data: {
+                        label: 'Mean Thermal Stress',
+                        units: 'Weeks',
                         fixed: 4
                     }
                 }
@@ -73,7 +225,9 @@ export const SpatialAnalysis = {
         climate_model: {
             handler(newValue, oldValue) {
                 if (newValue) {
-                    this.layerFiles.shelf_trend.file_name = newValue + "_bottomTtrend.tif";
+                    this.layerFiles.shelf_trend.file_name = newValue + this.layerFiles.shelf_trend.file_postfix;
+                    this.layerFiles.mean_bottom_temp.file_name = newValue + this.layerFiles.mean_bottom_temp.file_postfix;
+                    this.layerFiles.thermal_stress.file_name = newValue + this.layerFiles.thermal_stress.file_postfix;
 
                     const active = this.activeLayer == null ? 'shelf_trend' : this.activeLayer;
                     // the layer won't reload if active == this.activeLayer
