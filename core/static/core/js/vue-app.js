@@ -50,6 +50,11 @@ const mapApp = createApp({
                     maxDelta: null
                 }
             },
+
+            // Track Cached Heatwave indicator data.
+            networkDataCache: new Map(),
+            networkDataCacheDate: null,
+
             filterMPAs: []
         });
 
@@ -87,6 +92,14 @@ const mapApp = createApp({
                 fillOpacity: 0.5
             }
         }
+
+        // Watch for date changes to invalidate cache
+        watch(() => state.dates.selected_date, () => {
+            // Clear cache when date changes
+            state.networkDataCache.clear();
+            state.networkDataCacheDate = null;
+        })
+
         // Initialize everything
         onMounted(() => {
             // Using Esri World Imagery as satellite base map
@@ -126,12 +139,27 @@ const mapApp = createApp({
         // Helper function to process MPA data and add to map
 
         function add_feature_popups(feature, layer) {
-            layer.bindTooltip(feature.properties.name || "Unnamed MPA", {
-                permanent: false, // Set to true if you want tooltips always visible
-                direction: 'top', // Position relative to the feature (top, bottom, left, right, center)
-                className: 'my-tooltip', // Add custom CSS class for styling
-                opacity: 0.9 // Control tooltip opacity
+            // Don't bind tooltip initially - wait for mouseover
+            layer.on('mouseover', (e) => {
+                const content = getTooltipContent(layer, null);
+
+                // Only bind tooltip if we have content
+                if (content) {
+                    if (!layer.getTooltip()) {
+                        layer.bindTooltip(content, {
+                            permanent: false,
+                            direction: 'top',
+                            opacity: 0.9
+                        });
+                    }
+                    layer.openTooltip();
+                }
             });
+
+            layer.on('mouseout', () => {
+                layer.closeTooltip();
+            });
+
             layer.on('click', () => {
                 handlePolygonSelection(layer, feature);
             });
@@ -285,6 +313,22 @@ const mapApp = createApp({
 
             // Add network indicators if a date is selected
             if (state.dates.selected_date) {
+                const mpaId = layer.feature.properties.id;
+
+                // Check if we need to fetch network data
+                if (!state.networkDataCache.has(mpaId) ||
+                    state.networkDataCacheDate !== state.dates.selected_date) {
+
+                    // Fetch data for this specific MPA
+                    fetchNetworkIndicatorDataForMPA(mpaId, layer);
+
+                    // Return basic tooltip while loading
+                    return `<div>${layer.feature.properties.name || "Unnamed MPA"}<br/><em>Loading...</em></div>`;
+                }
+
+                // Use cached data
+                netdata = state.networkDataCache.get(mpaId);
+
                 const curValue = (netdata.data.ts_data - netdata.data.climatology)
                 const curAnom = curValue / netdata.data.std_dev
                 let maxAnom = netdata.max_delta / netdata.data.std_dev
@@ -484,21 +528,13 @@ const mapApp = createApp({
         function setSelectedDate(date) {
             if(date !== state.dates.selected_date) {
                 state.dates.selected_date = date;
-                fetchNetworkIndicatorData();
             }
         }
 
         function setSelectedDateRange(dateRange) {
-            let update_network_data = false;
             if (typeof dateRange === 'object' && dateRange !== null) {
-                if(dateRange.selected_date !== state.dates.selected_date)
-                    update_network_data = true
-
                 // Handle dateRange object from MPAControls
                 state.dates = dateRange.date
-                if(update_network_data) {
-                    fetchNetworkIndicatorData();
-                }
             }
 
             // Check canvas exists before attempting to draw
@@ -509,39 +545,21 @@ const mapApp = createApp({
             }
 
             getData();
-            // fetchNetworkIndicatorData();
         }
 
         function setSelectedDepth(depth) {
             if(String(depth) != state.depth) {
                 state.depth = String(depth);
-                fetchNetworkIndicatorData();
                 getData();
             }
         }
 
-        // This forces the refresh of the network indicator data that's used in popups when hovering
-        // over an area on the map
-        async function fetchNetworkIndicatorData() {
+        async function fetchNetworkIndicatorDataForMPA(mpaId, layer) {
             if (!state.dates.selected_date || !paths.urls.heatWaveIndicatorUrl) return;
 
             try {
-                // Collect polygon layers and their IDs in a single pass
-                const polygonLayersMap = new Map();
-                state.map.eachLayer(layer => {
-                    if (layer.feature?.properties?.id) {
-                        polygonLayersMap.set(layer.feature.properties.id, layer);
-                    }
-                });
-
-                if (polygonLayersMap.size === 0) return;
-
-                // Use comma-separated IDs for a more compact URL
-                const polygonIds = Array.from(polygonLayersMap.keys());
                 const url = new URL(paths.urls.heatWaveIndicatorUrl, window.location.origin);
-
-                // Add parameters using searchParams API
-                url.searchParams.set('mpa_id', polygonIds.join(','));
+                url.searchParams.set('mpa_id', mpaId);
                 url.searchParams.set('date', state.dates.selected_date);
                 url.searchParams.set('type', state.timeseries_type);
 
@@ -553,18 +571,16 @@ const mapApp = createApp({
 
                 const data = await response.json();
 
-                // Update tooltips only for layers with returned data
-                polygonLayersMap.forEach((layer, id) => {
-                    try {
-                        if (data[id] && data[id].data) {
-                            getTooltipContent(layer, data[id]);
-                        }
-                    } catch (error) {
-                        console.error(`Error loading network indicator data: ${id}`, error);
-                    }
-                });
+                if (data[mpaId] && data[mpaId].data) {
+                    // Cache the data
+                    state.networkDataCache.set(mpaId, data[mpaId]);
+                    state.networkDataCacheDate = state.dates.selected_date;
+
+                    // Update the tooltip with the fetched data
+                    getTooltipContent(layer, data[mpaId]);
+                }
             } catch (error) {
-                console.error("Error fetching network indicator data:", error);
+                console.error(`Error fetching network indicator data for MPA ${mpaId}:`, error);
             }
         }
 

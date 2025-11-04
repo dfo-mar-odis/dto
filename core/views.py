@@ -45,6 +45,7 @@ def get_common_context(request):
         for mpa in get_mpa_ids:
             mpa_ids += mpa.split(',') if ',' in mpa else [mpa]
 
+    context['mpa_ids'] = None
     if mpa_ids:
         context['mpa_ids'] = mpa_ids
 

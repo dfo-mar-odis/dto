@@ -205,7 +205,7 @@
             {% endblock %}
             // Initialize Vue app
             const app = mapApp.mount('#app');
-            {% if mpa_ids %}{% for mpa in mpa_ids %}
+            {% if mpa_ids is not None %}{% for mpa in mpa_ids %}
                 app.addFilterMPA({{ mpa }});
             {% endfor %}
             {% endif %}

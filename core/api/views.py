@@ -1,8 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from itertools import groupby
-from operator import attrgetter
+from functools import lru_cache
 
 from django.db.models import Min, Max
 
@@ -26,18 +25,11 @@ def get_timeseries_dataframe(mpa_zone: models.MPAZones, ts_model=1, ts_type=1, d
         indicator=indicator
     ).order_by('date_time')
 
-    observations = mpa_zone.observations.filter(
-        depth=depth,
-        indicator=indicator
-    ).order_by('date_time')
-
     if start_date:
         mpa_timeseries = mpa_timeseries.filter(date_time__gte=start_date)
-        observations = observations.filter(date_time__gte=start_date)
 
     if end_date:
         mpa_timeseries = mpa_timeseries.filter(date_time__lte=end_date)
-        observations = observations.filter(date_time__lte=end_date)
 
     if not mpa_timeseries.exists():
         return None
@@ -46,48 +38,84 @@ def get_timeseries_dataframe(mpa_zone: models.MPAZones, ts_model=1, ts_type=1, d
     df['date_time'] = pd.to_datetime(df['date_time'])
     df.set_index('date_time', inplace=True)
 
-    if observations.exists():
-        # Create observations dataframe with additional fields
-        obs_df = pd.DataFrame(list(observations.values('date_time', 'value', 'count', 'std')))
-        obs_df['date_time'] = pd.to_datetime(obs_df['date_time'])
-        obs_df = obs_df.rename(columns={'value': 'observation'})
-        obs_df.set_index('date_time', inplace=True)
-
-        # Merge dataframes
-        df = df.join(obs_df, how='left')
-
     return df
 
 
-def get_base_timeseries(mpa_zone, ts_model=1, ts_type=1, depth=None, indicator=1):
+def get_timeseries_dataframe_with_observations(mpa_zone: models.MPAZones, ts_model=1, ts_type=1, depth=None, start_date=None, end_date=None, indicator=1):
+    dataframe = get_timeseries_dataframe(mpa_zone, ts_model, ts_type, depth, start_date, end_date, indicator)
 
-    data_dict = {}
+    if depth is None:
+        return dataframe
 
-    # Get dataframe for processing
-    df = get_timeseries_dataframe(
-        mpa_zone,
-        ts_model,
-        ts_type,
-        depth,
+    observations = mpa_zone.observations.filter(
+        depth=depth,
         indicator=indicator
-    )
+    ).order_by('date_time')
+
+    if start_date:
+        observations = observations.filter(date_time__gte=start_date)
+
+    if end_date:
+        observations = observations.filter(date_time__lte=end_date)
+
+    if not observations.exists():
+        return dataframe
+
+    # Create observations dataframe with additional fields
+    obs_df = pd.DataFrame(list(observations.values('date_time', 'value', 'count', 'std')))
+    obs_df['date_time'] = pd.to_datetime(obs_df['date_time'])
+    obs_df = obs_df.rename(columns={'value': 'observation'})
+    obs_df.set_index('date_time', inplace=True)
+
+    # Merge dataframes
+    dataframe = dataframe.join(obs_df, how='left')
+
+    return dataframe
+
+
+@lru_cache(maxsize=128)
+def _get_cached_climatology_data(mpa_zone_id, ts_model, ts_type, depth, indicator):
+    """Cached helper that returns climatology data dict for a given MPA/model/type/depth/indicator combo"""
+    mpa_zone = models.MPAZones.objects.get(pk=mpa_zone_id)
+
+    df = get_timeseries_dataframe_with_observations(mpa_zone, ts_model, ts_type, depth, indicator=indicator)
     if df is None:
         raise ValueError(f"No data found for zone {mpa_zone}")
 
-    # our climatology data is based off the first 30 years of data we have, basically start of 1993 to end of 2022
+    # our climatology data is based off the first 30 years of data we have
     timeseries_30_year = df[(df.index <= '2022-12-31')]
-    data_dict['data'] = timeseries_30_year.groupby([timeseries_30_year.index.month, timeseries_30_year.index.day])
-
-    data_dict['std'] = data_dict['data'].std()
-    data_dict['climatology'] = data_dict['data'].quantile()
+    grouped = timeseries_30_year.groupby([timeseries_30_year.index.month, timeseries_30_year.index.day])
 
     # Calculate min/max deltas
     max_val = df[(df.value == df.max().value)]
     min_val = df[(df.value == df.min().value)]
 
-    # min and max possible difference across the entire timeseries
-    data_dict['max_delta'] = df.max().value - data_dict['climatology'].loc[(max_val.index.month[0], max_val.index.day[0])].value
-    data_dict['min_delta'] = df.min().value - data_dict['climatology'].loc[(min_val.index.month[0], min_val.index.day[0])].value
+    climatology = grouped.quantile()
+    std = grouped.std()
+
+    max_delta = df.max().value - climatology.loc[(max_val.index.month[0], max_val.index.day[0])].value
+    min_delta = df.min().value - climatology.loc[(min_val.index.month[0], min_val.index.day[0])].value
+
+    return {
+        'std': std,
+        'climatology': climatology,
+        'max_delta': max_delta,
+        'min_delta': min_delta
+    }
+
+
+def get_base_timeseries(mpa_zone, ts_model=1, ts_type=1, depth=None, indicator=1):
+    """Returns full dataframe and cached climatology data"""
+    df = get_timeseries_dataframe_with_observations(mpa_zone, ts_model, ts_type, depth, indicator=indicator)
+    if df is None:
+        raise ValueError(f"No data found for zone {mpa_zone}")
+
+    # Get cached climatology data
+    data_dict = _get_cached_climatology_data(mpa_zone.pk, ts_model, ts_type, depth, indicator)
+
+    # Add the grouped data reference (not cached since it's a GroupBy object)
+    timeseries_30_year = df[(df.index <= '2022-12-31')]
+    data_dict['data'] = timeseries_30_year.groupby([timeseries_30_year.index.month, timeseries_30_year.index.day])
 
     return df, data_dict
 
@@ -130,6 +158,7 @@ def get_timeseries_data(mpa_id, ts_model=1, ts_type=1, depth=None, start_date=No
     } for date, daily_data in df.iterrows()]
 
     return results
+
 
 def get_quantile_data(mpa_id, ts_model=1, ts_type=1, depth=None, start_date=None,
                       end_date=None, indicator=1, quantile_upper=None, quantile_lower=None):
