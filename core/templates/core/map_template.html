@@ -19,12 +19,12 @@
                         icon-url="{% static 'icons/favicon.png' %}"
                 ></mpa-info>
                 <heat-wave-indicator class="card"
-                    :data-point="state.networkIndicatorData.currentPoint"
-                    :quantile="state.networkIndicatorData.currentQuantile"
-                    :min-delta="state.networkIndicatorData.quantileData?.min_delta"
-                    :max-delta="state.networkIndicatorData.quantileData?.max_delta"
-                    :upper-quantile-label="state.networkIndicatorData.label?.upper"
-                    :lower-quantile-label="state.networkIndicatorData.label?.lower"
+                                     :data-point="state.networkIndicatorData.currentPoint"
+                                     :quantile="state.networkIndicatorData.currentQuantile"
+                                     :min-delta="state.networkIndicatorData.quantileData?.min_delta"
+                                     :max-delta="state.networkIndicatorData.quantileData?.max_delta"
+                                     :upper-quantile-label="state.networkIndicatorData.label?.upper"
+                                     :lower-quantile-label="state.networkIndicatorData.label?.lower"
                 ></heat-wave-indicator>
             </div>
             <div class="col">
@@ -40,18 +40,18 @@
         <div class="row mt-2">
             <div class="col">
                 {% block map-controls %}
-                <mpa-controls
-                        v-if="state.timeseries_type !== undefined"
-                        max-date-url="{% url 'core:get_max_date' %}"
-                        :timeseries_type="state.timeseries_type"
-                        :mpa="state.mpa"
-                        :initial-start-date="state.dates.start_date"
-                        :initial-end-date="state.dates.end_date"
-                        :selected-date="state.dates.selected_date"
-                        @get-data="getData"
-                        @date-range-change="setSelectedDateRange"
-                        @depth-selected="setSelectedDepth">
-                </mpa-controls>
+                    <mpa-controls
+                            v-if="state.timeseries_type !== undefined"
+                            max-date-url="{% url 'core:get_max_date' %}"
+                            :timeseries_type="state.timeseries_type"
+                            :mpa="state.mpa"
+                            :initial-start-date="state.dates.start_date"
+                            :initial-end-date="state.dates.end_date"
+                            :selected-date="state.dates.selected_date"
+                            @get-data="getData"
+                            @date-range-change="setSelectedDateRange"
+                            @depth-selected="setSelectedDepth">
+                    </mpa-controls>
                 {% endblock %}
             </div>
         </div>
@@ -76,106 +76,108 @@
         <div class="tab-content" id="chart_tabs">
             {% block tab-content %}
                 {% block timeseries-tab %}
-            <div class="tab-pane fade"
-                 :class="{ 'show active': tabs.activeTab === 'timeseries_data' }"
-                 id="timeseries_data">
-                <div class="row">
-                    <div class="col">
-                        <quantile-chart
-                                :mpa="state.mpa"
-                                :timeseries_type="state.timeseries_type"
-                                :depth="state.depth"
-                                :start-date="state.dates.start_date"
-                                :end-date="state.dates.end_date"
-                                :selected-date="state.dates.selected_date"
-                                :timeseries-data="state.timeseriesData"
-                                data-url="{% url 'api:quantile-data' %}"
-                                :is-active="tabs.activeTab === 'timeseries_data'"
-                                :is-loading="state.loading"
-                                @date-selected="setSelectedDate"
-                                @quantile-data-updated="updateNetworkIndicator"
-                        ></quantile-chart>
-                    </div>
-                </div>
-            </div>
-                {% endblock %}
-                {% block species-tab %}
-            <div class="tab-pane fade"
-                :class="{ 'show active': tabs.activeTab === 'species_data' }"
-                 id="species_data">
-                <species-chart-container
-                        :mpa="state.mpa"
-                        :species-list="state.species"
-                        :timeseries-data="state.timeseriesData"
-                        :selected-date="state.dates.selected_date"
-                        :is-active="tabs.activeTab === 'species_data'"
-                        :is-loading="state.loading"
-                        @date-selected="setSelectedDate"
-                ></species-chart-container>
-
-                <div class="card mt-2">
-                    <div class="card-header">
-                        <div class="card-title">
-                            Citations
+                    <div class="tab-pane fade"
+                         :class="{ 'show active': tabs.activeTab === 'timeseries_data' }"
+                         id="timeseries_data">
+                        <div class="row">
+                            <div class="col">
+                                <quantile-chart
+                                        :mpa="state.mpa"
+                                        :timeseries_type="state.timeseries_type"
+                                        :depth="state.depth"
+                                        :start-date="state.dates.start_date"
+                                        :end-date="state.dates.end_date"
+                                        :selected-date="state.dates.selected_date"
+                                        :timeseries-data="state.timeseriesData"
+                                        data-url="{% url 'api:quantile-data' %}"
+                                        :is-active="tabs.activeTab === 'timeseries_data'"
+                                        :is-loading="state.loading"
+                                        @date-selected="setSelectedDate"
+                                        @quantile-data-updated="updateNetworkIndicator"
+                                ></quantile-chart>
+                            </div>
                         </div>
                     </div>
-                    <div class="card-body">
-                        Shaylyn A. Lewis, Christine H. Stortini, Daniel G. Boyce, and Ryan R.E. Stanley. 2023. Climate
-                        change, species thermal emergence, and conservation design: a case study in the Canadian Northwest
-                        Atlantic. FACETS. 8: 1-16. <a href="https://doi.org/10.1139/facets-2022-0191">https://doi.org/10.1139/facets-2022-0191</a>
+                {% endblock %}
+                {% block species-tab %}
+                    <div class="tab-pane fade"
+                         :class="{ 'show active': tabs.activeTab === 'species_data' }"
+                         id="species_data">
+                        <species-chart-container
+                                :mpa="state.mpa"
+                                :species-list="state.species"
+                                :timeseries-data="state.timeseriesData"
+                                :selected-date="state.dates.selected_date"
+                                :is-active="tabs.activeTab === 'species_data'"
+                                :is-loading="state.loading"
+                                @date-selected="setSelectedDate"
+                        ></species-chart-container>
+
+                        <div class="card mt-2">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    Citations
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                Shaylyn A. Lewis, Christine H. Stortini, Daniel G. Boyce, and Ryan R.E. Stanley. 2023.
+                                Climate
+                                change, species thermal emergence, and conservation design: a case study in the Canadian
+                                Northwest
+                                Atlantic. FACETS. 8: 1-16. <a href="https://doi.org/10.1139/facets-2022-0191">https://doi.org/10.1139/facets-2022-0191</a>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
                 {% endblock %}
                 {% block spatial-analysis-tab %}
-            <div class="tab-pane fade"
-                :class="{ 'show active': tabs.activeTab === 'spatial_analysis' }"
-                id="spatial_analysis">
-                <div class="row">
-                    <div class="col">
-                        <spatial-analysis
-                                :climate_model="state.model_id"
-                                :is-active="tabs.activeTab === 'spatial_analysis'"
-                                path_to_geofolder="{% static '/core/spatial/' %}"
-                                path_to_mpafolder="{% static '/core/geojson/' %}"
-                        >
-                        </spatial-analysis>
+                    <div class="tab-pane fade"
+                         :class="{ 'show active': tabs.activeTab === 'spatial_analysis' }"
+                         id="spatial_analysis">
+                        <div class="row">
+                            <div class="col">
+                                <spatial-analysis
+                                        :climate_model="state.model_id"
+                                        :is-active="tabs.activeTab === 'spatial_analysis'"
+                                        path_to_geofolder="{% static '/core/spatial/' %}"
+                                        path_to_mpafolder="{% static '/core/geojson/' %}"
+                                >
+                                </spatial-analysis>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
                 {% endblock %}
                 {% block standard-anomaly-tab %}
 
-            <div class="tab-pane fade"
-                :class="{ 'show active': tabs.activeTab === 'individual_indicators' }"
-                id="individual_indicators">
-                <div class="row">
-                    <div class="col">
-                        <site-indicators-chart
-                                :mpa="state.mpa"
-                                :is-active="tabs.activeTab === 'individual_indicators'"
-                                data-url="{% url 'api:network-indicator-list' %}"
-                        ></site-indicators-chart>
+                    <div class="tab-pane fade"
+                         :class="{ 'show active': tabs.activeTab === 'individual_indicators' }"
+                         id="individual_indicators">
+                        <div class="row">
+                            <div class="col">
+                                <site-indicators-chart
+                                        :mpa="state.mpa"
+                                        :is-active="tabs.activeTab === 'individual_indicators'"
+                                        data-url="{% url 'api:network-indicator-list' %}"
+                                ></site-indicators-chart>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
                 {% endblock %}
                 {% block network-tab %}
-            <div class="tab-pane fade"
-                :class="{ 'show active': tabs.activeTab === 'network_data' }"
-                 id="network_data">
-                <div id="div_id_network_card">
-                    <network-indicators
-                            :selected-polygon="state.selectedPolygon"
-                            :selected-polygons="state.selectedPolygons"
-                            :selected-date="state.dates.selected_date"
-                            :is-active="tabs.activeTab === 'network_data'"
-                            data-url="{% url 'api:network-indicator-list' %}"
-                    ></network-indicators>
-                </div>
-            </div>
+                    <div class="tab-pane fade"
+                         :class="{ 'show active': tabs.activeTab === 'network_data' }"
+                         id="network_data">
+                        <div id="div_id_network_card">
+                            <network-indicators
+                                    :selected-polygon="state.selectedPolygon"
+                                    :selected-polygons="state.selectedPolygons"
+                                    :selected-date="state.dates.selected_date"
+                                    :is-active="tabs.activeTab === 'network_data'"
+                                    data-url="{% url 'api:network-indicator-list' %}"
+                            ></network-indicators>
+                        </div>
+                    </div>
                 {% endblock %}
-        {% endblock %}
+            {% endblock %}
         </div>
     </div>
 {% endblock %}
@@ -192,21 +194,21 @@
             }
 
             {% block include-tabs %}
-            const tabsData = {
-                activeTab: 'timeseries_data', {# active tab should match the id of the tab above #}
-                tabList: {
-                    timeseries_data: {title: window.translations?.timeseries || 'Timeseries'},
-                    species_data: {title: window.translations?.species_data || 'Species Data'},
-                    spatial_analysis: {title: window.translations?.spatial_analysis},
-                    individual_indicators: {title: window.translations?.individual_indicators || 'Individual Indicators'},
-                    network_data: {title: window.translations?.network_comparison || 'Network Comparison'},
-                }
-            };
+                const tabsData = {
+                    activeTab: 'timeseries_data', {# active tab should match the id of the tab above #}
+                    tabList: {
+                        timeseries_data: {title: window.translations?.timeseries || 'Timeseries'},
+                        species_data: {title: window.translations?.species_data || 'Species Data'},
+                        spatial_analysis: {title: window.translations?.spatial_analysis},
+                        individual_indicators: {title: window.translations?.individual_indicators || 'Individual Indicators'},
+                        network_data: {title: window.translations?.network_comparison || 'Network Comparison'},
+                    }
+                };
             {% endblock %}
             // Initialize Vue app
             const app = mapApp.mount('#app');
             {% if mpa_ids is not None %}{% for mpa in mpa_ids %}
-                app.addFilterMPA({{ mpa }});
+            app.addFilterMPA({{ mpa }});
             {% endfor %}
             {% endif %}
 

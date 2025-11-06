@@ -5,6 +5,10 @@
 window.currentLanguage = '{{ LANGUAGE_CODE }}'
 console.log('Current Lang: ' + window.currentLanguage);
 window.translations = {
+
+    'about': "{% trans 'About' %}",
+    'dto_description': "{% trans 'Welcome to your gateway for tracking marine conservation networks using advanced oceanographic models and observational data.' %}",
+
     // MPA Info component
     'mpa_description': "{% trans 'Site Description' %}",
     'name': "{% trans 'Name' %}",

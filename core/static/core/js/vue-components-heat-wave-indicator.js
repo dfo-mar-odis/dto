@@ -104,7 +104,7 @@ export const HeatWaveIndicator = {
     },
 
     template: `
-        <div class="wave-indicator card-body">
+        <div v-if="dataPoint" class="wave-indicator card-body">
             <div class="row">
                 <small class="form-text text-muted mt-1">{{ title }}</small>
             </div>

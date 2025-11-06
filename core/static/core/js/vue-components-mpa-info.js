@@ -58,7 +58,8 @@ export const MPAInfo = {
     <div class="card">
       <div class="card-header">
         <div class="card-title">
-          <h4>{{ t.mpa_description || 'Site Description' }}</h4>
+          <h4 v-if="mpa.name">{{ t.mpa_description || 'Site Description' }}</h4>
+          <h4 v-else>{{ t.about }}</h4>
         </div>
       </div>
       <div class="card-body" v-if="mpa.name">
@@ -76,7 +77,8 @@ export const MPAInfo = {
         </div>
       </div>
       <div class="card-body alert-info" v-else>
-        {{ t.select_mpa || 'Please select an MPA' }}
+        <p>{{ t.dto_description }}</p>
+        <p>{{ t.select_mpa || 'Please select an MPA' }}</p>
       </div>
     </div>
   `

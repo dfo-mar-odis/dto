@@ -28,14 +28,23 @@ export const SpatialAnalysis = {
         <div class="card-body">
           <div class="row">
             <div class="col-3">
-              <button 
-                v-for="(layer, key) in layerFiles" 
-                :key="key" 
-                class="btn btn-outline-dark mb-1" 
-                @click="changeLayer(key)"
-                :class="{'active': activeLayer === key}">
-                {{ layer.data.title }}
-              </button>
+              <div class="row">
+                <div class="col">
+                  <button
+                      v-for="(layer, key) in layerFiles"
+                      :key="key"
+                      class="btn btn-outline-dark mb-1"
+                      @click="changeLayer(key)"
+                      :class="{'active': activeLayer === key}">
+                    {{ layer.data.title }}
+                  </button>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col" id="div_col_id_about_button_text">
+
+                </div>
+              </div>
             </div>
             <div class="col">
               <div id="spatial-map" style="height: 500px;"></div>
@@ -66,9 +75,10 @@ export const SpatialAnalysis = {
                     colors: trend_colour,
                     data: {
                         title: 'Bottom Temperature Trend',
+                        description: 'Significant trend for the bottom temperature from GLORYS model for period 1993-2024, expressed in degrees Celsius per decade.',
                         label: 'Trend',
                         units: '°C/decade',
-                        fixed: 4
+                        fixed: 2
                     }
                 },
                 mean_bottom_temp: {
@@ -79,9 +89,10 @@ export const SpatialAnalysis = {
                     colors: viridis_colour,
                     data: {
                         title: 'Mean Bottom Temperature',
+                        description: 'Average of the bottom temperature from GLORYS model for period 1993-2024.',
                         label: 'Mean Bottom Temp.',
                         units: '°C',
-                        fixed: 4
+                        fixed: 2
                     }
                 },
                 thermal_stress: {
@@ -89,12 +100,16 @@ export const SpatialAnalysis = {
                     // the format [climate_model_id]_meanThermalStress.tif
                     file_name: null,
                     file_postfix: "_meanThermalStress.tif",
-                    colors: viridis_colour,
+                    colors: trend_colour,
                     data: {
                         title: 'Mean Thermal Stress',
+                        description: 'Number of weeks that the bottom temperature spends above the maximum climatological bottom temperature. Duration of thermal stress was computed for each year and averaged for the period 1993-2024.',
+                        references: [
+                            'https://doi.org/10.1525/elementa.2024.00001'
+                        ],
                         label: 'Mean Thermal Stress',
                         units: 'Weeks',
-                        fixed: 4
+                        fixed: 0
                     }
                 }
             }
@@ -112,7 +127,7 @@ export const SpatialAnalysis = {
                 this.$nextTick(() => {
                     try {
                         this.map.invalidateSize();
-                        this.map.fitBounds(this.geotiffLayer.getBounds());
+                        // this.map.fitBounds(this.geotiffLayer.getBounds());
                     } catch {
                         console.log("map not ready");
                     }
@@ -143,8 +158,8 @@ export const SpatialAnalysis = {
             if (typeof L !== 'undefined') {
                 // Initialize the map
                 this.map = L.map('spatial-map', {
-                    center: [43.75, -63.5],
-                    zoom: 5,
+                    center: [43.875, -61.33333],
+                    zoom: 6,
                 });
 
                 this.addBaseLayer();
@@ -322,6 +337,22 @@ export const SpatialAnalysis = {
             // Load the new layer
             const layer_props = this.layerFiles[this.activeLayer];
             this.loadGeoTiff(layer_props);
+
+            // Update the text of the 'div_col_id_about_text' element
+            const aboutTextElement = document.getElementById('div_col_id_about_button_text');
+            if (aboutTextElement) {
+                aboutTextElement.textContent = layer_props.data.description;
+            }
+            if (layer_props.data.references) {
+                layer_props.data.references.forEach(ref => {
+                    const link = document.createElement('a');
+                    link.href = ref;
+                    link.textContent = ref;
+                    link.target = '_blank'; // Open link in a new tab
+                    link.style.display = 'block'; // Ensure each link is on a new line
+                    aboutTextElement.appendChild(link);
+                });
+            }
         },
 
         set_color(values) {
