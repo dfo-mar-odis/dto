@@ -81,6 +81,20 @@ export const SpatialAnalysis = {
                         fixed: 2
                     }
                 },
+                shelf_trend_projected: {
+                    // file_name gets set in the watch function, and depends on the selected climate model. It follows
+                    // the format [climate_model_id]_bottomTtrend.tif
+                    file_name: null,
+                    file_postfix: "_bottomTtrend_EPSG3857.tif",
+                    colors: trend_colour,
+                    data: {
+                        title: 'Bottom Temperature Trend (projected)',
+                        description: 'Significant trend for the bottom temperature from GLORYS model for period 1993-2024, expressed in degrees Celsius per decade.',
+                        label: 'Trend',
+                        units: '°C/decade',
+                        fixed: 2
+                    }
+                },
                 mean_bottom_temp: {
                     // file_name gets set in the watch function, and depends on the selected climate model. It follows
                     // the format [climate_model_id]_meanBottomTemp.tif
@@ -89,6 +103,20 @@ export const SpatialAnalysis = {
                     colors: viridis_colour,
                     data: {
                         title: 'Mean Bottom Temperature',
+                        description: 'Average of the bottom temperature from GLORYS model for period 1993-2024.',
+                        label: 'Mean Bottom Temp.',
+                        units: '°C',
+                        fixed: 2
+                    }
+                },
+                mean_bottom_temp_projected: {
+                    // file_name gets set in the watch function, and depends on the selected climate model. It follows
+                    // the format [climate_model_id]_meanBottomTemp.tif
+                    file_name: null,
+                    file_postfix: "_meanBottomTemp_EPSG3857.tif",
+                    colors: viridis_colour,
+                    data: {
+                        title: 'Mean Bottom Temperature (projected)',
                         description: 'Average of the bottom temperature from GLORYS model for period 1993-2024.',
                         label: 'Mean Bottom Temp.',
                         units: '°C',
@@ -111,7 +139,25 @@ export const SpatialAnalysis = {
                         units: 'Weeks',
                         fixed: 0
                     }
+                },
+                thermal_stress_projected: {
+                    // file_name gets set in the watch function, and depends on the selected climate model. It follows
+                    // the format [climate_model_id]_meanThermalStress.tif
+                    file_name: null,
+                    file_postfix: "_meanThermalStress_EPSG3857.tif",
+                    colors: trend_colour,
+                    data: {
+                        title: 'Mean Thermal Stress (projected)',
+                        description: 'Number of weeks that the bottom temperature spends above the maximum climatological bottom temperature. Duration of thermal stress was computed for each year and averaged for the period 1993-2024.',
+                        references: [
+                            'https://doi.org/10.1525/elementa.2024.00001'
+                        ],
+                        label: 'Mean Thermal Stress',
+                        units: 'Weeks',
+                        fixed: 0
+                    }
                 }
+
             }
         };
     },
