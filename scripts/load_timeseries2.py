@@ -218,15 +218,13 @@ def load_mpas_from_array(data: list):
 def load_canso100():
     load_model('Canso100', 'CANSO100')
 
-def load_model(model_dir, model_name):
+def load_model(model_dir, climate_model):
 
     root_path = Path(f'./scripts/data/model_bottom_conditions_tables/{model_dir}/')
-    logger.info(f"Loading {model_name} files")
+    logger.info(f"Loading {climate_model.name} files")
 
     files = os.listdir(root_path)
-    logger.info(f"Found {len(files)} {model_name} files")
-
-    climate_model = models.ClimateModels.objects.get_or_create(name=model_name, priority=2)[0]
+    logger.info(f"Found {len(files)} {climate_model.name} files")
 
     load_dict = []
     for file_name in files:
@@ -260,8 +258,6 @@ def load_model(model_dir, model_name):
         )
 
     load_mpas_from_array(load_dict)
-    climate_model.indicators.filter()
-    load_indicators.load_std_anomalies(climate_model)
 
 def load_model_file(model_dir, file_name, model_name):
 
@@ -306,8 +302,41 @@ def load_model_file(model_dir, file_name, model_name):
 
 
 def load_mpas():
-    load_model('Canso100_GL_levs', 'Canso100')
-    load_model('Canso500_GL_levs', 'Canso500')
-    load_model('CIOPSE_GL_levs', 'CIOPSE')
-    load_model('Fundy500_GL_levs', 'Fundy500')
-    load_model('SJ100_GL_levs', 'SJ100')
+    models.ClimateModels.objects.exclude(name__iexact='glorys').delete()
+
+    model_name = "Canso100"
+    climate_model = models.ClimateModels.objects.create(pk=2, name=model_name, priority=2)
+    load_model('Canso100', climate_model)
+    load_model('Canso100_GL_levs', climate_model)
+    climate_model.indicators.filter()
+    load_indicators.load_std_anomalies(climate_model)
+
+    model_name = "Canso500"
+    climate_model = models.ClimateModels.objects.create(pk=3, name=model_name, priority=2)
+    load_model('Canso500', climate_model)
+    load_model('Canso500_GL_levs', climate_model)
+    climate_model.indicators.filter()
+    load_indicators.load_std_anomalies(climate_model)
+
+    model_name = "CIOPSE"
+    climate_model = models.ClimateModels.objects.create(pk=4, name=model_name, priority=2)
+    load_model('CIOPSE/Run1', climate_model)
+    load_model('CIOPSE/Run2', climate_model)
+    load_model('CIOPSE/Run3', climate_model)
+    load_model('CIOPSE_GL_levs', climate_model)
+    climate_model.indicators.filter()
+    load_indicators.load_std_anomalies(climate_model)
+
+    model_name = "Fundy500"
+    climate_model = models.ClimateModels.objects.create(pk=5, name=model_name, priority=2)
+    load_model('Fundy500', climate_model)
+    load_model('Fundy500_GL_levs', climate_model)
+    climate_model.indicators.filter()
+    load_indicators.load_std_anomalies(climate_model)
+
+    model_name = "SJ100"
+    climate_model = models.ClimateModels.objects.create(pk=6, name=model_name, priority=2)
+    load_model('SJ100', climate_model)
+    load_model('SJ100_GL_levs', climate_model)
+    climate_model.indicators.filter()
+    load_indicators.load_std_anomalies(climate_model)
