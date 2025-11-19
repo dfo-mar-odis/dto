@@ -205,7 +205,7 @@ def load_mpas_from_array(data: list):
             if 'ts.csv' in file_name:
                 mpa.timeseries.filter(model=climate_model, indicator=variable, type=timeseries_type, depth=None).delete()
                 read_timeseries_chunk(mpa, file_path_name, climate_model, variable, timeseries_type)
-            elif 'vlev_mean.csv' in file_name:
+            elif 'vlev_mean.csv' in file_name or 'vlev_mean_GL.csv' in file_name:
                 mpa.timeseries.filter(model=climate_model, indicator=variable, type=timeseries_type, depth__gt=0).delete()
                 read_depth_timeseries(mpa, file_path_name, climate_model, variable, timeseries_type)
             else:
@@ -231,7 +231,10 @@ def load_model(model_dir, model_name):
     load_dict = []
     for file_name in files:
         file_path = os.path.join(root_path, file_name)
-        if '_sbt_' in file_name:
+        if '_stats.csv' in file_name:
+            # skipt the stats files.
+            continue
+        elif '_sbt_' in file_name:
             timeseries_type = 1
             variable = models.TimeseriesVariables.objects.get_or_create(name="Temperature")[0]
         elif '_sst_' in file_name:
@@ -259,3 +262,52 @@ def load_model(model_dir, model_name):
     load_mpas_from_array(load_dict)
     climate_model.indicators.filter()
     load_indicators.load_std_anomalies(climate_model)
+
+def load_model_file(model_dir, file_name, model_name):
+
+    root_path = Path(f'./scripts/data/model_bottom_conditions_tables/{model_dir}/')
+    logger.info(f"Loading {model_name} files")
+
+    files = os.listdir(root_path)
+    logger.info(f"Found {len(files)} {model_name} files")
+
+    climate_model = models.ClimateModels.objects.get_or_create(name=model_name, priority=2)[0]
+
+    load_dict = []
+    file_path = os.path.join(root_path, file_name)
+    if '_sbt_' in file_name:
+        timeseries_type = 1
+        variable = models.TimeseriesVariables.objects.get_or_create(name="Temperature")[0]
+    elif '_sst_' in file_name:
+        timeseries_type = 2
+        variable = models.TimeseriesVariables.objects.get_or_create(name="Temperature")[0]
+    elif '_sbs_' in file_name:
+        timeseries_type = 1
+        variable = models.TimeseriesVariables.objects.get_or_create(name="Salinity")[0]
+    elif '_sss_' in file_name:
+        timeseries_type = 2
+        variable = models.TimeseriesVariables.objects.get_or_create(name="Salinity")[0]
+    else:
+        logger.error(f"Unrecognized file type: {file_name}")
+        return
+
+    load_dict.append(
+        {
+            'file_name': file_path,
+            'climate_model': climate_model,
+            'timeseries_type': timeseries_type, # 1 = bottom, 2 = surface
+            'variable': variable
+        }
+    )
+
+    load_mpas_from_array(load_dict)
+    climate_model.indicators.filter()
+    load_indicators.load_std_anomalies(climate_model)
+
+
+def load_mpas():
+    load_model('Canso100_GL_levs', 'Canso100')
+    load_model('Canso500_GL_levs', 'Canso500')
+    load_model('CIOPSE_GL_levs', 'CIOPSE')
+    load_model('Fundy500_GL_levs', 'Fundy500')
+    load_model('SJ100_GL_levs', 'SJ100')

@@ -37,7 +37,11 @@ def get_common_context(request):
     models_array = [(m.pk, f'{m.name}') for m in models.ClimateModels.objects.all()]
     context['models'] = models_array
     context['selected_model'] = {'id': int(request.session.get('selected_model', 1))}
-    context['selected_model']['name'] = models.ClimateModels.objects.get(id=context['selected_model']['id']).name
+    try:
+        context['selected_model']['name'] = models.ClimateModels.objects.get(id=context['selected_model']['id']).name
+    except models.ClimateModels.DoesNotExist:
+        context['selected_model']['name'] = "GLORYS"
+
 
     mpa_ids = []
     get_mpa_ids = request.GET.getlist('mpa_id')
