@@ -13,8 +13,10 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 
 from core.api.pagination import CustomPageNumberPagination
-from core.api.serializers import AreaOfInterestSerializer, MPAZonesSerializer, MPAZonesWithoutGeometrySerializer, SpeciesSerializer
+from core.api.serializers import AreaOfInterestSerializer, MPAZonesSerializer, MPAZonesWithoutGeometrySerializer, \
+    SpeciesSerializer, SpatialRasterSetsSerializer
 from core import models
+from core.models import SpatialRasterSets
 
 
 def get_timeseries_dataframe(mpa_zone: models.MPAZones, ts_model=1, ts_type=1, depth=None, start_date=None, end_date=None, indicator=1):
@@ -552,5 +554,22 @@ class AOIListView(generics.ListAPIView):
 
         if model:
             queryset = queryset.filter(model=model)
+
+        return queryset
+
+
+class SpatialRasterSetsViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = SpatialRasterSets.objects.all()
+    serializer_class = SpatialRasterSetsSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        model_id = self.request.query_params.get('model_id')
+        model_name = self.request.query_params.get('model_name')
+
+        if model_id:
+            queryset = queryset.filter(model__pk=model_id)
+        elif model_name:
+            queryset = queryset.filter(model__name__iexact=model_name)
 
         return queryset

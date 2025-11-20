@@ -101,3 +101,31 @@ class SpeciesSerializer(serializers.ModelSerializer):
             'value': obj.status,
             'display': obj.get_status_display()
         }
+
+
+class SpatialReferencesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.SpatialReferences
+        fields = ['id', 'citation']
+
+
+class RastersSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Rasters
+        fields = ['id', 'order', 'filename']
+
+
+class ColorRampsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.ColorRamps
+        fields = ['id', 'name']
+
+
+class SpatialRasterSetsSerializer(serializers.ModelSerializer):
+    references = SpatialReferencesSerializer(many=True, read_only=True)
+    rasters = RastersSerializer(many=True, read_only=True)
+    color = ColorRampsSerializer(read_only=True)
+
+    class Meta:
+        model = models.SpatialRasterSets
+        fields = ['id', 'title', 'label', 'description', 'units', 'precision', 'references', 'rasters', 'color']

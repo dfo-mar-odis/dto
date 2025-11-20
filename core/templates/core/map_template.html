@@ -138,6 +138,7 @@
                                 <spatial-analysis
                                         :climate_model="state.model_id"
                                         :is-active="tabs.activeTab === 'spatial_analysis'"
+                                        raster_set_url="{% url "api:spatial-raster-sets-list" %}"
                                         path_to_geofolder="{% static '/core/spatial/' %}"
                                         path_to_mpafolder="{% static '/core/geojson/' %}"
                                 >

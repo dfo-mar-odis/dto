@@ -22,6 +22,11 @@ const viridis_colour = [{r: 68, g: 1, b: 84}, {r: 68, g: 1, b: 84}, {r: 70, g: 1
     {r: 142, g: 214, b: 69}, {r: 157, g: 217, b: 59}, {r: 173, g: 220, b: 48}, {r: 192, g: 223, b: 37},
     {r: 208, g: 225, b: 28}, {r: 223, g: 227, b: 24}, {r: 239, g: 229, b: 28}, {r: 253, g: 231, b: 37}]
 
+const colour_sets = {
+    "trend": trend_colour,
+    "viridis": viridis_colour
+}
+
 export const SpatialAnalysis = {
     template: `
       <div class="card">
@@ -57,7 +62,8 @@ export const SpatialAnalysis = {
         climate_model: null,
         isActive: Boolean,
         path_to_geofolder: "",
-        path_to_mpafolder: ""
+        path_to_mpafolder: "",
+        raster_set_url: null,
     },
 
     data() {
@@ -66,104 +72,17 @@ export const SpatialAnalysis = {
             geotiffLayer: null,
             activeRaster: null,
             activeLayer: null,
-            layerFiles: {
-                shelf_trend: {
-                    // file_name gets set in the watch function, and depends on the selected climate model. It follows
-                    // the format [climate_model_id]_bottomTtrend.tif
-                    file_name: null,
-                    file_postfix: "_bottomTtrend.tif",
-                    colors: trend_colour,
-                    data: {
-                        title: 'Bottom Temperature Trend',
-                        description: 'Significant trend for the bottom temperature from GLORYS model for period 1993-2024, expressed in degrees Celsius per decade.',
-                        label: 'Trend',
-                        units: '°C/decade',
-                        fixed: 2
-                    }
-                },
-                shelf_trend_projected: {
-                    // file_name gets set in the watch function, and depends on the selected climate model. It follows
-                    // the format [climate_model_id]_bottomTtrend.tif
-                    file_name: null,
-                    file_postfix: "_bottomTtrend_EPSG3857.tif",
-                    colors: trend_colour,
-                    data: {
-                        title: 'Bottom Temperature Trend (projected)',
-                        description: 'Significant trend for the bottom temperature from GLORYS model for period 1993-2024, expressed in degrees Celsius per decade.',
-                        label: 'Trend',
-                        units: '°C/decade',
-                        fixed: 2
-                    }
-                },
-                mean_bottom_temp: {
-                    // file_name gets set in the watch function, and depends on the selected climate model. It follows
-                    // the format [climate_model_id]_meanBottomTemp.tif
-                    file_name: null,
-                    file_postfix: "_meanBottomTemp.tif",
-                    colors: viridis_colour,
-                    data: {
-                        title: 'Mean Bottom Temperature',
-                        description: 'Average of the bottom temperature from GLORYS model for period 1993-2024.',
-                        label: 'Mean Bottom Temp.',
-                        units: '°C',
-                        fixed: 2
-                    }
-                },
-                mean_bottom_temp_projected: {
-                    // file_name gets set in the watch function, and depends on the selected climate model. It follows
-                    // the format [climate_model_id]_meanBottomTemp.tif
-                    file_name: null,
-                    file_postfix: "_meanBottomTemp_EPSG3857.tif",
-                    colors: viridis_colour,
-                    data: {
-                        title: 'Mean Bottom Temperature (projected)',
-                        description: 'Average of the bottom temperature from GLORYS model for period 1993-2024.',
-                        label: 'Mean Bottom Temp.',
-                        units: '°C',
-                        fixed: 2
-                    }
-                },
-                thermal_stress: {
-                    // file_name gets set in the watch function, and depends on the selected climate model. It follows
-                    // the format [climate_model_id]_meanThermalStress.tif
-                    file_name: null,
-                    file_postfix: "_meanThermalStress.tif",
-                    colors: trend_colour,
-                    data: {
-                        title: 'Mean Thermal Stress',
-                        description: 'Number of weeks that the bottom temperature spends above the maximum climatological bottom temperature. Duration of thermal stress was computed for each year and averaged for the period 1993-2024.',
-                        references: [
-                            'https://doi.org/10.1525/elementa.2024.00001'
-                        ],
-                        label: 'Mean Thermal Stress',
-                        units: 'Weeks',
-                        fixed: 0
-                    }
-                },
-                thermal_stress_projected: {
-                    // file_name gets set in the watch function, and depends on the selected climate model. It follows
-                    // the format [climate_model_id]_meanThermalStress.tif
-                    file_name: null,
-                    file_postfix: "_meanThermalStress_EPSG3857.tif",
-                    colors: trend_colour,
-                    data: {
-                        title: 'Mean Thermal Stress (projected)',
-                        description: 'Number of weeks that the bottom temperature spends above the maximum climatological bottom temperature. Duration of thermal stress was computed for each year and averaged for the period 1993-2024.',
-                        references: [
-                            'https://doi.org/10.1525/elementa.2024.00001'
-                        ],
-                        label: 'Mean Thermal Stress',
-                        units: 'Weeks',
-                        fixed: 0
-                    }
-                }
-
-            }
+            layerFiles: {}
         };
+    },
+
+    computed: {
+
     },
 
     mounted() {
         this.initMap();
+        this.loadLayerFiles();
     },
 
     watch: {
@@ -181,17 +100,26 @@ export const SpatialAnalysis = {
             }
         },
         climate_model: {
-            handler(newValue, oldValue) {
-                if (newValue) {
-                    Object.keys(this.layerFiles).forEach(layer => {
-                        this.layerFiles[layer].file_name = newValue + this.layerFiles[layer].file_postfix;
-                    });
-                    const active = this.activeLayer == null ? 'shelf_trend' : this.activeLayer;
-                    // the layer won't reload if active == this.activeLayer
+            handler: async function (newValue, oldValue) {
+                if (!newValue) return;
+
+                await this.fetchLayerFiles();
+
+                const aboutTextElement = document.getElementById('div_col_id_about_button_text');
+
+                if (this.layerFiles.length === 0) {
+                    // No rasters for this climate model
                     this.activeLayer = null;
-                    this.changeLayer(active);
-                    this.loadMpaFile(newValue);
+                    if (this.geotiffLayer) {
+                        try { this.map.removeLayer(this.geotiffLayer); } catch (e) {}
+                        this.geotiffLayer = null;
+                    }
+                    if (aboutTextElement) {
+                        aboutTextElement.textContent = "No data for this climate model";
+                    }
                 }
+                this.changeLayer("0");
+                this.loadMpaFile(newValue);
             },
             deep: true,
             immediate: true
@@ -211,11 +139,59 @@ export const SpatialAnalysis = {
                 this.addBaseLayer();
                 this.addMapControls()
 
-                if(this.climate_model) {
-                    this.changeLayer('shelf_trend')
-                }
             } else {
                 console.error('Leaflet library not loaded');
+            }
+        },
+
+        async fetchLayerFiles() {
+            this.layerFiles = {};
+            if(!this.climate_model) {
+                return;
+            }
+
+            try {
+                const url = new URL(this.raster_set_url, window.location.origin);
+                url.searchParams.set('model_name', this.climate_model);
+
+                const response = await fetch(url.toString());
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch layer files: ${response.status}`);
+                }
+                const data = await response.json();
+
+                data.results.forEach(raster_set => {
+                    const entry = {}
+                    entry.file_name = raster_set.rasters[0].filename;
+                    entry.colors = colour_sets[raster_set.color.name];
+                    entry.data = {};
+                    entry.data.title = raster_set.title;
+                    entry.data.label = raster_set.label;
+                    entry.data.description = raster_set.description;
+                    entry.data.units = raster_set.units;
+                    entry.data.fixed = raster_set.precision;
+
+                    if(raster_set.references.length > 0) {
+                        entry.data.references = [];
+                        raster_set.references.forEach(reference => {
+                            entry.data.references.push(reference.citation);
+                        });
+                    }
+                    const newEntryKey = Object.keys(this.layerFiles).length; // Use the next available number as the key
+                    this.layerFiles[newEntryKey] = entry;
+                });
+            } catch (error) {
+                console.error("Error fetching layer files:", error);
+            }
+        },
+
+        async loadLayerFiles() {
+            await this.fetchLayerFiles();
+
+            // Initialize the active layer after fetching
+            const availableKeys = Object.keys(this.layerFiles);
+            if (availableKeys.length > 0) {
+                this.changeLayer(availableKeys[0]);
             }
         },
 

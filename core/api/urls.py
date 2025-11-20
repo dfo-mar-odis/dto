@@ -10,7 +10,8 @@ from .views import (
     NetworkIndicatorsViewSet,
     SelectedDateDataView,
     TimeseriesDataView,
-    QuantileDataView
+    QuantileDataView,
+    SpatialRasterSetsViewSet
 )
 from .. import api
 
@@ -22,6 +23,7 @@ router.register(r'species', SpeciesViewSet, basename='species')
 router.register(r'heat-wave-indicators', HeatWaveIndicatorsViewSet, basename='heat-wave-indicators')
 router.register(r'network-indicator', NetworkIndicatorsViewSet, basename='network-indicator')
 router.register(r'mpas-with-timeseries', MPAZonesWithTimeseriesViewSet, basename='mpas-with-timeseries')
+router.register(r'spatial-raster-sets', SpatialRasterSetsViewSet, basename='spatial-raster-sets')
 
 api_urlpatterns = router.urls + [
     path('selected-date-data/', SelectedDateDataView.as_view(), name='selected-date-data'),
