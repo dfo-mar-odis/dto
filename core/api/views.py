@@ -559,7 +559,7 @@ class AOIListView(generics.ListAPIView):
 
 
 class SpatialRasterSetsViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = SpatialRasterSets.objects.all()
+    queryset = SpatialRasterSets.objects.all().order_by("pk")
     serializer_class = SpatialRasterSetsSerializer
 
     def get_queryset(self):

@@ -31,28 +31,33 @@ export const SpatialAnalysis = {
     template: `
       <div class="card">
         <div class="card-body">
-          <div class="row">
-            <div class="col-3">
-              <div class="row">
-                <div class="col">
-                  <button
-                      v-for="(layer, key) in layerFiles"
-                      :key="key"
-                      class="btn btn-outline-dark mb-1"
-                      @click="changeLayer(key)"
-                      :class="{'active': activeLayer === key}">
-                    {{ layer.data.title }}
-                  </button>
+          <div v-if="Object.keys(layerFiles).length <= 0">
+            There is no data for this Climate Model
+          </div>
+          <div v-else>
+            <div class="row">
+              <div class="col-3">
+                <div class="row">
+                  <div class="col">
+                    <button
+                        v-for="(layer, key) in layerFiles"
+                        :key="key"
+                        class="btn btn-outline-dark mb-1"
+                        @click="changeLayer(key)"
+                        :class="{'active': activeLayer === key}">
+                      {{ layer.data.title }}
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <div class="row">
-                <div class="col" id="div_col_id_about_button_text">
+                <div class="row">
+                  <div class="col" id="div_col_id_about_button_text">
 
+                  </div>
                 </div>
               </div>
-            </div>
-            <div class="col">
-              <div id="spatial-map" style="height: 500px;"></div>
+              <div class="col">
+                <div id="spatial-map" style="height: 500px;"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -81,8 +86,10 @@ export const SpatialAnalysis = {
     },
 
     mounted() {
-        this.initMap();
         this.loadLayerFiles();
+        if(this.layerFiles.length > 0) {
+            this.initMap();
+        }
     },
 
     watch: {
@@ -105,6 +112,15 @@ export const SpatialAnalysis = {
 
                 await this.fetchLayerFiles();
 
+                if (!this.map) {
+                    this.$nextTick(() => {
+                        const mapContainer = document.getElementById('spatial-map');
+                        if (mapContainer) {
+                            this.initMap();
+                        }
+                    });
+                };
+
                 const aboutTextElement = document.getElementById('div_col_id_about_button_text');
 
                 if (this.layerFiles.length === 0) {
@@ -118,8 +134,15 @@ export const SpatialAnalysis = {
                         aboutTextElement.textContent = "No data for this climate model";
                     }
                 }
-                this.changeLayer("0");
-                this.loadMpaFile(newValue);
+
+                // Initialize the active layer after fetching
+                const availableKeys = Object.keys(this.layerFiles);
+                if (availableKeys.length > 0) {
+                    this.changeLayer(availableKeys[0]);
+                } else {
+                    this.changeLayer(null);
+                }
+
             },
             deep: true,
             immediate: true
@@ -128,6 +151,7 @@ export const SpatialAnalysis = {
 
     methods: {
         initMap() {
+
             // Make sure Leaflet is available
             if (typeof L !== 'undefined') {
                 // Initialize the map
@@ -138,6 +162,7 @@ export const SpatialAnalysis = {
 
                 this.addBaseLayer();
                 this.addMapControls()
+                this.loadMpaFile();
 
             } else {
                 console.error('Leaflet library not loaded');
@@ -269,8 +294,12 @@ export const SpatialAnalysis = {
             colorbarControl.addTo(this.map);
         },
 
-        async loadMpaFile(climate_model) {
-            const model_file = `mpa_model_${climate_model}.geojson`;
+        loadMpaFile() {
+            if(!this.map) {
+                return;
+            }
+
+            const model_file = `mpa_model_${this.climate_model}.geojson`;
             const geojsonUrl = this.path_to_mpafolder + model_file;
             fetch(geojsonUrl)
                 .then(response => {
@@ -346,6 +375,11 @@ export const SpatialAnalysis = {
         },
 
         changeLayer(layerType) {
+            if(layerType === null) {
+                this.activeLayer = null;
+                return;
+            }
+
             if (this.activeLayer === layerType) return;
 
             this.activeLayer = layerType;

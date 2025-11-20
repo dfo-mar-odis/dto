@@ -316,11 +316,25 @@ const mapApp = createApp({
                 const mpaId = layer.feature.properties.id;
 
                 // Check if we need to fetch network data
-                if (!state.networkDataCache.has(mpaId) ||
+                if(state.networkDataCacheLoading?.has(mpaId) &&
+                !state.networkDataCache.has(mpaId)){
+                    // Return basic tooltip while loading
+                    return `<div>${layer.feature.properties.name || "Unnamed MPA"}<br/><em>Loading...</em></div>`;
+
+                } else if (!state.networkDataCache.has(mpaId) ||
                     state.networkDataCacheDate !== state.dates.selected_date) {
 
+                    // Mark this MPA as loading
+                    if (!state.networkDataCacheLoading) {
+                        state.networkDataCacheLoading = new Set();
+                    }
+                    state.networkDataCacheLoading.add(mpaId);
+
                     // Fetch data for this specific MPA
-                    fetchNetworkIndicatorDataForMPA(mpaId, layer);
+                    fetchNetworkIndicatorDataForMPA(mpaId, layer).finally(() => {
+                        // Remove the loading state once the request completes
+                        state.networkDataCacheLoading.delete(mpaId);
+                    });
 
                     // Return basic tooltip while loading
                     return `<div>${layer.feature.properties.name || "Unnamed MPA"}<br/><em>Loading...</em></div>`;
