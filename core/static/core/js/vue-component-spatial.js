@@ -57,7 +57,7 @@ export const SpatialAnalysis = {
                               <button
                                   v-for="(raster, index) in layer.data.rasters" :key="index"
                                   class="btn btn-sm col-auto me-1 mb-1"
-                                  :class="{'btn-primary': activeRaster === raster.label, 'btn-secondary': activeRaster !== raster.label}"
+                                  :class="activeLayer === key && activeRaster === raster.label ? 'btn-primary' : 'btn-secondary'"
                                   @click="changeLayer(key, raster.label)">
                                 {{ raster.label }}
                               </button>
