@@ -112,7 +112,7 @@ class SpatialReferencesSerializer(serializers.ModelSerializer):
 class RastersSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Rasters
-        fields = ['id', 'order', 'filename']
+        fields = ['id', 'order', 'label', 'file_name']
 
 
 class ColorRampsSerializer(serializers.ModelSerializer):

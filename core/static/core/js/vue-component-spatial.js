@@ -39,19 +39,42 @@ export const SpatialAnalysis = {
               <div class="col-3">
                 <div class="row">
                   <div class="col">
-                    <button
-                        v-for="(layer, key) in layerFiles"
-                        :key="key"
-                        class="btn btn-outline-dark mb-1"
-                        @click="changeLayer(key)"
-                        :class="{'active': activeLayer === key}">
-                      {{ layer.data.title }}
-                    </button>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col" id="div_col_id_about_button_text">
-
+                    <div class="accordion">
+                      <div class="accordion-item" v-for="(layer, key) in layerFiles" :key="key">
+                        <div class="accordion-header">
+                          <button
+                              class="accordion-button collapsed"
+                              data-bs-toggle="collapse"
+                              :data-bs-target="'#collapse-' + key"
+                              :aria-expanded="false"
+                              :aria-controls="'collapse-' + key">
+                            {{ layer.data.title }}
+                          </button>
+                        </div>
+                        <div :id="'collapse-' + key" class="accordion-collapse collapse">
+                          <div class="accordion-body">
+                            <div class="row">
+                              <button
+                                  v-for="(raster, index) in layer.data.rasters" :key="index"
+                                  class="btn btn-sm col-auto me-1 mb-1"
+                                  :class="{'btn-primary': activeRaster === raster.label, 'btn-secondary': activeRaster !== raster.label}"
+                                  @click="changeLayer(key, raster.label)">
+                                {{ raster.label }}
+                              </button>
+                            </div>
+                            <div>{{ layer.data.description }}</div>
+                            <div v-if="layer.data.references">
+                              References:
+                              <ul>
+                                <li v-for="ref in layer.data.references" :key="ref">
+                                  <a :href="ref" target="_blank">{{ ref }}</a>
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -81,13 +104,11 @@ export const SpatialAnalysis = {
         };
     },
 
-    computed: {
-
-    },
+    computed: {},
 
     mounted() {
         this.loadLayerFiles();
-        if(this.layerFiles.length > 0) {
+        if (this.layerFiles.length > 0) {
             this.initMap();
         }
     },
@@ -119,7 +140,8 @@ export const SpatialAnalysis = {
                             this.initMap();
                         }
                     });
-                };
+                }
+                ;
 
                 const aboutTextElement = document.getElementById('div_col_id_about_button_text');
 
@@ -127,7 +149,10 @@ export const SpatialAnalysis = {
                     // No rasters for this climate model
                     this.activeLayer = null;
                     if (this.geotiffLayer) {
-                        try { this.map.removeLayer(this.geotiffLayer); } catch (e) {}
+                        try {
+                            this.map.removeLayer(this.geotiffLayer);
+                        } catch (e) {
+                        }
                         this.geotiffLayer = null;
                     }
                     if (aboutTextElement) {
@@ -171,7 +196,7 @@ export const SpatialAnalysis = {
 
         async fetchLayerFiles() {
             this.layerFiles = {};
-            if(!this.climate_model) {
+            if (!this.climate_model) {
                 return;
             }
 
@@ -187,7 +212,6 @@ export const SpatialAnalysis = {
 
                 data.results.forEach(raster_set => {
                     const entry = {}
-                    entry.file_name = raster_set.rasters[0].filename;
                     entry.colors = colour_sets[raster_set.color.name];
                     entry.data = {};
                     entry.data.title = raster_set.title;
@@ -196,7 +220,14 @@ export const SpatialAnalysis = {
                     entry.data.units = raster_set.units;
                     entry.data.fixed = raster_set.precision;
 
-                    if(raster_set.references.length > 0) {
+                    if (raster_set.rasters.length > 0) {
+                        entry.data.rasters = []
+                        raster_set.rasters.forEach(raster => {
+                            entry.data.rasters.push(raster)
+                        });
+                    }
+
+                    if (raster_set.references.length > 0) {
                         entry.data.references = [];
                         raster_set.references.forEach(reference => {
                             entry.data.references.push(reference.citation);
@@ -249,7 +280,7 @@ export const SpatialAnalysis = {
             this.map.on('mousemove', this.handleMouseOver);
 
             // Create colorbar control
-            const colorbarControl = L.control({ position: 'bottomleft' });
+            const colorbarControl = L.control({position: 'bottomleft'});
 
             colorbarControl.onAdd = function () {
                 const colorbar = L.DomUtil.create('div', 'colorbar');
@@ -295,7 +326,7 @@ export const SpatialAnalysis = {
         },
 
         loadMpaFile() {
-            if(!this.map) {
+            if (!this.map) {
                 return;
             }
 
@@ -323,13 +354,14 @@ export const SpatialAnalysis = {
         },
 
         handleMouseOver(evt) {
-            if(!this.geotiffLayer) {
+            if (!this.activeLayer || !this.activeRaster) {
                 return;
             }
 
             const layer_props = this.layerFiles[this.activeLayer];
-            const infoControl= document.getElementById('layer-info-control')
-            const georaster = this.geotiffLayer.georasters[0];
+            const infoControl = document.getElementById('layer-info-control')
+            const rasterData = layer_props.loadedRasters.find(raster => raster.label === this.activeRaster);
+            const georaster = rasterData.georaster;
             const latlng = evt.latlng;
             try {
                 // Access the georaster directly and use its values method
@@ -354,9 +386,13 @@ export const SpatialAnalysis = {
         },
 
         // Function to update the colorbar
-        updateColorbar(min, max) {
-            const colors = this.layerFiles[this.activeLayer].colors;
-            const units = this.layerFiles[this.activeLayer].data.units;
+        updateColorbar() {
+            const layerProps = this.layerFiles[this.activeLayer]
+            const min = layerProps.globalMin;
+            const max = layerProps.globalMax;
+
+            const colors = layerProps.colors;
+            const units = layerProps.data.units;
 
             const gradient = colors.map(color => `rgb(${color.r}, ${color.g}, ${color.b})`).join(', ');
             const colorbar = document.getElementById('colorbar-ramp');
@@ -374,57 +410,107 @@ export const SpatialAnalysis = {
             }
         },
 
-        changeLayer(layerType) {
-            if(layerType === null) {
+        async changeLayer(layerType, selectedRaster = null) {
+            if (layerType === null) {
                 this.activeLayer = null;
+                this.activeRaster = null;
                 return;
             }
+            if (this.activeLayer !== layerType) {
+                // Remove all layers from the previous active layer
+                if (this.activeLayer && this.layerFiles[this.activeLayer]?.loadedRasters) {
+                    this.layerFiles[this.activeLayer].loadedRasters.forEach(raster => {
+                        this.map.removeLayer(raster.layer);
+                    });
+                }
 
-            if (this.activeLayer === layerType) return;
+                // Set the new active layer and load its rasters
+                this.activeLayer = layerType;
+                const layerProps = this.layerFiles[this.activeLayer];
 
-            this.activeLayer = layerType;
-
-            // Remove current layer if it exists
-            if (this.geotiffLayer) {
-                this.map.removeLayer(this.geotiffLayer);
-                this.geotiffLayer = null;
+                await this.loadGeoTiff(layerProps.data.rasters);
+                // this.layerFiles[this.activeLayer].data.rasters.forEach(raster => {
+                //     this.displayRaster(raster.label, true);
+                // });
+                this.updateColorbar();
             }
 
-            // Load the new layer
-            const layer_props = this.layerFiles[this.activeLayer];
-            this.loadGeoTiff(layer_props);
+            const layerProps = this.layerFiles[this.activeLayer];
+            selectedRaster = selectedRaster || layerProps.data.rasters[0].label;
+            this.displayRaster(selectedRaster, true);
+        },
 
-            // Update the text of the 'div_col_id_about_text' element
-            const aboutTextElement = document.getElementById('div_col_id_about_button_text');
-            if (aboutTextElement) {
-                aboutTextElement.textContent = layer_props.data.description;
+        displayRaster(selectedRaster, reloadColors = false) {
+            const activeRasterData = this.layerFiles[this.activeLayer].loadedRasters.find(r => r.label === this.activeRaster);
+            const newRasterData = this.layerFiles[this.activeLayer].loadedRasters.find(r => r.label === selectedRaster);
+            if (activeRasterData) {
+                this.map.removeLayer(activeRasterData.layer); // Hide raster
+                this.activeRaster = null;
             }
-            if (layer_props.data.references) {
-                layer_props.data.references.forEach(ref => {
-                    const link = document.createElement('a');
-                    link.href = ref;
-                    link.textContent = ref;
-                    link.target = '_blank'; // Open link in a new tab
-                    link.style.display = 'block'; // Ensure each link is on a new line
-                    aboutTextElement.appendChild(link);
+            this.map.addLayer(newRasterData.layer); // Show raster
+            this.activeRaster = selectedRaster;
+
+            if (reloadColors) {
+                newRasterData.layer.updateColors(this.set_color)
+            }
+        },
+
+        async loadGeoTiff(rasters) {
+            if (!rasters || rasters.length === 0) return;
+
+            const rasterPromises = rasters.map(raster => {
+                const url = this.path_to_geofolder + raster.file_name;
+                return fetch(url)
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                        return response.arrayBuffer();
+                    })
+                    .then(arrayBuffer => parseGeoraster(arrayBuffer))
+                    .then(georaster => {
+                        const layer = new GeoRasterLayer({
+                            georaster: georaster,
+                            resolution: 256,
+                        });
+
+                        return {
+                            label: raster.label,
+                            file_name: raster.file_name,
+                            georaster: georaster,
+                            layer: layer,
+                        };
+                    });
+            });
+
+            try {
+                this.layerFiles[this.activeLayer].loadedRasters = await Promise.all(rasterPromises);
+
+                let globalMin = Infinity;
+                let globalMax = -Infinity;
+
+                this.layerFiles[this.activeLayer].loadedRasters.forEach(raster => {
+                    const {mins, maxs} = raster.georaster;
+                    globalMin = Math.min(globalMin, mins[0]);
+                    globalMax = Math.max(globalMax, maxs[0]);
                 });
+                this.layerFiles[this.activeLayer].globalMin = globalMin
+                this.layerFiles[this.activeLayer].globalMax = globalMax
+            } catch (error) {
+                console.error('Error loading rasters:', error);
             }
         },
 
         set_color(values) {
-            const min = this.geotiffLayer.georasters[0].mins[0];
-            const max = this.geotiffLayer.georasters[0].maxs[0];
+            const layerProps = this.layerFiles[this.activeLayer];
+            const colors = layerProps.colors;
+            const min = layerProps.globalMin;
+            const max = layerProps.globalMax;
             const value = values[0];
-            const colors = this.layerFiles[this.activeLayer].colors;
-            // Convert to percentage (0-1 range)
-            const normalizedValue = Math.max(0, Math.min(1, (value - min) / (max - min)));
 
-            // Determine which color segment to use
+            const normalizedValue = Math.max(0, Math.min(1, (value - min) / (max - min)));
             const numSegments = colors.length - 1;
             const segment = Math.min(Math.floor(normalizedValue * numSegments), numSegments - 1);
             const segmentPosition = (normalizedValue * numSegments) - segment;
 
-            // Interpolate between segment colors
             const color1 = colors[segment];
             const color2 = colors[segment + 1];
 
@@ -434,50 +520,6 @@ export const SpatialAnalysis = {
 
             return `rgba(${r}, ${g}, ${b}, 1.0)`;
         },
-
-        loadGeoTiff(layer_props) {
-            if(layer_props.file_name == null) {
-                return;
-            }
-
-            const url = this.path_to_geofolder + layer_props.file_name
-            try {
-                // Create an absolute URL to ensure web workers can resolve it properly
-                const absoluteUrl = new URL(url, window.location.origin).href;
-
-                // Alternative approach: fetch first, then parse
-                fetch(absoluteUrl)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! Status: ${response.status}`);
-                        }
-                        return response.arrayBuffer();
-                    })
-                    .then(arrayBuffer => {
-                        return parseGeoraster(arrayBuffer);
-                    }).then(georaster => {
-                        this.geotiffLayer = new GeoRasterLayer({
-                            georaster: georaster,
-                            opacity: 1.0,
-                            resolution: 256,
-                        });
-
-                        this.geotiffLayer.addTo(this.map);
-                        this.geotiffLayer.updateColors(this.set_color)
-
-                        if (this.geotiffLayer) {
-                            const min = this.geotiffLayer.georasters[0].mins[0];
-                            const max = this.geotiffLayer.georasters[0].maxs[0];
-                            this.updateColorbar(min, max);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error loading or parsing GeoTIFF:', error);
-                    });
-            } catch (error) {
-                console.error('Error in loadGeoTiff function:', error);
-            }
-        }
     },
 
     beforeUnmount() {

@@ -38,27 +38,42 @@ class ClimateModels(models.Model):
 class ColorRamps(models.Model):
     name = models.CharField(max_length=20, verbose_name=_('Ramp Name'))
 
+    def __str__(self):
+        return f"{self.name}"
+
 
 class SpatialRasterSets(models.Model):
     model = models.ForeignKey(ClimateModels, on_delete=models.CASCADE, related_name='raster_sets', verbose_name=_('Climate Model'))
     color = models.ForeignKey(ColorRamps, on_delete=models.PROTECT, related_name='raster_sets', verbose_name=_('Color'))
     title = models.CharField(max_length=50, verbose_name=_('Formal name of the data'))
     label = models.CharField(max_length=50, verbose_name=_('Short informal label to use for the dataset'))
-    description = models.CharField(max_length=255, verbose_name=_('Description of the dataset'))
+    description = models.TextField(verbose_name=_('Description of the dataset'))
     units = models.CharField(max_length=20, verbose_name=_('Units of the dataset'))
     precision = models.IntegerField(default=2, verbose_name=_('Precision of the dataset'))
+
+    def __str__(self):
+        return f"{self.model.name}: {self.title} - {self.description}"
 
 
 class Rasters(models.Model):
     spatial_set = models.ForeignKey(SpatialRasterSets, on_delete=models.CASCADE, related_name='rasters', verbose_name=_('Spatial raster set'))
     order = models.IntegerField(default=1, verbose_name=_('Order of the raster'))
-    filename = models.CharField(max_length=100, verbose_name=_('Filename'))
+    file_name = models.CharField(max_length=100, verbose_name=_('Filename'))
+    label = models.CharField(max_length=50, verbose_name=_('Label of the raster'))
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.order}: {self.label} - {self.file_name}"
 
 
 class SpatialReferences(models.Model):
     spatial_set = models.ForeignKey(SpatialRasterSets, on_delete=models.CASCADE, related_name='references', verbose_name=_('Spatial raster set'))
     citation = models.CharField(max_length=255, verbose_name=_('Citation'))
 
+    def __str__(self):
+        return f"{self.spatial_set} : {self.citation}"
 
 class AreaOfInterest(models.Model):
     model = models.ForeignKey(ClimateModels, on_delete=models.CASCADE, related_name='areas_of_interest')

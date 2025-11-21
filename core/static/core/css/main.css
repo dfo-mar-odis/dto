@@ -30,6 +30,18 @@ body {
     margin-right: 2px;
 }
 
+.accordion-button {
+    background-color: #85c1ff !important; /* Match the nav-tabs background */
+    color: black !important; /* Match the nav-tabs text color */
+    border-color: #85c1ff !important; /* Match the border color */
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: #003f7f !important; /* Match the active nav-tabs background */
+    color: white !important; /* Match the active nav-tabs text color */
+    border-color: #003f7f !important; /* Match the active border color */
+}
+
 .nav-tabs .nav-link.active {
     background-color: #003f7f !important; /* Darker blue for active state */
     color: white !important; /* White text for contrast */
