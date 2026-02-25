@@ -322,5 +322,7 @@ def load_onset():
     load_mpas_from_dict(glorys_data, climate_model=model[0])
 
 def load_mpas():
-    load_std_anomalies()
     load_onset()
+    cmodels = models.ClimateModels.objects.all()
+    for model in cmodels:
+        load_std_anomalies(model)

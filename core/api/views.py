@@ -18,6 +18,8 @@ from core.api.serializers import AreaOfInterestSerializer, MPAZonesSerializer, M
 from core import models
 from core.models import SpatialRasterSets
 
+import logging
+logger = logging.getLogger('dto_info')
 
 def get_timeseries_dataframe(mpa_zone: models.MPAZones, ts_model=1, ts_type=1, depth=None, start_date=None, end_date=None, indicator=1):
     mpa_timeseries = mpa_zone.timeseries.filter(
@@ -389,6 +391,7 @@ class SelectedDateDataView(APIView):
 
 class TimeseriesDataView(APIView):
     def get(self, request):
+        logger.debug(f"Received request for timeseries data with params: {request.query_params}")
         # Extract query parameters
         mpa_id = request.query_params.get('mpa_id')
 

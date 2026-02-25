@@ -1,0 +1,37 @@
+version: "3.9"
+services:
+  dto-django-nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: dto-django-nginx
+    restart: always
+    ports:
+      - "8501:80"
+    command: /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+    env_file:
+      - ./.env.local
+    volumes:
+      - .:/opt/project
+    depends_on:
+      dto-postgis:
+          condition: service_healthy
+
+  dto-postgis:
+    image: postgis/postgis:13-3.4
+    container_name: dto-postgis
+    restart: always
+    env_file:
+      - .env.local
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 1s
+      timeout: 10s
+      retries: 10
+    volumes:
+      - pgdata:/var/lib/postgresql/data/
+
+volumes:
+  pgdata:

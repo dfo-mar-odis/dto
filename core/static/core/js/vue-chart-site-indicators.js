@@ -70,7 +70,7 @@ export const SiteIndicatorsChart = {
         },
 
         formatChartData(chart_data) {
-            const dataPoints = chart_data.map(data => ({x: new Date(data.year+"-01-01"), y: parseFloat(data.value)})); // Extract values
+            const dataPoints = chart_data.map(data => ({x: data.year, y: parseFloat(data.value)})); // Extract values
 
             const backgroundColor = dataPoints.map(point => point.y < 0 ? 'rgba(66, 133, 244, 0.7)' : 'rgba(234, 67, 53, 0.7)');
             const borderColor = dataPoints.map(point => point.y < 0 ? 'rgba(66, 133, 244, 0.7)' : 'rgba(234, 67, 53, 0.7)');
@@ -109,8 +109,12 @@ export const SiteIndicatorsChart = {
                 data: formattedData,
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
+                    maintainAspectRatio: true,
+                    aspectRatio: 3,
                     animation: false,
+                    layout: {
+                        padding: 0
+                    },
                     plugins: {
                         title: {
                             display: true,
@@ -118,7 +122,13 @@ export const SiteIndicatorsChart = {
                         },
                         tooltip: {
                             mode: 'index',
-                            intersect: false
+                            intersect: false,
+                            callbacks: {
+                                title: function(context) {
+                                    // Format x-axis value as a string without commas
+                                    return context[0].parsed.x.toString();
+                                }
+                            }
                         },
                         legend: {
                             position: 'bottom',
@@ -145,17 +155,15 @@ export const SiteIndicatorsChart = {
                     },
                     scales: {
                         x: {
-                            type: 'time',
-                            time: {
-                                unit: 'year',
-                                displayFormats: {
-                                    month: 'YYYY'
-                                }
-                            },
+                            type: 'linear',
                             title: {
                                 display: true,
                                 text: window.translations?.year || 'Year'
-                            }
+                            },
+                            ticks: {
+                                stepSize: 1,
+                                callback: (value) => value
+                            },
                         },
                         y: {
                             title: {

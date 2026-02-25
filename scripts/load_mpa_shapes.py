@@ -91,7 +91,8 @@ def print_mpas():
         print(f"{shp}")
 
 def load_indicators():
-    models.TimeseriesVariables.objects.get_or_create(name__iexact="temperature")
+    models.TimeseriesVariables.objects.get_or_create(name="Temperature")
+    models.TimeseriesVariables.objects.get_or_create(name="Salinity")
 
 def load_mpa_classifications(data):
     try:
