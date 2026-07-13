@@ -293,13 +293,13 @@ def build_surface_mpa_dictionary(data_directory) -> dict:
     return data
 
 def load_bottom_mpas():
-    model = models.ClimateModels.objects.get_or_create(name="GLORYS", priority=1)
+    model = models.ClimateModels.objects.get_or_create(pk=1, name="GLORYS", priority=1)
     data_directory = Path('./scripts/data/GLORYS_bottom/')
     glorys_data = build_bottom_mpa_dictionary(data_directory)
     load_mpas_from_dict(glorys_data, climate_model=model[0])
 
 def load_surface_mpas():
-    model = models.ClimateModels.objects.get_or_create(name="GLORYS", priority=1)
+    model = models.ClimateModels.objects.get_or_create(pk=1, name="GLORYS", priority=1)
     data_directory = Path('./scripts/data/GLORYS_surface/')
     glorys_data = build_surface_mpa_dictionary(data_directory)
     load_mpas_from_dict(glorys_data, climate_model=model[0])

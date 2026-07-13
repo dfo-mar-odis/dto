@@ -112,7 +112,7 @@ def get_base_timeseries(mpa_zone, ts_model=1, ts_type=1, depth=None, indicator=1
     """Returns full dataframe and cached climatology data"""
     df = get_timeseries_dataframe_with_observations(mpa_zone, ts_model, ts_type, depth, indicator=indicator)
     if df is None:
-        raise ValueError(f"No data found for zone {mpa_zone}")
+        raise ValueError(f"No data found for zone {mpa_zone}, timeseries model {ts_model}, type {ts_type}, depth {depth}, indicator {indicator}")
 
     # Get cached climatology data
     data_dict = _get_cached_climatology_data(mpa_zone.pk, ts_model, ts_type, depth, indicator)

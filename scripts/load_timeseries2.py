@@ -301,42 +301,28 @@ def load_model_file(model_dir, file_name, model_name):
     load_indicators.load_std_anomalies(climate_model)
 
 
+def process_model(expected_pk: int, model_name: str, runs: list = None):
+    try:
+        climate_model = models.ClimateModels.objects.get(pk=expected_pk)
+        if climate_model.name != model_name:
+            raise KeyError(f"Expected model with pk={expected_pk} to be '{model_name}', but found '{climate_model.name}'")
+    except models.ClimateModels.DoesNotExist:
+        climate_model = models.ClimateModels.objects.create(pk=expected_pk, name=model_name, priority=2)
+
+    if runs:
+        for run in runs:
+            load_model(f'{model_name}/{run}', climate_model)
+
+    load_model(model_name, climate_model)
+    load_model(f'{model_name}_GL_levs', climate_model)
+    climate_model.indicators.filter()
+    load_indicators.load_std_anomalies(climate_model)
+
 def load_mpas():
     models.ClimateModels.objects.exclude(name__iexact='glorys').delete()
 
-    model_name = "Canso100"
-    climate_model = models.ClimateModels.objects.create(pk=2, name=model_name, priority=2)
-    load_model('Canso100', climate_model)
-    load_model('Canso100_GL_levs', climate_model)
-    climate_model.indicators.filter()
-    load_indicators.load_std_anomalies(climate_model)
-
-    model_name = "Canso500"
-    climate_model = models.ClimateModels.objects.create(pk=3, name=model_name, priority=2)
-    load_model('Canso500', climate_model)
-    load_model('Canso500_GL_levs', climate_model)
-    climate_model.indicators.filter()
-    load_indicators.load_std_anomalies(climate_model)
-
-    model_name = "CIOPSE"
-    climate_model = models.ClimateModels.objects.create(pk=4, name=model_name, priority=2)
-    load_model('CIOPSE/Run1', climate_model)
-    load_model('CIOPSE/Run2', climate_model)
-    load_model('CIOPSE/Run3', climate_model)
-    load_model('CIOPSE_GL_levs', climate_model)
-    climate_model.indicators.filter()
-    load_indicators.load_std_anomalies(climate_model)
-
-    model_name = "Fundy500"
-    climate_model = models.ClimateModels.objects.create(pk=5, name=model_name, priority=2)
-    load_model('Fundy500', climate_model)
-    load_model('Fundy500_GL_levs', climate_model)
-    climate_model.indicators.filter()
-    load_indicators.load_std_anomalies(climate_model)
-
-    model_name = "SJ100"
-    climate_model = models.ClimateModels.objects.create(pk=6, name=model_name, priority=2)
-    load_model('SJ100', climate_model)
-    load_model('SJ100_GL_levs', climate_model)
-    climate_model.indicators.filter()
-    load_indicators.load_std_anomalies(climate_model)
+    process_model(2, "Canso100")
+    process_model(3, "Canso500")
+    process_model(4, "CIOPSE", runs=['Run1', 'Run2', 'Run3'])
+    process_model(5, "Fundy500")
+    process_model(6, "SJ100")
