@@ -90,7 +90,7 @@ def print_mpas():
 def load_wea_classifications() -> models.Classifications:
     name_e = "Wind Energy Areas (WEAs)"
     name_f = "Wind Energy Areas (WEAs)"
-    colour = "#4AC38C"
+    colour = "#EEAA99"
 
     if(classifications:=models.Classifications.objects.filter(name_e__iexact=name_e)).exists():
         classification = classifications.first()

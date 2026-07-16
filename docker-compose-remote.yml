@@ -1,12 +1,12 @@
-version: "3.9"
 services:
   dto-django-remote:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    container_name: dto-django-remote
     restart: always
     ports:
-      - "8501:80"
-    command: /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+      - "8501:8000"
+    command: /bin/bash entry-point.sh
     env_file:
       - ./.env.remote
