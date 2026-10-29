@@ -1,4 +1,4 @@
-FROM python:3.12.10-slim-bullseye
+FROM python:3.12.15-slim-bookworm
 LABEL authors="Patrick Upson"
 
 # Set environment variables
@@ -11,7 +11,7 @@ RUN mkdir /opt/project
 WORKDIR /opt/project
 
 RUN apt-get update
-RUN apt-get install -y binutils libproj-dev gdal-bin python3-gdal gettext
+RUN apt-get update && apt-get install -y binutils libproj-dev gdal-bin python3-gdal
 
 # Install dependencies
 COPY ./requirements.txt .

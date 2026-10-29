@@ -293,17 +293,25 @@ def build_surface_mpa_dictionary(data_directory) -> dict:
     return data
 
 def load_bottom_mpas():
-    model = models.ClimateModels.objects.get_or_create(pk=1, name="GLORYS", priority=1)
+    model = models.ClimateModels.objects.get(pk=1)
     data_directory = Path('./scripts/data/GLORYS_bottom/')
     glorys_data = build_bottom_mpa_dictionary(data_directory)
-    load_mpas_from_dict(glorys_data, climate_model=model[0])
+    load_mpas_from_dict(glorys_data, climate_model=model)
 
 def load_surface_mpas():
-    model = models.ClimateModels.objects.get_or_create(pk=1, name="GLORYS", priority=1)
+    model = models.ClimateModels.objects.get(pk=1)
     data_directory = Path('./scripts/data/GLORYS_surface/')
     glorys_data = build_surface_mpa_dictionary(data_directory)
-    load_mpas_from_dict(glorys_data, climate_model=model[0])
+    load_mpas_from_dict(glorys_data, climate_model=model)
 
 def load_mpas():
+
+    model = models.ClimateModels.objects.filter(pk=1)
+    if not model.exists():
+        models.ClimateModels.objects.create(name="GLORYS", priority=1)
+    elif model[0].name.upper() != "GLORYS":
+        model[0].name = "GLORYS"
+        model[0].save()
+
     load_bottom_mpas()
     load_surface_mpas()

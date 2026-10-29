@@ -66,7 +66,7 @@ export const SpeciesChart = {
                 .then(response => response.json())
                 .then(data => {
                     if (data._links && data._links.items && data._links.items.length > 0) {
-                        const href = data._links.items[data._links.items.length - 1].href;
+                        const href = data._links.items[0].href;
                         const nextUrl = new URL(href, "https://api.phylopic.org");
                         nextUrl.searchParams.append("build", build)
                         return fetch(nextUrl.toString());
@@ -76,7 +76,6 @@ export const SpeciesChart = {
                 })
                 .then(response => { if(response) return response.json(); })
                 .then(nextData => {
-                    console.log(nextData);
                     if (nextData && nextData._links && nextData._links.vectorFile) {
                         const vectorFile = nextData._links.vectorFile;
                         const [width, height] = vectorFile.sizes.split('x').map(Number);

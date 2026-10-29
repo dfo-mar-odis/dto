@@ -29,10 +29,16 @@ class MPAZones(models.Model):
 class TimeseriesVariables(models.Model):
     name = models.CharField(max_length=50, verbose_name=_('Indicator Name'))
 
+    def __str__(self):
+        return f"{self.name}"
+
 
 class ClimateModels(models.Model):
     name = models.CharField(max_length=50, verbose_name=_('Model Name'))
     priority = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.name}"
 
 
 class ColorRamps(models.Model):
