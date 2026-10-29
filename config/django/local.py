@@ -10,4 +10,4 @@ if settings.DEBUG:
 
 settings.INSTALLED_APPS.append('django_extensions')
 
-ALLOWED_HOSTS = ["localhost"]
+ALLOWED_HOSTS = ["localhost", "ci-wpnsbio9039519-web-1.mar.dfo-mpo.ca"]

@@ -226,7 +226,7 @@ def build_bottom_mpa_dictionary(data_directory) -> dict:
         file_name = file_path.name
 
         # Skip files that don't match our naming patterns
-        if not (file_name.startswith('depth_avebottomT_') or file_name.startswith('avebottomT_')):
+        if not (file_name.startswith('depth_avebottomT_') or file_name.startswith('ave_bottomT_')):
             continue
 
         # Extract MPA ID from filename
@@ -244,7 +244,7 @@ def build_bottom_mpa_dictionary(data_directory) -> dict:
         # Classify file type and add to appropriate category
         if file_name.startswith('depth_avebottomT_'):
             data[mpa_id]['DEPTH_TS'] = str(file_path)
-        elif file_name.startswith('avebottomT_'):
+        elif file_name.startswith('ave_bottomT_'):
             data[mpa_id]['TS'] = str(file_path)
 
     print(f"Completed! Found data for {len(data)} MPAs")
@@ -292,15 +292,15 @@ def build_surface_mpa_dictionary(data_directory) -> dict:
     print(f"Completed! Found data for {len(data)} MPAs")
     return data
 
-def load_bottom_mpas():
+def load_bottom_mpas(path='./scripts/data/GLORYS_bottom/'):
     model = models.ClimateModels.objects.get_or_create(pk=1, name="GLORYS", priority=1)
-    data_directory = Path('./scripts/data/GLORYS_bottom/')
+    data_directory = Path(path)
     glorys_data = build_bottom_mpa_dictionary(data_directory)
     load_mpas_from_dict(glorys_data, climate_model=model[0])
 
-def load_surface_mpas():
+def load_surface_mpas(path='./scripts/data/GLORYS_surface/'):
     model = models.ClimateModels.objects.get_or_create(pk=1, name="GLORYS", priority=1)
-    data_directory = Path('./scripts/data/GLORYS_surface/')
+    data_directory = Path(path)
     glorys_data = build_surface_mpa_dictionary(data_directory)
     load_mpas_from_dict(glorys_data, climate_model=model[0])
 
