@@ -1,0 +1,10 @@
+/dock/
+/scripts/
+/node_modules/
+/staticfiles/
+/.github/
+/.venv/
+/node_modules/
+
+*.lock
+docker*.yml

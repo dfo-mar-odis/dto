@@ -10,7 +10,7 @@ ENV PYTHONUNBUFFERED=1
 RUN mkdir /opt/project
 WORKDIR /opt/project
 
-RUN apt-get update && apt-get install -y binutils libproj-dev gdal-bin python3-gdal
+RUN apt-get update && apt-get install -y binutils libproj-dev gdal-bin python3-gdal libgdal-dev
 RUN apt-get install -y nginx supervisor && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies
