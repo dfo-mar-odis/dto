@@ -6,7 +6,9 @@ services:
     restart: always
     ports:
       - "80:80"
-    command: /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+    command:
+      - echo $DJANGO_SETTINGS_MODULE
+      - /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
     environment:
       - "SECRET_KEY=${SECRET_KEY}"
       - "DJANGO_LOG_FILE=${DJANGO_LOG_FILE}"
