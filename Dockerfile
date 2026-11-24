@@ -1,4 +1,4 @@
-FROM python:3.12.15-slim-bookworm
+FROM python:3.13-slim-bookworm
 LABEL authors="Patrick Upson"
 
 # Set environment variables
