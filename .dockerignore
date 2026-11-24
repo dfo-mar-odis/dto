@@ -5,6 +5,6 @@
 /.github/
 /.venv/
 /node_modules/
-
+.env*
 *.lock
 docker*.yml
